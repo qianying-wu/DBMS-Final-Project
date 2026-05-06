@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>User Page</title>
+  </head>
+  <body>
+    <h1>使用者頁面</h1>
+    <div id="info"></div>
+    <script>
+      const qs = new URLSearchParams(location.search);
+      const id = qs.get('userId') || 'unknown';
+      document.getElementById('info').textContent = 'userId: ' + id;
+    </script>
+  </body>
+</html>

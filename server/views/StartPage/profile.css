@@ -1,0 +1,31 @@
+*{box-sizing:border-box}body{font-family:'Noto Sans TC', Arial, sans-serif;margin:0;background:#faf7f2;color:#333}
+.topbar{height:64px;background:#fff;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+.logo{font-weight:700;color:#6b4f3a}
+.actions{display:flex;gap:10px;align-items:center}
+.icon-btn, .avatar-btn{background:transparent;border:1px solid transparent;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:18px}
+.icon-btn:hover{background:#f5f5f5}
+.avatar-btn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}
+.layout{display:grid;grid-template-columns:220px 1fr 260px;gap:18px;padding:20px}
+.sidebar{background:transparent}
+.sidebar .resume-list{list-style:none;padding:0;margin:8px 0}
+.sidebar .resume-list li{padding:8px 10px;border-radius:6px;color:#6b4f3a;display:flex;align-items:center;gap:8px}
+.resume-list li .resume-name{flex:1}
+.resume-list li .resume-name[contenteditable]{outline: none;padding:2px;border-radius:4px}
+.sidebar .resume-list li.active{background:linear-gradient(90deg,#f0d8b3,#e6c79a);}
+.content .page-title{margin:0 0 10px 0}
+.card{background:#fff;padding:18px;border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,0.06)}
+.row{display:flex;gap:12px}
+.row label{flex:1;display:flex;flex-direction:column;font-size:14px}
+.row label.full{flex:1}
+input[type=text], textarea{padding:10px;border-radius:8px;border:1px solid #eee}
+.photo-row{display:flex;gap:10px;align-items:center}
+.photo-preview{width:96px;height:96px;border-radius:8px;border:1px dashed #ddd;display:flex;align-items:center;justify-content:center;color:#aaa}
+.tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.tag{background:#f0d8b3;padding:6px 8px;border-radius:6px;color:#6b4f3a}
+.tag .remove{margin-left:6px;cursor:pointer}
+.tag-input{display:flex;gap:6px;margin-top:6px}
+.btn{padding:10px 14px;border-radius:8px;border:none;cursor:pointer}
+.btn.primary{background:linear-gradient(90deg,#D2B48C,#caa77a);color:#fff}
+.btn.outline{background:transparent;border:1px solid #ddd}
+.actions-row{display:flex;gap:10px;margin-top:12px}
+.sidebar.right .box{background:#fff;padding:12px;border-radius:8px;box-shadow:0 6px 14px rgba(0,0,0,0.04)}

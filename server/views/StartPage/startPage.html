@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Start Page</title>
+    <style>
+      body { font-family: Arial, sans-serif; background:#FAF0E6; display:flex; align-items:center; justify-content:center; height:100vh; }
+      .container { display:flex; gap:20px; }
+      .btn { padding:20px 30px; background:#D2B48C; color:#fff; border:none; cursor:pointer; font-size:18px; border-radius:6px; }
+      .modal { display:none; position:fixed; left:0; top:0; right:0; bottom:0; background: rgba(0,0,0,0.4); align-items:center; justify-content:center; }
+      .modal .card { background:#fff; padding:20px; border-radius:6px; width:320px; }
+      label { display:block; margin-bottom:8px; }
+      input { width:100%; padding:8px; margin-bottom:10px; }
+    </style>
+  </head>
+  <body>
+    <div style="text-align:center;">
+      <h1 style="font-size:48px; margin-bottom:20px; color:#6b4f3a;">競賽組隊</h1>
+      <div class="container">
+        <button id="userBtn" class="btn">使用者</button>
+        <button id="maintBtn" class="btn">管理員</button>
+      </div>
+    </div>
+
+    <div id="modal" class="modal">
+      <div class="card">
+        <h3 id="modalTitle">Login</h3>
+        <label>Username <input id="username"></label>
+        <label>Password <input id="password" type="password"></label>
+        <div style="text-align:right">
+          <button id="cancel">取消</button>
+          <button id="submit">登入</button>
+        </div>
+        <pre id="result"></pre>
+      </div>
+    </div>
+
+    <script src="/startPage.js"></script>
+  </body>
+</html>

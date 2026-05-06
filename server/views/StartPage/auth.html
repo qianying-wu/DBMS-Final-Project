@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Auth</title>
+    <style>
+      :root{--primary:#D2B48C;--accent:#6b4f3a;--muted:#666}
+      body{font-family: 'Noto Sans TC', Arial, sans-serif; background:linear-gradient(180deg,#fffaf0,#f7efe6); display:flex; align-items:center; justify-content:center; height:100vh; margin:0}
+      .card{background:#fff;padding:28px;border-radius:12px;width:380px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border:1px solid rgba(107,79,58,0.06)}
+      .brand{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+      .logo{font-size:28px}
+      h2{margin:0;color:var(--accent)}
+  .tabs{display:flex;margin:14px 0;gap:8px}
+  /* inactive tabs: subtle border so they remain visible */
+  .tab{flex:1;padding:8px 10px;border-radius:8px;border:1px solid rgba(107,79,58,0.08);background:transparent;color:var(--muted);cursor:pointer;transition:all .18s ease}
+  .tab:hover{background:rgba(210,180,140,0.06);color:var(--accent);transform:translateY(-1px)}
+  .tab.active{background:linear-gradient(90deg,var(--primary),#caa77a);color:#fff;border:1px solid rgba(0,0,0,0.06);box-shadow:0 6px 18px rgba(107,79,58,0.08)}
+      input{width:100%;padding:10px;border-radius:8px;border:1px solid #eee;margin:8px 0;font-size:14px}
+      .row{display:flex;gap:10px;margin-top:12px}
+      .btn{padding:10px 14px;border-radius:8px;border:none;cursor:pointer}
+      .btn.primary{background:linear-gradient(90deg,var(--primary),#caa77a);color:#fff;flex:1}
+      .btn.outline{background:transparent;border:1px solid #ddd;color:var(--accent);flex:1}
+      .out{background:#f9f9f9;padding:8px;border-radius:6px;margin-top:10px;color:#333;max-height:120px;overflow:auto}
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="brand">
+        <div class="logo">🏆</div>
+        <h2 id="title">登入 / 註冊</h2>
+      </div>
+
+      <div class="tabs">
+        <button id="toLogin" class="tab active">登入</button>
+        <button id="toRegister" class="tab">註冊</button>
+      </div>
+
+      <div id="form" class="form">
+        <input id="username" placeholder="帳號 (Username)">
+        <input id="password" placeholder="密碼 (Password)" type="password">
+        <div class="row">
+          <button id="submit" class="btn primary">送出</button>
+          <button id="back" class="btn outline">回首頁</button>
+        </div>
+        <pre id="out" class="out"></pre>
+      </div>
+    </div>
+    <script src="/auth.js"></script>
+  </body>
+</html>

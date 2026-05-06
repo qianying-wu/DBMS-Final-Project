@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Login Test</title>
+  </head>
+  <body>
+    <h1>Login Test</h1>
+    <form id="loginForm">
+      <label>Role: <input name="role" value="user"></label><br>
+      <label>Username: <input name="username"></label><br>
+      <label>Password: <input name="password" type="password"></label><br>
+      <button type="submit">Login</button>
+    </form>
+    <pre id="out"></pre>
+    <script>
+      const form = document.getElementById('loginForm');
+      const out = document.getElementById('out');
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const data = {
+          role: form.role.value,
+          username: form.username.value,
+          password: form.password.value
+        };
+        try {
+          const resp = await fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          const json = await resp.json();
+          out.textContent = JSON.stringify({ status: resp.status, body: json }, null, 2);
+        } catch (err) {
+          out.textContent = String(err);
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>組隊瀏覽 / 發起隊伍</title>
+    <link rel="stylesheet" href="/team.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="logo">競賽組隊</div>
+      <div class="actions">
+        <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
+        <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar left">
+        <button id="openCreate" class="btn primary block">發起招募</button>
+        <div class="section">
+          <h4>搜尋/篩選</h4>
+          <input id="teamSearch" placeholder="搜尋隊名、主題或技能" />
+        </div>
+
+        <div class="section">
+          <h4>熱門隊伍</h4>
+          <ul id="leftTeams" class="simple-list"></ul>
+        </div>
+        <div class="section">
+          <h4>比賽</h4>
+          <ul id="contestsList" class="simple-list"></ul>
+        </div>
+      </aside>
+
+      <section class="content">
+        <div class="hero">
+          <div class="hero-left">
+            <h2>比賽隊伍總覽</h2>
+            <p>瀏覽其他隊伍、查看需求，或自己創建一隊並招募成員。</p>
+          </div>
+          <div class="hero-right">
+            <button id="createBtn" class="btn primary">創建自己的隊伍 +</button>
+          </div>
+        </div>
+
+        <div id="teamsGrid" class="teams-grid"></div>
+      </section>
+
+      <aside class="sidebar right">
+        <h4>我的隊伍</h4>
+        <div id="myTeams" class="box">尚未加入隊伍</div>
+
+  <h4 style="margin-top:18px">我的收藏</h4>
+  <div id="myFavs" class="box">尚無收藏</div>
+  <div style="margin-top:8px"><button id="removeSelectedFavs" class="btn outline">移除所選</button></div>
+
+  <h4 style="margin-top:18px">我的管理</h4>
+  <div id="myManaged" class="box">尚未管理任何隊伍</div>
+
+  <h4 style="margin-top:18px">關注的比賽 / 訊息</h4>
+  <div id="followed" class="list">無</div>
+      </aside>
+    </main>
+
+    <!-- create modal simple -->
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-card" role="document">
+        <h3>創建新隊伍</h3>
+        <div class="modal-row">
+          <label class="modal-label">隊名
+            <input id="newTeamName">
+          </label>
+          <label class="modal-label">主題/說明
+            <textarea id="newTeamDesc" rows="3"></textarea>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button id="modalCreate" class="btn primary">建立</button>
+          <button id="modalCancel" class="btn outline">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/team.js"></script>
+    <!-- requests modal -->
+    <div id="requestsModal" class="modal hidden requests-modal" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <h3>待審核的加入申請</h3>
+        <div id="requestsList"></div>
+        <div class="modal-actions">
+          <button id="closeReq" class="btn outline">關閉</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

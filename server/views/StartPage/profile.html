@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>個人履歷</title>
+    <link rel="stylesheet" href="/profile.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="logo">競賽組隊</div>
+      <div class="actions">
+        <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
+        <button id="teamBtn" class="icon-btn" aria-label="組隊">🤝</button>
+        <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar left">
+        <h3>履歷表</h3>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button id="addResume" class="btn">新增履歷</button>
+          <button id="delResume" class="btn outline">刪除</button>
+        </div>
+        <ul id="resumeList" class="resume-list"></ul>
+      </aside>
+
+      <section class="content">
+        <h2 class="page-title">個人履歷</h2>
+
+        <div class="card">
+          <form id="profileForm">
+            <div class="row">
+              <label>姓名<input id="name" type="text" placeholder="你的名字"></label>
+              <label>照片
+                <div class="photo-row">
+                  <input id="photo" type="file" accept="image/*">
+                  <div id="photoPreview" class="photo-preview">預覽</div>
+                </div>
+              </label>
+            </div>
+
+            <div class="row">
+              <label>學校<input id="school" type="text" placeholder="學校"></label>
+              <label>年級<input id="grade" type="text" placeholder="年級"></label>
+            </div>
+
+            <div class="row">
+              <label class="full">專長
+                <div class="tags" id="tags"></div>
+                <div class="tag-input">
+                  <input id="newTag" placeholder="新增專長">
+                  <button id="addTag" type="button">+</button>
+                </div>
+              </label>
+            </div>
+
+            <div class="row">
+              <label class="full">個人經歷<textarea id="experience" placeholder="描述你的專案、比賽或經歷" rows="6"></textarea></label>
+            </div>
+
+            <div class="row">
+              <label class="full">自我介紹<textarea id="intro" placeholder="一段短介紹" rows="4"></textarea></label>
+            </div>
+
+            <div class="actions-row">
+              <button id="saveBtn" type="button" class="btn primary">儲存</button>
+              <button id="exportBtn" type="button" class="btn outline">匯出 JSON</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <aside class="sidebar right">
+        <h3>我的隊伍</h3>
+        <div class="box" id="myTeams">尚未加入隊伍</div>
+
+        <h3 style="margin-top:18px">關注的比賽 / 訊息</h3>
+        <div class="list" id="followed">無</div>
+      </aside>
+    </main>
+
+    <script src="/profile.js"></script>
+  </body>
+</html>

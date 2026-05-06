@@ -1,0 +1,74 @@
+openapi: 3.0.0
+info:
+  title: 競賽組隊系統 API
+  description: 包含使用者、隊伍管理、需求回覆與評價系統
+  version: 1.0.0
+
+paths:
+  # ---------------------------------------------------------
+  # 功能：使用者申請加入隊伍 (包含回覆需求)
+  # ---------------------------------------------------------
+  /teams/{team_id}/apply:
+    post:
+      summary: 申請加入隊伍
+      description: 使用者提交申請，並針對隊伍提出的 Demand 進行 Response。
+      parameters:
+        - name: team_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                responses:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      demand_id:
+                        type: integer
+                      ans_content:
+                        type: string
+            example:
+              user_id: 501
+              responses:
+                - demand_id: 10
+                  ans_content: "我有兩年 React 開發經驗"
+                - demand_id: 11
+                  ans_content: "每週二四晚上可以開會"
+      responses:
+        '201':
+          description: 申請成功，等待隊長審核
+        '400':
+          description: 格式錯誤或已申請過
+
+  # ---------------------------------------------------------
+  # 功能：查看特定使用者的評價 (Review)
+  # ---------------------------------------------------------
+  /users/{user_id}/reviews:
+    get:
+      summary: 取得使用者的歷史評價
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功取得評價清單
+          content:
+            application/json:
+              example:
+                - rev_id: 99
+                  reviewer_name: "隊長 A"
+                  star: 5
+                  rev_content: "溝通順暢，技術力強！"
+                  com_name: "2024 全國大專創新競賽"
