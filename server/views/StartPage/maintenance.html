@@ -2,15 +2,90 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Maintenance Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>管理員首頁</title>
+    <style>
+      *{box-sizing:border-box}
+      body{font-family:'Noto Sans TC', Arial, sans-serif;margin:0;background:#f5f7fa;color:#263238}
+      .topbar{height:64px;background:#fff;border-bottom:1px solid #e8edf2;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+      .logo{font-weight:700;color:#38506b}
+      .logout{background:transparent;border:1px solid #cfd8dc;border-radius:8px;padding:8px 12px;cursor:pointer;color:#38506b}
+      .layout{max-width:1040px;margin:0 auto;padding:32px 20px}
+      .welcome{margin-bottom:20px}
+      .welcome h1{margin:0 0 8px;color:#38506b}
+      .welcome p{margin:0;color:#607d8b}
+      .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+      .card{background:#fff;border:1px solid #e8edf2;border-radius:10px;padding:20px;box-shadow:0 10px 24px rgba(38,50,56,0.06)}
+      .card h2{margin:0 0 8px;color:#38506b;font-size:20px}
+      .card p{min-height:72px;margin:0 0 18px;color:#607d8b;line-height:1.5}
+      .btn{display:inline-block;background:linear-gradient(90deg,#78909c,#546e7a);color:#fff;text-decoration:none;border:none;border-radius:8px;padding:10px 14px;cursor:pointer;font-size:14px}
+      .btn.outline{background:#fff;color:#38506b;border:1px solid #cfd8dc}
+      #info,#apiResult{color:#78909c;font-size:14px;margin-top:18px;white-space:pre-wrap}
+      @media (max-width: 820px){
+        .grid{grid-template-columns:1fr}
+      }
+      @media (max-width: 560px){
+        .topbar{padding:0 14px}
+        .layout{padding:22px 14px}
+      }
+    </style>
   </head>
   <body>
-    <h1>維修人員頁面</h1>
-    <div id="info"></div>
+    <header class="topbar">
+      <div class="logo">競賽組隊｜管理員</div>
+      <button id="logout" class="logout">登出</button>
+    </header>
+
+    <main class="layout">
+      <section class="welcome">
+        <h1>管理員首頁</h1>
+        <p>查看系統狀態，並快速前往目前可管理與測試的頁面。</p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>隊伍管理</h2>
+          <p>前往隊伍頁檢查隊伍資料、招募內容與申請流程。</p>
+          <a id="teamLink" class="btn" href="/team.html">查看隊伍</a>
+        </article>
+
+        <article class="card">
+          <h2>使用者頁面</h2>
+          <p>以一般使用者頁面確認登入後入口、履歷與組隊導覽是否正常。</p>
+          <a id="userLink" class="btn" href="/user.html">查看使用者頁</a>
+        </article>
+
+        <article class="card">
+          <h2>後端狀態</h2>
+          <p>呼叫測試 API，確認 Express server 與前端頁面連線正常。</p>
+          <button id="checkApi" class="btn outline" type="button">檢查 API</button>
+        </article>
+      </section>
+
+      <div id="info"></div>
+      <div id="apiResult"></div>
+    </main>
+
     <script>
       const qs = new URLSearchParams(location.search);
       const id = qs.get('userId') || 'unknown';
       document.getElementById('info').textContent = 'maintenance userId: ' + id;
+      document.getElementById('teamLink').href = '/team.html?userId=' + encodeURIComponent(id) + '&role=maintenance';
+      document.getElementById('userLink').href = '/user.html?userId=' + encodeURIComponent(id);
+      document.getElementById('logout').addEventListener('click', () => {
+        location.href = '/startPage.html';
+      });
+      document.getElementById('checkApi').addEventListener('click', async () => {
+        const apiResult = document.getElementById('apiResult');
+        apiResult.textContent = '檢查中...';
+        try {
+          const resp = await fetch('/api/test');
+          const json = await resp.json();
+          apiResult.textContent = JSON.stringify({ status: resp.status, body: json }, null, 2);
+        } catch (err) {
+          apiResult.textContent = 'API 檢查失敗：' + (err.message || err);
+        }
+      });
     </script>
   </body>
 </html>

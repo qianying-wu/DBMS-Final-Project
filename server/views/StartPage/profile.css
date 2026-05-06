@@ -29,3 +29,18 @@ input[type=text], textarea{padding:10px;border-radius:8px;border:1px solid #eee}
 .btn.outline{background:transparent;border:1px solid #ddd}
 .actions-row{display:flex;gap:10px;margin-top:12px}
 .sidebar.right .box{background:#fff;padding:12px;border-radius:8px;box-shadow:0 6px 14px rgba(0,0,0,0.04)}
+
+@media (max-width: 920px){
+  .layout{grid-template-columns:1fr;padding:14px}
+  .sidebar{order:2}
+  .content{order:1}
+  .row{flex-direction:column}
+}
+
+@media (max-width: 520px){
+  .topbar{padding:0 12px}
+  .card{padding:14px}
+  .photo-row{align-items:flex-start;flex-direction:column}
+  .actions-row{flex-direction:column}
+  .actions-row .btn{width:100%}
+}

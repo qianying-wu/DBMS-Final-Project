@@ -2,15 +2,69 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>User Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>使用者首頁</title>
+    <style>
+      *{box-sizing:border-box}
+      body{font-family:'Noto Sans TC', Arial, sans-serif;margin:0;background:#faf7f2;color:#333}
+      .topbar{height:64px;background:#fff;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+      .logo{font-weight:700;color:#6b4f3a}
+      .logout{background:transparent;border:1px solid #ddd;border-radius:8px;padding:8px 12px;cursor:pointer;color:#6b4f3a}
+      .layout{max-width:960px;margin:0 auto;padding:32px 20px}
+      .welcome{margin-bottom:20px}
+      .welcome h1{margin:0 0 8px;color:#6b4f3a}
+      .welcome p{margin:0;color:#666}
+      .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+      .card{background:#fff;border:1px solid #eee;border-radius:10px;padding:20px;box-shadow:0 10px 24px rgba(0,0,0,0.06)}
+      .card h2{margin:0 0 8px;color:#6b4f3a}
+      .card p{min-height:48px;margin:0 0 18px;color:#666;line-height:1.5}
+      .btn{display:inline-block;background:linear-gradient(90deg,#D2B48C,#caa77a);color:#fff;text-decoration:none;border-radius:8px;padding:10px 14px}
+      #info{color:#888;font-size:14px;margin-top:18px}
+      @media (max-width: 640px){
+        .topbar{padding:0 14px}
+        .layout{padding:22px 14px}
+        .grid{grid-template-columns:1fr}
+      }
+    </style>
   </head>
   <body>
-    <h1>使用者頁面</h1>
-    <div id="info"></div>
+    <header class="topbar">
+      <div class="logo">競賽組隊</div>
+      <button id="logout" class="logout">登出</button>
+    </header>
+
+    <main class="layout">
+      <section class="welcome">
+        <h1>使用者首頁</h1>
+        <p>選擇要管理履歷，或開始瀏覽與建立隊伍。</p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>個人履歷</h2>
+          <p>編輯你的學校、年級、專長、經歷與自我介紹，方便隊伍了解你。</p>
+          <a id="profileLink" class="btn" href="/profile.html">前往履歷</a>
+        </article>
+
+        <article class="card">
+          <h2>組隊瀏覽</h2>
+          <p>查看目前招募中的隊伍、收藏隊伍，或建立自己的比賽隊伍。</p>
+          <a id="teamLink" class="btn" href="/team.html">前往組隊</a>
+        </article>
+      </section>
+
+      <div id="info"></div>
+    </main>
+
     <script>
       const qs = new URLSearchParams(location.search);
       const id = qs.get('userId') || 'unknown';
       document.getElementById('info').textContent = 'userId: ' + id;
+      document.getElementById('profileLink').href = '/profile.html?userId=' + encodeURIComponent(id);
+      document.getElementById('teamLink').href = '/team.html?userId=' + encodeURIComponent(id);
+      document.getElementById('logout').addEventListener('click', () => {
+        location.href = '/startPage.html';
+      });
     </script>
   </body>
 </html>

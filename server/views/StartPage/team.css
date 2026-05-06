@@ -41,3 +41,20 @@ input#newTeamName, textarea#newTeamDesc{padding:10px;border-radius:6px;border:1p
 body.modal-open{overflow:hidden}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 #teamSearch{width:100%;padding:8px;border-radius:6px;border:1px solid #eee}
+
+@media (max-width: 980px){
+  .layout{grid-template-columns:1fr;padding:14px}
+  .sidebar{order:2}
+  .content{order:1}
+  .content .hero{align-items:flex-start;flex-direction:column;gap:10px}
+  .hero-right,.hero-right .btn{width:100%}
+}
+
+@media (max-width: 560px){
+  .topbar{padding:0 12px}
+  .teams-grid{grid-template-columns:1fr}
+  .modal-card{min-width:0;width:calc(100vw - 28px);padding:18px}
+  .modal-row{flex-direction:column}
+  .modal-actions{flex-direction:column-reverse}
+  .modal-actions .btn{width:100%}
+}
