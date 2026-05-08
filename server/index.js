@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import * as authController from './controllers/authController.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,7 +20,6 @@ let nextMockId = 3000;
 app.use(express.json());
 
 // 2. 設定靜態檔案路徑 (指向你存放 HTML/CSS/前端JS 的地方)
-// 假設你之後把前端檔案移到名為 public 的資料夾
 app.use(express.static(path.join(__dirname, 'views/StartPage')));
 
 // 3. 測試用 API：檢查後端有沒有跑起來
@@ -28,7 +28,7 @@ app.get('/api/test', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(startPageDir, 'startPage.html')); // 之前是前端指到/public
+    res.sendFile(path.join(startPageDir, 'startPage.html')); 
 });
 
 app.post('/login', (req, res) => {
