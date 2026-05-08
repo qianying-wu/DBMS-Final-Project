@@ -31,33 +31,35 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(startPageDir, 'startPage.html')); 
 });
 
-app.post('/login', (req, res) => {
-    const { username, password, role } = req.body || {};
-    if (!username || !password || !role) {
-        return res.status(400).json({ ok: false, error: 'username, password and role are required' });
-    }
+// app.post('/login', (req, res) => {
+//     const { username, password, role } = req.body || {};
+//     if (!username || !password || !role) {
+//         return res.status(400).json({ ok: false, error: 'username, password and role are required' });
+//     }
 
-    const user = mockUsers[username];
-    if (!user || user.password !== password || user.role !== role) {
-        return res.status(401).json({ ok: false, error: 'invalid credentials' });
-    }
+//     const user = mockUsers[username];
+//     if (!user || user.password !== password || user.role !== role) {
+//         return res.status(401).json({ ok: false, error: 'invalid credentials' });
+//     }
 
-    res.json({ ok: true, userId: user.id });
-});
+//     res.json({ ok: true, userId: user.id });
+// });
 
-app.post('/register', (req, res) => {
-    const { username, password, role } = req.body || {};
-    if (!username || !password || !role) {
-        return res.status(400).json({ ok: false, error: 'username, password and role are required' });
-    }
-    if (mockUsers[username]) {
-        return res.status(409).json({ ok: false, error: 'user exists' });
-    }
+// app.post('/register', (req, res) => {
+//     const { username, password, role } = req.body || {};
+//     if (!username || !password || !role) {
+//         return res.status(400).json({ ok: false, error: 'username, password and role are required' });
+//     }
+//     if (mockUsers[username]) {
+//         return res.status(409).json({ ok: false, error: 'user exists' });
+//     }
 
-    const id = nextMockId++;
-    mockUsers[username] = { password, role, id };
-    res.json({ ok: true, userId: id });
-});
+//     const id = nextMockId++;
+//     mockUsers[username] = { password, role, id };
+//     res.json({ ok: true, userId: id });
+// });
+app.post('/register', authController.register);
+app.post('/login', authController.login);
 
 // 4. 啟動伺服器
 app.listen(port, () => {
