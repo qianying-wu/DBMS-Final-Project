@@ -10,6 +10,7 @@ const app = express();
 const port = 3000;
 const startPageDir = path.join(__dirname, 'views', 'StartPage');
 
+// 模擬使用者資料庫 (未來會換成真正的資料庫查詢)
 const mockUsers = {
     testuser: { password: 'testpass', role: 'user', id: 1001 },
     maint: { password: 'maintpass', role: 'maintenance', id: 2001 }
