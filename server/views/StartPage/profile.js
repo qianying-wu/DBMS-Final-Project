@@ -301,13 +301,27 @@
     photoPreview.addEventListener('pointercancel', onPointerUp);
   });
 
-  // top-right buttons
-  const notifyBtn = document.getElementById('notifyBtn');
-  const avatarBtn = document.getElementById('avatarBtn');
-  const teamBtn = document.getElementById('teamBtn');
-  if (notifyBtn) notifyBtn.addEventListener('click', showNotifications);
-  if (teamBtn) teamBtn.addEventListener('click', ()=>{ window.location.href = '/team.html'; });
-  if (avatarBtn) avatarBtn.addEventListener('click', ()=>{ alert('打開個人檔案設定'); });
+  // top-right buttons (defensive binding)
+  try {
+    console.log('profile.js loaded - binding top-right buttons');
+    const notifyBtn = document.getElementById('notifyBtn');
+    const avatarBtn = document.getElementById('avatarBtn');
+    const teamBtn = document.getElementById('teamBtn');
+    if (notifyBtn) notifyBtn.addEventListener('click', showNotifications);
+    if (teamBtn) {
+      // primary listener
+      teamBtn.addEventListener('click', ()=>{ window.location.href = '/team.html'; });
+      // fallback: set onclick and an href-like attribute so non-JS clicks also work
+      teamBtn.onclick = () => { window.location.href = '/team.html'; };
+      teamBtn.setAttribute('data-href', '/team.html');
+    }
+    if (avatarBtn) avatarBtn.addEventListener('click', ()=>{ alert('打開個人檔案設定'); });
+  } catch (err) {
+    console.error('Error binding top-right buttons:', err);
+    // ensure team button still navigates as fallback
+    const teamBtn = document.getElementById('teamBtn');
+    if (teamBtn) teamBtn.onclick = () => { window.location.href = '/team.html'; };
+  }
   window.addEventListener('storage', e=>{
     if (['myTeams','favorites','teams','contests'].includes(e.key)) renderSyncedSidebar();
     if (e.key === 'notifications') updateNotificationBadge();
