@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>隊伍資訊</title>
+    <link rel="stylesheet" href="/create-team.css"> 
+    <link rel="stylesheet" href="/team-info.css"> 
+  </head>
+  <body>
+    <header class="topbar">
+      <button id="backBtn" class="icon-btn" aria-label="回上一頁">←</button>
+      <div class="logo">競賽組隊</div>
+      <div class="actions">
+        <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
+        <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
+      </div>
+    </header>
+
+    <main class="create-layout">
+      <aside class="panel left-panel">
+        <section class="panel-section first">
+          <h4>隊伍導覽</h4>
+          <div class="step-list">
+            <div class="active">隊伍詳細資訊</div>
+            <div>比賽官方頁面</div>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h4>本比賽其他隊伍</h4>
+          <ul id="otherTeams" class="team-list">
+            </ul>
+        </section>
+      </aside>
+
+      <section class="main-panel">
+        <section class="info-section">
+          <div class="section-heading">
+            <h2 id="displayTeamName">隊伍名稱載入中...</h2>
+            <span id="displayContestLabel" class="contest-label">比賽名稱</span>
+          </div>
+
+          <div class="info-block status-block">
+            <div class="status-item">
+              <strong>招募進度：</strong> 
+              <span id="displayMemberCount">1</span> / <span id="displayMaxSlots">4</span> 人
+            </div>
+            <div class="status-item">
+              <strong>需求技能：</strong> 
+              <span id="displaySkills" class="skills-tags">前端、資料分析</span>
+            </div>
+          </div>
+
+          <div class="info-block">
+            <h3>主題 / 說明</h3>
+            <p id="displayDesc" class="desc-text">
+              隊伍說明的詳細內容會顯示在這裡。
+            </p>
+          </div>
+
+          <div class="info-block">
+            <h3>目前成員</h3>
+            <ul id="memberList" class="member-list">
+              </ul>
+          </div>
+
+          <div class="info-block application-block">
+            <h3>申請加入隊伍</h3>
+            <form id="applyForm" class="create-form" style="display: none;">
+              <div id="applicationQuestions"></div>
+              
+              <div class="form-actions">
+                <button class="btn primary" type="submit">送出申請</button>
+                <button id="cancelApplyBtn" class="btn outline" type="button">取消</button>
+              </div>
+            </form>
+            
+            <div id="actionButtons" class="form-actions">
+              <button id="applyBtn" class="btn primary">我要申請</button>
+              <button id="contactBtn" class="btn outline">聯絡隊長</button>
+            </div>
+          </div>
+
+        </section>
+      </section>
+
+      <aside class="panel right-panel">
+        <section class="panel-section first">
+          <h4>我的隊伍</h4>
+          <div id="myTeams" class="box">尚未加入隊伍</div>
+        </section>
+
+        <section class="panel-section">
+          <h4>關注的比賽 / 隊伍</h4>
+          <div id="followed" class="box">尚無關注</div>
+        </section>
+      </aside>
+    </main>
+
+    <script src="/team-info.js"></script>
+  </body>
+</html>

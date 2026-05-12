@@ -1,0 +1,126 @@
+/* =========================================
+   隊伍資訊頁 (team-info.html) 專用樣式
+   配合 create-team.css 共同使用
+   ========================================= */
+
+/* 區塊基礎設定 */
+.info-block {
+  background: #fff;
+  border: 1px solid #eadfd2;
+  border-radius: 12px;
+  padding: 18px 22px;
+  margin-bottom: 18px;
+}
+
+.info-block h3 {
+  margin: 0 0 14px;
+  color: #4f3827;
+  font-size: 16px;
+  border-bottom: 1px solid #f0ebe5;
+  padding-bottom: 10px;
+}
+
+/* 隊伍基本狀態區塊 (較特別的底色) */
+.status-block {
+  background: #fffdf9;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-item {
+  font-size: 15px;
+  color: #3f342c;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.status-item strong {
+  color: #5f4633;
+}
+
+/* 技能標籤 */
+.skills-tags {
+  display: inline-block;
+  background: #f5f0ea;
+  color: #6b4f3a;
+  border: 1px solid #e6ddd3;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 隊伍說明文字 */
+.desc-text {
+  line-height: 1.6;
+  color: #444;
+  white-space: pre-line; /* 讓斷行能正常顯示 */
+  margin: 0;
+  font-size: 15px;
+}
+
+/* 成員列表網格 */
+.member-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.member-list li {
+  background: #faf7f2;
+  border: 1px solid #e6ddd3;
+  padding: 12px 10px;
+  border-radius: 8px;
+  text-align: center;
+  color: #3f342c;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* 申請加入區塊 (重點提示) */
+.application-block {
+  border: 2px solid #d6c2ad;
+  background: #fffdf9;
+}
+
+#actionButtons {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+/* 針對申請表單內的題目顯示 */
+.application-question-item {
+  margin-bottom: 16px;
+}
+
+.application-question-item p {
+  margin: 0 0 8px;
+  font-weight: 700;
+  color: #3f342c;
+}
+
+/* 響應式微調 */
+@media (max-width: 560px) {
+  .info-block {
+    padding: 14px;
+  }
+  
+  .member-list {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+  
+  #actionButtons {
+    flex-direction: column;
+  }
+  
+  #actionButtons .btn {
+    width: 100%;
+  }
+}
