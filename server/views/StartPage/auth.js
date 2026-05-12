@@ -38,13 +38,14 @@
     if (!u || !p) { out.textContent = '請填寫完整！'; return; }
     try {
       const path = mode === 'login' ? '/login' : '/register';      
-      const resp = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username: u, password: p}) });
+      const resp = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ account: u, password: p}) });
       const json = await resp.json().catch(()=>({}));
       if (resp.ok) {
         out.textContent = JSON.stringify(json, null, 2);
         if (mode === 'login') {
           // redirect to role page with userId
           const id = json.userId || json.userId === 0 ? json.userId : '';
+          const target = `/user.html?id=${id}`;
           setTimeout(()=> location.href = target, 500);
         } else {
           // after successful register (stub) switch to login mode
