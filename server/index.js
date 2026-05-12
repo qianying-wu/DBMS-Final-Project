@@ -12,12 +12,6 @@ const app = express();
 const port = 3000;
 const startPageDir = path.join(__dirname, 'views', 'StartPage');
 
-const mockUsers = {
-    testuser: { password: 'testpass', role: 'user', id: 1001 },
-    maint: { password: 'maintpass', role: 'maintenance', id: 2001 }
-};
-let nextMockId = 3000;
-
 // 1. 解析前端傳來的 JSON 資料 (這行一定要加，否則 API 抓不到資料)
 app.use(express.json());
 
@@ -25,7 +19,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'views/StartPage')));
 
 // 3. 測試用 API：檢查後端有沒有跑起來
-app.get('/api/test', (req, res) => {
+app.get('/test', (req, res) => {
     res.json({ message: "後端伺服器已連線！" });
 });
 
