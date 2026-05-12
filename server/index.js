@@ -27,6 +27,26 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(startPageDir, 'startPage.html')); 
 });
 
+app.get('/profile', (req, res) => {
+    res.sendFile(path.join(startPageDir, 'profile.html'));
+});
+
+app.get('/team', (req, res) => {
+    res.sendFile(path.join(startPageDir, 'team.html'));
+});
+
+app.get('/contest', (req, res) => {
+    res.sendFile(path.join(startPageDir, 'contest.html'));
+});
+
+app.get('/create-team', (req, res) => {
+    res.sendFile(path.join(startPageDir, 'create-team.html'));
+});
+
+app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
+    res.status(204).end();
+});
+
 // app.post('/login', (req, res) => {
 //     const { username, password, role } = req.body || {};
 //     if (!username || !password || !role) {
@@ -54,9 +74,8 @@ app.get('/', (req, res) => {
 //     mockUsers[username] = { password, role, id };
 //     res.json({ ok: true, userId: id });
 // });
-// conditional auth handlers: mock when USE_MOCK=1 to avoid requiring DB env
-if (process.env.USE_MOCK === '1') {
-    console.log('Starting in MOCK mode (USE_MOCK=1) - using in-memory auth handlers');
+function registerMockAuthHandlers(reason = 'USE_MOCK=1') {
+    console.log(`Starting in MOCK mode (${reason}) - using in-memory auth handlers`);
     const mockUsers = new Map();
     let nextId = 1;
 
@@ -78,6 +97,11 @@ if (process.env.USE_MOCK === '1') {
     });
 
     app.post('/submit-review', reviewController.submitReview);
+}
+
+// conditional auth handlers: mock when USE_MOCK=1 to avoid requiring DB env
+if (process.env.USE_MOCK === '1') {
+    registerMockAuthHandlers('USE_MOCK=1');
 } else {
     // load real auth controller (may throw if env missing)
     (async () => {
@@ -85,7 +109,10 @@ if (process.env.USE_MOCK === '1') {
         app.post('/register', authController.register);
         app.post('/login', authController.login);
         app.post('/submit-review', reviewController.submitReview);
-    })();
+    })().catch(err => {
+        console.warn(`Real auth unavailable: ${err.message}`);
+        registerMockAuthHandlers('missing DB config');
+    });
 }
 
 // 4. 啟動伺服器

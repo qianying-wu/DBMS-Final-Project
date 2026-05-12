@@ -2,7 +2,7 @@
   const $ = id => document.getElementById(id);
   const ME = { id: 9999, name: '你自己' };
   const params = new URLSearchParams(location.search);
-  const contestId = Number(params.get('id')) || 10;
+  const contestId = Number(params.get('contestId')) || Number(params.get('id')) || 10;
 
   function loadContests(){
     const raw = localStorage.getItem('contests');
@@ -38,6 +38,15 @@
 
   function contestTeams(){
     return loadTeams().filter(team => Number(team.contestId) === Number(getContest().id));
+  }
+
+  function withUserParam(path){
+    const userId = params.get('userId');
+    return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
+  }
+
+  function createTeamHref(){
+    return withUserParam(`/create-team.html?contestId=${encodeURIComponent(getContest().id)}`);
   }
 
   function render(){
@@ -110,35 +119,12 @@
     alert('已送出加入申請，等待隊長審核');
   }
 
-  function openModal(){
-    $('modal').classList.remove('hidden');
-    document.body.classList.add('modal-open');
-    setTimeout(()=>$('newTeamName').focus(), 80);
+  function openCreateTeamPage(){
+    location.href = createTeamHref();
   }
 
-  function closeModal(){
-    $('modal').classList.add('hidden');
-    document.body.classList.remove('modal-open');
-    $('newTeamName').value = '';
-    $('newTeamDesc').value = '';
-  }
-
-  $('createBtn').addEventListener('click', openModal);
-  $('openCreate').addEventListener('click', openModal);
-  $('modalCancel').addEventListener('click', closeModal);
-  $('modal').addEventListener('click', e => { if (e.target === $('modal')) closeModal(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-
-  $('modalCreate').addEventListener('click', ()=>{
-    const name = $('newTeamName').value.trim();
-    if (!name) return alert('請輸入隊名');
-    const desc = $('newTeamDesc').value.trim();
-    const teams = loadTeams();
-    teams.unshift({ id: Date.now(), name, desc, members:1, slots:4, owner:ME.id, contestId:getContest().id });
-    saveTeams(teams);
-    closeModal();
-    render();
-  });
+  $('createBtn').addEventListener('click', openCreateTeamPage);
+  $('openCreate').addEventListener('click', openCreateTeamPage);
 
   $('teamCards').addEventListener('click', e=>{
     const favBtn = e.target.closest('[data-fav]');
@@ -152,9 +138,9 @@
     if (item) openTeamDetail(Number(item.dataset.team));
   });
 
-  $('backBtn').addEventListener('click', ()=>{ location.href = '/team.html'; });
+  $('backBtn').addEventListener('click', ()=>{ location.href = withUserParam('/team.html'); });
   $('notifyBtn').addEventListener('click', ()=>{ alert('目前無新通知'); });
-  $('avatarBtn').addEventListener('click', ()=>{ location.href = '/profile.html'; });
+  $('avatarBtn').addEventListener('click', ()=>{ location.href = withUserParam('/profile.html'); });
 
   render();
 })();

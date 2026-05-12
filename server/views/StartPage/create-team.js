@@ -39,6 +39,15 @@
     return contests.find(contest => Number(contest.id) === contestId) || contests[0];
   }
 
+  function withUserParam(path){
+    const userId = params.get('userId');
+    return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
+  }
+
+  function contestHref(){
+    return withUserParam(`/contest.html?id=${encodeURIComponent(getContest().id)}`);
+  }
+
   function getContestTeams(){
     const contest = getContest();
     return loadTeams().filter(team => Number(team.contestId) === Number(contest.id));
@@ -129,13 +138,13 @@
     });
     saveTeams(teams);
     alert('已建立隊伍');
-    location.href = '/team.html';
+    location.href = contestHref();
   });
 
-  $('cancelBtn').addEventListener('click', () => { location.href = '/team.html'; });
-  $('backBtn').addEventListener('click', () => { location.href = '/team.html'; });
+  $('cancelBtn').addEventListener('click', () => { location.href = contestHref(); });
+  $('backBtn').addEventListener('click', () => { location.href = contestHref(); });
   $('notifyBtn').addEventListener('click', () => { alert('目前無新通知'); });
-  $('avatarBtn').addEventListener('click', () => { location.href = '/profile.html'; });
+  $('avatarBtn').addEventListener('click', () => { location.href = withUserParam('/profile.html'); });
 
   render();
   renderQuestions();
