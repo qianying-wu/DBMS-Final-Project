@@ -3,6 +3,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import * as authController from './controllers/authController.js';
 
+// 手動定義 __filename 和 __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const port = 3000;
 const startPageDir = path.join(__dirname, 'views', 'StartPage');
