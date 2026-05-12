@@ -122,7 +122,8 @@
 
   function getTeamHref(){
     const userId = new URLSearchParams(window.location.search).get('userId');
-    return userId ? `/team.html?userId=${encodeURIComponent(userId)}` : '/team.html';
+    const teamPath = window.location.protocol === 'file:' ? 'team.html' : '/team.html';
+    return userId ? `${teamPath}?userId=${encodeURIComponent(userId)}` : teamPath;
   }
 
   function loadTeams(){
@@ -328,7 +329,7 @@
     console.error('Error binding top-right buttons:', err);
     // ensure team button still navigates as fallback
     const teamBtn = document.getElementById('teamBtn');
-    if (teamBtn) teamBtn.setAttribute('href', '/team.html');
+    if (teamBtn) teamBtn.setAttribute('href', 'team.html');
   }
   window.addEventListener('storage', e=>{
     if (['myTeams','favorites','teams','contests'].includes(e.key)) renderSyncedSidebar();
