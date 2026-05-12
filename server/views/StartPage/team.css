@@ -61,3 +61,39 @@ body.modal-open{overflow:hidden}
 a{
   text-decoration:none;
 }
+
+/* ==============================
+   全域懸浮搜尋 (純新增)
+   ============================== */
+.global-search-input {
+  width: 320px; padding: 8px 16px; border-radius: 20px;
+  border: 1px solid #e6ddd3; outline: none; background: #fdfdfc;
+  font-family: inherit; margin: 0 15px; flex: 1; max-width: 400px;
+}
+.global-search-input:focus { border-color: #d4b283; }
+
+.global-search-overlay {
+  position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+  background: rgba(250, 247, 242, 0.85); z-index: 999;
+  backdrop-filter: blur(5px); display: flex; justify-content: center; padding: 20px;
+}
+.global-search-overlay.hidden { display: none; }
+
+.search-overlay-content {
+  background: #fff; width: 100%; max-width: 800px; height: max-content;
+  max-height: 85vh; border-radius: 12px; box-shadow: 0 15px 35px rgba(76, 55, 35, 0.1);
+  border: 1px solid #e6ddd3; padding: 20px; display: flex; flex-direction: column;
+}
+
+.search-header {
+  display: flex; gap: 15px; align-items: center; margin-bottom: 16px;
+  padding-bottom: 16px; border-bottom: 1px solid #efe5db;
+}
+
+.search-tabs { display: flex; gap: 8px; }
+.s-tab { cursor: pointer; padding: 6px 14px; border-radius: 8px; color: #7b6a59; font-size: 14px; }
+.s-tab.active { background: #fff; border: 1px solid #d4b283; color: #6b4f3a; font-weight: 700; }
+
+.search-results-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+.search-list-item { padding: 12px; background: #fff; border: 1px solid #eee; border-radius: 8px; cursor: pointer; transition: all 0.2s;}
+.search-list-item:hover { border-color: #d4b283; background: #fffdf9; box-shadow: 0 4px 12px rgba(76, 55, 35, 0.05);}
