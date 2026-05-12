@@ -1,0 +1,20 @@
+### 測試註冊功能
+POST http://localhost:3000/register
+Content-Type: application/json
+
+{
+    "account": "celine_test_00",
+    "userName": "celine_test_01",
+    "userPsw": "mypassword123",
+    "userEmail": "celine_test_01@example.com",
+
+}
+
+### 測試登入功能
+POST http://localhost:3000/login
+Content-Type: application/json
+
+{
+    "account": "celine_test_01",
+    "userPsw": "mypassword123"
+}
