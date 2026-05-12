@@ -16,7 +16,6 @@ const pool = mysql.createPool({
 
 // --- 註冊邏輯 ---
 export const register = async (req, res) => {
-    console.log('後端收到的內容:', req.body); // <--- 加這行
     const { username, password} = req.body || {};
     
     if (!username || !password) {

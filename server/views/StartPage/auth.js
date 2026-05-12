@@ -32,7 +32,7 @@
     const u = username.value; const p = password.value;
     if (!u || !p) { out.textContent = '請填入 username/password'; return; }
     try {
-      const path = mode === 'login' ? '/login' : '/register';
+      const path = mode === 'login' ? '/login' : '/register';      
       const resp = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username: u, password: p}) });
       const json = await resp.json().catch(()=>({}));
       if (resp.ok) {
