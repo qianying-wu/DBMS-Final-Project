@@ -38,21 +38,22 @@
     if (!u || !p) { out.textContent = '請填寫完整！'; return; }
     try {
       const path = mode === 'login' ? '/login' : '/register';      
-       const body = (mode === 'login')
-         ? { account: u, password: p }
-         : { account: u, password: p, displayName: username.value || '', email: userEmail.value || '' };
-       const resp = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+
+      const resp = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ account: u, password: p}) });
       const json = await resp.json().catch(()=>({}));
       if (resp.ok) {
         out.textContent = JSON.stringify(json, null, 2);
-        // on success (both login and register) redirect to competition main page
-        const id = (typeof json.userId !== 'undefined') ? json.userId : '';
-        // give user a tiny pause so they see the response, then redirect
-        setTimeout(() => {
-          const dest = '/team.html' + (id !== '' ? '?userId=' + encodeURIComponent(id) : '');
-          location.href = dest;
-        }, 500);
-        return;
+        if (mode === 'login') {
+          // redirect to role page with userId
+          const id = json.userId || json.userId === 0 ? json.userId : '';
+          const target = `/user.html?id=${id}`;
+          setTimeout(()=> location.href = target, 500);
+        } else {
+          // after successful register (stub) switch to login mode
+          mode = 'login'; render();
+          out.textContent += '\n註冊成功，請以新帳號登入';
+        }
+
       } else {
         out.textContent = JSON.stringify({ status: resp.status, body: json }, null, 2);
       }
