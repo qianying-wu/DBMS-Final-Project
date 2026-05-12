@@ -16,9 +16,9 @@ const pool = mysql.createPool({
 
 // --- 註冊邏輯 ---
 export const register = async (req, res) => {
-    const { username, password} = req.body || {};
+    const { account, password} = req.body || {};
     
-    if (!username || !password) {
+    if (!account || !password) {
         return res.status(400).json({ ok: false, error: '資料填寫不完整' });
     }
 
@@ -26,7 +26,7 @@ export const register = async (req, res) => {
         // 1. 檢查使用者是否已存在 (SQL: SELECT)
         const [existing] = await pool.execute(
             'SELECT account FROM user WHERE account = ?',
-            [username]
+            [account]
         );
 
         if (existing.length > 0) {
@@ -37,7 +37,7 @@ export const register = async (req, res) => {
         // 我們不需要手動處理 id，因為資料庫設定了 AUTO_INCREMENT
         const [result] = await pool.execute(
             'INSERT INTO user (account, userPsw) VALUES (?, ?)',
-            [username, password]
+            [account, password]
         );
 
         // 3. 回傳結果 (insertId 是資料庫自動產生的新 ID)
@@ -51,9 +51,9 @@ export const register = async (req, res) => {
 
 // --- 登入邏輯 ---
 export const login = async (req, res) => {
-    const { username, password} = req.body || {};
+    const {account, password} = req.body || {};
 
-    if (!username || !password) {
+    if (!account || !password) {
         return res.status(400).json({ 
             ok: false, 
             error: '請完整輸入帳號、密碼並選擇身分' 
@@ -65,7 +65,7 @@ export const login = async (req, res) => {
         // 同時比對帳號、密碼與身分
         const [rows] = await pool.execute(
             'SELECT user_id, account FROM user WHERE account = ? AND userPsw = ?',
-            [username, password]
+            [account, password]
         );
 
         // 2. 比對結果
@@ -77,7 +77,7 @@ export const login = async (req, res) => {
         }
 
         const user = rows[0];
-        console.log(`使用者 ${user.username} (ID: ${user.id}) 登入成功`);
+        console.log(`使用者 ${user.account} (ID: ${user.id}) 登入成功`);
 
         res.json({ 
             ok: true, 

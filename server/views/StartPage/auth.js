@@ -4,11 +4,14 @@
   const title = document.getElementById('title');
   const toLogin = document.getElementById('toLogin');
   const toRegister = document.getElementById('toRegister');
-  const username = document.getElementById('username');
+  const account = document.getElementById('account');
   const password = document.getElementById('password');
   const submit = document.getElementById('submit');
   const back = document.getElementById('back');
   const out = document.getElementById('out');
+  const username = document.getElementById('username');
+  const userEmail = document.getElementById('userEmail');
+
 
   let mode = 'login';
 
@@ -19,8 +22,10 @@
       // update tab styles
       if (mode === 'login') {
         toLogin.classList.add('active'); toRegister.classList.remove('active');
+        username.classList.add('hide'); userEmail.classList.add('hide');
       } else {
         toRegister.classList.add('active'); toLogin.classList.remove('active');
+        username.classList.remove('hide'); userEmail.classList.remove('hide');
       }
   }
 
@@ -29,8 +34,8 @@
   back.addEventListener('click', () => { window.location.href = '/startPage.html'; });
 
   submit.addEventListener('click', async () => {
-    const u = username.value; const p = password.value;
-    if (!u || !p) { out.textContent = '請填入 username/password'; return; }
+    const u = account.value; const p = password.value;
+    if (!u || !p) { out.textContent = '請填寫完整！'; return; }
     try {
       const path = mode === 'login' ? '/login' : '/register';      
       const resp = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username: u, password: p}) });
