@@ -1,4 +1,5 @@
 (function(){
+  function init(){
   const $ = id => document.getElementById(id);
   const saveBtn = $('saveBtn');
   const exportBtn = $('exportBtn');
@@ -117,6 +118,11 @@
     updateNotificationBadge();
     modal.addEventListener('click', e=>{ if (e.target === modal) modal.remove(); });
     document.getElementById('closeNotificationModal').addEventListener('click', ()=>modal.remove());
+  }
+
+  function getTeamHref(){
+    const userId = new URLSearchParams(window.location.search).get('userId');
+    return userId ? `/team.html?userId=${encodeURIComponent(userId)}` : '/team.html';
   }
 
   function loadTeams(){
@@ -309,24 +315,38 @@
     const teamBtn = document.getElementById('teamBtn');
     if (notifyBtn) notifyBtn.addEventListener('click', showNotifications);
     if (teamBtn) {
-      // primary listener
-      teamBtn.addEventListener('click', ()=>{ window.location.href = '/team.html'; });
-      // fallback: set onclick and an href-like attribute so non-JS clicks also work
-      teamBtn.onclick = () => { window.location.href = '/team.html'; };
-      teamBtn.setAttribute('data-href', '/team.html');
+      const teamHref = getTeamHref();
+      teamBtn.setAttribute('href', teamHref);
+      teamBtn.addEventListener('click', event=>{
+        event.preventDefault();
+        window.location.href = teamHref;
+      });
+      teamBtn.setAttribute('data-href', teamHref);
     }
     if (avatarBtn) avatarBtn.addEventListener('click', ()=>{ alert('打開個人檔案設定'); });
   } catch (err) {
     console.error('Error binding top-right buttons:', err);
     // ensure team button still navigates as fallback
     const teamBtn = document.getElementById('teamBtn');
-    if (teamBtn) teamBtn.onclick = () => { window.location.href = '/team.html'; };
+    if (teamBtn) teamBtn.setAttribute('href', '/team.html');
   }
   window.addEventListener('storage', e=>{
     if (['myTeams','favorites','teams','contests'].includes(e.key)) renderSyncedSidebar();
     if (e.key === 'notifications') updateNotificationBadge();
   });
 
-  load();
-  updateNotificationBadge();
+    load();
+    updateNotificationBadge();
+  }
+
+  // ensure init runs after DOM is ready; log startup errors
+  try {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  } catch (err) {
+    console.error('profile.js initialization failed:', err);
+  }
 })();
