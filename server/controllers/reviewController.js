@@ -16,20 +16,20 @@ const forbiddenWords = ['混蛋', '垃圾', '廢物', '懶惰'];
 
 export const submitReview = async (req, res) => {
     // 1. 從 req.body 拿資料 (這就是 postman 傳來的東西)
-    const { team_id, reviewer_id, target_user_id, score, comment } = req.body;
+    const {com_id, userWrite_id, userRec_id, star, rev_content } = req.body;
 
     // 2. 驗證邏輯
-    if (!team_id || !reviewer_id || !target_user_id || !score) {
+    if (!com_id || !userWrite_id || !userRec_id || !star) {
         return res.status(400).json({ ok: false, error: '缺少必要欄位' });
     }
 
-    if (score < 1 || score > 5) {
+    if (star < 1 || star > 5) {
         return res.status(400).json({ ok: false, error: '評分須介於 1-5 之間' });
     }
 
     // 3. 髒話過濾
-    if (comment) {
-        const foundBadWord = forbiddenWords.find(word => comment.includes(word));
+    if (rev_content) {
+        const foundBadWord = forbiddenWords.find(word => rev_content.includes(word));
         if (foundBadWord) {
             return res.status(400).json({ ok: false, error: `評論包含不當用語: ${foundBadWord}` });
         }
@@ -38,10 +38,10 @@ export const submitReview = async (req, res) => {
     try {
         // 4. 寫入資料庫
         const sql = `
-            INSERT INTO reviews (team_id, reviewer_id, target_user_id, score, comment)
+            INSERT INTO Review (com_id, userWrite_id, userRec_id, star, rev_content)
             VALUES (?, ?, ?, ?, ?)
         `;
-        await pool.execute(sql, [team_id, reviewer_id, target_user_id, score, comment || null]);
+        await pool.execute(sql, [com_id, userWrite_id, userRec_id, star, rev_content || null]);
 
         res.json({ ok: true, message: '評價成功送出' });
     } catch (error) {
