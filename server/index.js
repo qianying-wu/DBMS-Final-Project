@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as authController from './controllers/authController.js';
+import * as reviewController from './controllers/reviewController.js';
 
 // 手動定義 __filename 和 __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -61,6 +62,7 @@ app.get('/', (req, res) => {
 // });
 app.post('/register', authController.register);
 app.post('/login', authController.login);
+app.post('/submit-review', reviewController.submitReview);
 
 // 4. 啟動伺服器
 app.listen(port, () => {

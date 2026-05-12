@@ -1,0 +1,23 @@
+### 測試 1：正常提交評價
+POST http://localhost:3000/api/submit-review
+Content-Type: application/json
+
+{
+  "team_id": 1,
+  "reviewer_id": 101,
+  "target_user_id": 102,
+  "score": 5,
+  "comment": "合作愉快，技術很強！"
+}
+
+### 測試 2：測試不當用語 (應該報錯)
+POST http://localhost:3000/api/submit-review
+Content-Type: application/json
+
+{
+  "team_id": 1,
+  "reviewer_id": 101,
+  "target_user_id": 102,
+  "score": 4,
+  "comment": "這個人真的是垃圾"
+}
