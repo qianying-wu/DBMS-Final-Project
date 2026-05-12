@@ -11,23 +11,11 @@
 	const cancel = document.getElementById('cancel');
 	const result = document.getElementById('result');
 
-	let currentRole = 'user';
-
 		const userBtn = document.getElementById('userBtn');
-		const maintBtn = document.getElementById('maintBtn');
 		// Redirect to dedicated auth page with role query param
 		if (userBtn) userBtn.addEventListener('click', () => { window.location.href = '/auth.html?role=user'; });
-		if (maintBtn) maintBtn.addEventListener('click', () => { window.location.href = '/auth.html?role=maintenance'; });
 
-	function open(role){
-		currentRole = role;
-		modalTitle.textContent = role === 'user' ? '使用者登入' : '維修人員登入';
-		username.value = '';
-		password.value = '';
-		result.textContent = '';
-		modal.style.display = 'flex';
-		username.focus();
-	}
+
 
 		// modal unused when redirecting; keep handlers but hidden
 		cancel.addEventListener('click', () => modal.style.display = 'none');
@@ -39,7 +27,7 @@
 				const resp = await fetch('/login', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ username: username.value, password: password.value, role: currentRole })
+					body: JSON.stringify({ username: username.value, password: password.value})
 				});
 				const json = await resp.json().catch(() => ({}));
 				if (resp.ok) {

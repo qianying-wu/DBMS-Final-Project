@@ -6,20 +6,21 @@ The module does NOT connect to the database on import. A connection is
 established only when authenticate() is called.
 */
 
+require('dotenv').config();
 const mysql = require('mysql2/promise');
 
 class LoginDialog {
 	// allow passing a dbConfig to make testing easier; otherwise read env vars
-	constructor(role = 'user', dbConfig) {
-		this.role = role;
+	constructor(dbConfig) {
 		this.authenticated = false;
 		this.userId = -1;
 		const envDb = {
-			host: process.env.DB_HOST || '140.119.19.73',
-			port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3315,
-			user: process.env.DB_USER || 'TG09',
-			password: process.env.DB_PASSWORD || 'hGykqi',
-			database: process.env.DB_NAME || 'TG09',
+			host: process.env.DB_HOST || 'localhost',
+			port: process.env.DB_PORT,
+			user: process.env.DB_USER,
+			password: process.env.DB_PASSWORD,
+			database: process.env.DB_NAME,
+			ssl: { rejectUnauthorized: false }
 		};
 		this.dbConfig = dbConfig || envDb;
 	}
@@ -30,8 +31,8 @@ class LoginDialog {
 		try {
 			const conn = await mysql.createConnection(this.dbConfig);
 			const [rows] = await conn.execute(
-				'SELECT * FROM login WHERE username = ? AND password = ? AND role = ?',
-				[username, password, this.role]
+				'SELECT * FROM user WHERE account = ? AND userPsw = ?',
+				[username, password]
 			);
 			await conn.end();
 

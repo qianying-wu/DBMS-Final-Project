@@ -1,7 +1,6 @@
 // auth.js handles login/register UI and API calls
 (function(){
   const qs = new URLSearchParams(location.search);
-  const role = qs.get('role') || 'user';
   const title = document.getElementById('title');
   const toLogin = document.getElementById('toLogin');
   const toRegister = document.getElementById('toRegister');
@@ -34,14 +33,13 @@
     if (!u || !p) { out.textContent = '請填入 username/password'; return; }
     try {
       const path = mode === 'login' ? '/login' : '/register';
-      const resp = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username: u, password: p, role }) });
+      const resp = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username: u, password: p}) });
       const json = await resp.json().catch(()=>({}));
       if (resp.ok) {
         out.textContent = JSON.stringify(json, null, 2);
         if (mode === 'login') {
           // redirect to role page with userId
           const id = json.userId || json.userId === 0 ? json.userId : '';
-          const target = (role === 'maintenance') ? `/maintenance.html?userId=${encodeURIComponent(id)}` : `/user.html?userId=${encodeURIComponent(id)}`;
           setTimeout(()=> location.href = target, 500);
         } else {
           // after successful register (stub) switch to login mode
