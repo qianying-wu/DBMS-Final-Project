@@ -44,3 +44,6 @@ input[type=text], textarea{padding:10px;border-radius:8px;border:1px solid #eee}
   .actions-row{flex-direction:column}
   .actions-row .btn{width:100%}
 }
+a{
+  text-decoration:none;
+}
