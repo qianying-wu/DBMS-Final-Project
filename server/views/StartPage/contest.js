@@ -62,6 +62,10 @@
     return withUserParam(`/create-team.html?contestId=${encodeURIComponent(getContest().id)}`);
   }
 
+  function teamInfoHref(id){
+    return withUserParam(`/team-info.html?teamId=${encodeURIComponent(id)}`);
+  }
+
   function render(){
     const contest = getContest();
     const teams = contestTeams();
@@ -123,21 +127,7 @@
   function openTeamDetail(id){
     const team = loadTeams().find(item => item.id === id);
     if (!team) return alert('找不到隊伍');
-    const join = confirm(`隊伍：${team.name}\n${team.desc}\n成員 ${team.members}/${team.slots}\n\n要加入此隊伍嗎？`);
-    if (!join) return;
-    if (team.members >= team.slots) return alert('隊伍已額滿，無法加入');
-
-    const reqs = JSON.parse(localStorage.getItem('joinRequests')||'[]');
-    reqs.push({ id: Date.now(), teamId: team.id, teamName: team.name, user: ME, status: 'pending' });
-    localStorage.setItem('joinRequests', JSON.stringify(reqs));
-    window.AppNotifications?.add({
-      type: 'join-request',
-      userId: team.owner,
-      sourceId: `${team.id}:${ME.id}`,
-      sourceKey: `join-request:${team.id}:${ME.id}`,
-      message: `${ME.name} 申請加入你的隊伍「${team.name}」`
-    });
-    alert('已送出加入申請，等待隊長審核');
+    location.href = teamInfoHref(id);
   }
 
   function openCreateTeamPage(){

@@ -41,6 +41,36 @@
   color: #5f4633;
 }
 
+.contest-detail-block {
+  background: #f7fbff;
+  border-color: #cfe1ef;
+}
+
+.contest-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.contest-detail-grid div {
+  background: rgba(255,255,255,0.75);
+  border: 1px solid rgba(96,116,135,0.12);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.contest-detail-grid strong,
+.contest-detail-grid span {
+  display: block;
+}
+
+.contest-detail-grid strong {
+  color: #50616d;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
 /* 技能標籤 */
 .skills-tags {
   display: inline-block;
@@ -89,6 +119,41 @@
   background: #fffdf9;
 }
 
+.required-application-fields,
+.custom-question-fields {
+  grid-column: 1 / -1;
+}
+
+.required-application-fields {
+  border: 1px solid #eadfd2;
+  border-radius: 10px;
+  padding: 14px;
+  background: #fff;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.required-application-fields h4,
+.custom-question-fields h4 {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #4f3827;
+}
+
+.required-application-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-weight: 700;
+  color: #3f342c;
+}
+
+.required-application-fields .full {
+  grid-column: 1 / -1;
+}
+
 #actionButtons {
   display: flex;
   gap: 12px;
@@ -114,6 +179,11 @@
   
   .member-list {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+
+  .contest-detail-grid,
+  .required-application-fields {
+    grid-template-columns: 1fr;
   }
   
   #actionButtons {

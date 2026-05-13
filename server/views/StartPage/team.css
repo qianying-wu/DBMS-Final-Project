@@ -58,6 +58,9 @@ body{font-family:Arial, 'Noto Sans TC', sans-serif;margin:0;background:#faf7f2;c
 .fav-list li{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px dashed #f0f0f0}
 .req-badge{background:#ffd9b3;padding:4px 8px;border-radius:999px;font-size:12px}
 .requests-modal .req-item{padding:8px;border-bottom:1px solid #eee}
+.requests-modal .req-detail{background:#fffaf2;border:1px solid #eadfd2;border-radius:8px;margin-top:8px;padding:9px 10px;color:#4f3827;font-size:14px;line-height:1.5}
+.requests-modal .req-detail ul{margin:8px 0 0;padding-left:18px}
+.requests-modal .req-detail li{margin-top:7px}
 .requests-modal .req-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
 .managed-list{list-style:none;padding:0;margin:0}
 .managed-list li{display:flex;justify-content:space-between;align-items:center;padding:6px 4px;border-bottom:1px solid #f6f2ef}
