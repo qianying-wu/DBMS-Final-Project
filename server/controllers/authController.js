@@ -5,6 +5,7 @@ import pool from '../models/db.js';
 
 //dotenv.config();
 
+
 // 建立資料庫連線池
 // const pool = mysql.createPool({
 //     host: process.env.DB_HOST,
@@ -20,7 +21,7 @@ export const register = async (req, res) => {
     console.log('後端收到的內容:', req.body); 
     const { account,userName,userPsw,userEmail} = req.body || {};
     
-    if (!account || !userPsw) {
+    if (!account || !userPsw) {  
         return res.status(400).json({ ok: false, error: '資料填寫不完整' });
     }
 
@@ -40,6 +41,7 @@ export const register = async (req, res) => {
         const [result] = await pool.execute(
             'INSERT INTO user (account,userName,userPsw,userEmail) VALUES (?, ?, ?, ?)',
             [account, userName, userPsw, userEmail]
+           
         );
 
         // 3. 成功的話
@@ -54,9 +56,9 @@ export const register = async (req, res) => {
 
 // --- 登入邏輯 ---
 export const login = async (req, res) => {
-    const { username, password} = req.body || {};
+    const {account, password} = req.body || {};
 
-    if (!username || !password) {
+    if (!account || !password) {
         return res.status(400).json({ 
             ok: false, 
             error: '請完整輸入帳號、密碼並選擇身分' 
@@ -68,7 +70,7 @@ export const login = async (req, res) => {
         // 同時比對帳號、密碼與身分
         const [rows] = await pool.execute(
             'SELECT user_id, account FROM user WHERE account = ? AND userPsw = ?',
-            [username, password]
+            [account, password]
         );
 
         // 2. 比對結果
@@ -80,7 +82,7 @@ export const login = async (req, res) => {
         }
 
         const user = rows[0];
-        console.log(`使用者 ${user.username} (ID: ${user.id}) 登入成功`);
+        console.log(`使用者 ${user.account} (ID: ${user.id}) 登入成功`);
 
         res.json({ 
             ok: true, 

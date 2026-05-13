@@ -1,4 +1,5 @@
 (function(){
+  function init(){
   const $ = id => document.getElementById(id);
   const saveBtn = $('saveBtn');
   const exportBtn = $('exportBtn');
@@ -9,7 +10,13 @@
   const tagsWrap = $('tags');
   const photo = $('photo');
   const photoPreview = $('photoPreview');
+  const photoImage = $('photoImage');
+  const photoScale = $('photoScale');
+  const resetPhoto = $('resetPhoto');
   const resumeList = document.getElementById('resumeList');
+  const myTeamsBox = $('myTeams');
+  const followedBox = $('followed');
+  let photoState = { src: null, scale: 1, x: 0, y: 0 };
 
   // profiles stored in localStorage.profiles as { id, name, data }
   function loadProfiles(){
@@ -29,6 +36,126 @@
       const rem = document.createElement('span'); rem.className='remove'; rem.textContent='✕'; rem.onclick = ()=>{ tags.splice(i,1); renderTags(tags); };
       el.appendChild(rem); tagsWrap.appendChild(el);
     });
+  }
+
+  function renderPhoto(){
+    if (!photoState.src) {
+      photoPreview.classList.remove('has-photo');
+      photoImage.removeAttribute('src');
+      photoImage.style.transform = '';
+      photoScale.value = '1';
+      return;
+    }
+
+    photoPreview.classList.add('has-photo');
+    photoImage.src = photoState.src;
+    photoImage.style.transform = `translate(${photoState.x}px, ${photoState.y}px) scale(${photoState.scale})`;
+    photoScale.value = String(photoState.scale);
+  }
+
+  function setPhotoFromData(data){
+    photoState = {
+      src: data.photo || null,
+      scale: data.photoTransform?.scale || 1,
+      x: data.photoTransform?.x || 0,
+      y: data.photoTransform?.y || 0
+    };
+    renderPhoto();
+  }
+
+  function escapeHtml(value){
+    return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function formatDateTime(value){
+    const date = value ? new Date(value) : new Date();
+    if (Number.isNaN(date.getTime())) return '時間未記錄';
+    return date.toLocaleString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function loadNotifications(){
+    return JSON.parse(localStorage.getItem('notifications')||'[]');
+  }
+
+  function saveNotifications(notifications){
+    localStorage.setItem('notifications', JSON.stringify(notifications));
+  }
+
+  function updateNotificationBadge(){
+    const notifyBtn = document.getElementById('notifyBtn');
+    if (!notifyBtn) return;
+    const unread = loadNotifications().filter(item=>Number(item.userId)===9999 && !item.read).length;
+    notifyBtn.textContent = unread ? `🔔 ${unread}` : '🔔';
+  }
+
+  function showNotifications(){
+    const existing = document.getElementById('notificationModal');
+    if (existing) existing.remove();
+    const notifications = loadNotifications();
+    const myNotifications = notifications.filter(item=>Number(item.userId)===9999);
+    const modal = document.createElement('div');
+    modal.id = 'notificationModal';
+    modal.className = 'modal notification-modal';
+    modal.innerHTML = `
+      <div class="modal-card notification-card">
+        <h3>通知</h3>
+        <div class="notification-list">
+          ${myNotifications.length ? myNotifications.map(item=>`
+            <div class="notification-item ${item.read ? '' : 'unread'}">
+              <strong>${escapeHtml(item.message)}</strong>
+              <span>${formatDateTime(item.createdAt)}</span>
+            </div>
+          `).join('') : '<div class="empty-note">目前沒有通知</div>'}
+        </div>
+        <div class="modal-actions">
+          <button id="closeNotificationModal" class="btn outline">關閉</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    notifications.forEach(item=>{ if (Number(item.userId)===9999) item.read = true; });
+    saveNotifications(notifications);
+    updateNotificationBadge();
+    modal.addEventListener('click', e=>{ if (e.target === modal) modal.remove(); });
+    document.getElementById('closeNotificationModal').addEventListener('click', ()=>modal.remove());
+  }
+
+  function getTeamHref(){
+    const userId = new URLSearchParams(window.location.search).get('userId');
+    const teamPath = window.location.protocol === 'file:' ? 'team.html' : '/team.html';
+    return userId ? `${teamPath}?userId=${encodeURIComponent(userId)}` : teamPath;
+  }
+
+  function loadTeams(){
+    return JSON.parse(localStorage.getItem('teams')||'[]');
+  }
+
+  function loadContests(){
+    return JSON.parse(localStorage.getItem('contests')||'[]');
+  }
+
+  function renderSyncedSidebar(){
+    const joinedTeams = JSON.parse(localStorage.getItem('myTeams')||'[]');
+    const allTeams = loadTeams();
+    const contests = loadContests();
+    const favoriteIds = JSON.parse(localStorage.getItem('favorites')||'[]');
+    const favoriteTeams = favoriteIds.map(id=>allTeams.find(team=>Number(team.id)===Number(id))).filter(Boolean);
+
+    myTeamsBox.innerHTML = joinedTeams.length ? joinedTeams.map(team=>{
+      const contest = contests.find(item=>Number(item.id)===Number(team.contestId));
+      return `<div class="sync-item">
+        <strong>${escapeHtml(team.name)}</strong>
+        <span>${contest ? escapeHtml(contest.name) : '未指定比賽'}</span>
+      </div>`;
+    }).join('') : '尚未加入隊伍';
+
+    followedBox.innerHTML = favoriteTeams.length ? favoriteTeams.map(team=>{
+      const contest = contests.find(item=>Number(item.id)===Number(team.contestId));
+      return `<div class="sync-item">
+        <strong>${escapeHtml(team.name)}</strong>
+        <span>${contest ? `關注比賽：${escapeHtml(contest.name)}` : '已收藏隊伍'}</span>
+      </div>`;
+    }).join('') : '無';
   }
 
   function renderResumeList(){
@@ -73,8 +200,9 @@
     $('intro').value = data.intro||'';
     const tags = data.tags||[]; renderTags(tags);
     window._tags = tags;
-    if (data.photo) photoPreview.style.backgroundImage = `url(${data.photo})`; else photoPreview.textContent='預覽';
+    setPhotoFromData(data);
     renderResumeList();
+    renderSyncedSidebar();
   }
 
   addTag.addEventListener('click', ()=>{
@@ -97,7 +225,9 @@
   exportBtn.addEventListener('click', ()=>{
     const data = {
       name:$('name').value, school:$('school').value, grade:$('grade').value,
-      experience:$('experience').value, intro:$('intro').value, tags: window._tags||[]
+      experience:$('experience').value, intro:$('intro').value, tags: window._tags||[],
+      photo: photoState.src,
+      photoTransform: { scale: photoState.scale, x: photoState.x, y: photoState.y }
     };
     const s = JSON.stringify(data, null, 2);
     const blob = new Blob([s], {type:'application/json'});
@@ -118,7 +248,9 @@
   saveBtn.addEventListener('click', ()=>{
     const data = {
       name:$('name').value, school:$('school').value, grade:$('grade').value,
-      experience:$('experience').value, intro:$('intro').value, tags: window._tags||[], photo: photoPreview.style.backgroundImage ? photoPreview.style.backgroundImage.slice(5,-2) : null
+      experience:$('experience').value, intro:$('intro').value, tags: window._tags||[],
+      photo: photoState.src,
+      photoTransform: { scale: photoState.scale, x: photoState.x, y: photoState.y }
     };
     // save into active profile
     let ps = loadProfiles(); let activeId = getActiveProfileId();
@@ -134,17 +266,88 @@
 
   photo.addEventListener('change', e=>{
     const f = e.target.files && e.target.files[0]; if(!f) return;
-    const reader = new FileReader(); reader.onload = ()=>{ photoPreview.style.backgroundImage = `url(${reader.result})`; photoPreview.textContent=''; };
+    const reader = new FileReader(); reader.onload = ()=>{
+      photoState = { src: reader.result, scale: 1, x: 0, y: 0 };
+      renderPhoto();
+    };
     reader.readAsDataURL(f);
   });
 
-  // top-right buttons
-  const notifyBtn = document.getElementById('notifyBtn');
-  const avatarBtn = document.getElementById('avatarBtn');
-  const teamBtn = document.getElementById('teamBtn');
-  if (notifyBtn) notifyBtn.addEventListener('click', ()=>{ alert('沒有新通知'); });
-  if (teamBtn) teamBtn.addEventListener('click', ()=>{ window.location.href = '/team.html'; });
-  if (avatarBtn) avatarBtn.addEventListener('click', ()=>{ alert('打開個人檔案設定'); });
+  photoScale.addEventListener('input', e=>{
+    photoState.scale = Number(e.target.value);
+    renderPhoto();
+  });
 
-  load();
+  resetPhoto.addEventListener('click', ()=>{
+    photoState.scale = 1;
+    photoState.x = 0;
+    photoState.y = 0;
+    renderPhoto();
+  });
+
+  photoPreview.addEventListener('pointerdown', e=>{
+    if (!photoState.src) return;
+    photoPreview.setPointerCapture(e.pointerId);
+    const start = { pointerX: e.clientX, pointerY: e.clientY, photoX: photoState.x, photoY: photoState.y };
+
+    function onPointerMove(moveEvent){
+      photoState.x = start.photoX + moveEvent.clientX - start.pointerX;
+      photoState.y = start.photoY + moveEvent.clientY - start.pointerY;
+      renderPhoto();
+    }
+
+    function onPointerUp(upEvent){
+      photoPreview.releasePointerCapture(upEvent.pointerId);
+      photoPreview.removeEventListener('pointermove', onPointerMove);
+      photoPreview.removeEventListener('pointerup', onPointerUp);
+      photoPreview.removeEventListener('pointercancel', onPointerUp);
+    }
+
+    photoPreview.addEventListener('pointermove', onPointerMove);
+    photoPreview.addEventListener('pointerup', onPointerUp);
+    photoPreview.addEventListener('pointercancel', onPointerUp);
+  });
+
+  // top-right buttons (defensive binding)
+  try {
+    console.log('profile.js loaded - binding top-right buttons');
+    const notifyBtn = document.getElementById('notifyBtn');
+    const avatarBtn = document.getElementById('avatarBtn');
+    const teamBtn = document.getElementById('teamBtn');
+    if (notifyBtn) notifyBtn.addEventListener('click', showNotifications);
+    if (teamBtn) {
+      const teamHref = getTeamHref();
+      teamBtn.setAttribute('href', teamHref);
+      teamBtn.addEventListener('click', event=>{
+        event.preventDefault();
+        window.location.href = teamHref;
+      });
+      teamBtn.setAttribute('data-href', teamHref);
+    }
+    if (avatarBtn) avatarBtn.addEventListener('click', ()=>{ alert('打開個人檔案設定'); });
+  } catch (err) {
+    console.error('Error binding top-right buttons:', err);
+    // ensure team button still navigates as fallback
+    const teamBtn = document.getElementById('teamBtn');
+    if (teamBtn) teamBtn.setAttribute('href', 'team.html');
+  }
+  window.addEventListener('storage', e=>{
+    if (['myTeams','favorites','teams','contests'].includes(e.key)) renderSyncedSidebar();
+    if (e.key === 'notifications') updateNotificationBadge();
+  });
+
+    load();
+    updateNotificationBadge();
+  }
+
+  // ensure init runs after DOM is ready; log startup errors
+  try {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  } catch (err) {
+    console.error('profile.js initialization failed:', err);
+  }
 })();

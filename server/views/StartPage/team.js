@@ -14,6 +14,7 @@
   const teamSearch = $('teamSearch');
   // mock current user
   const ME = { id: 9999, name: '你自己' };
+  const params = new URLSearchParams(location.search);
 
   function loadTeams() {
     const raw = localStorage.getItem('teams');
@@ -42,6 +43,17 @@
   function getSelectedContestId() { return localStorage.getItem('selectedContest') ? Number(localStorage.getItem('selectedContest')) : null; }
   function setSelectedContestId(id) { if (id == null) localStorage.removeItem('selectedContest'); else localStorage.setItem('selectedContest', String(id)); }
   function saveTeams(t) { localStorage.setItem('teams', JSON.stringify(t)); }
+
+  function withUserParam(path) {
+    const userId = params.get('userId');
+    return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
+  }
+
+  function getCreateTeamHref() {
+    const selectedContest = getSelectedContestId();
+    const contestParam = selectedContest == null ? '' : `?contestId=${encodeURIComponent(selectedContest)}`;
+    return withUserParam(`/create-team.html${contestParam}`);
+  }
 
   function render() {
     const teams = loadTeams();
@@ -206,16 +218,11 @@
 
   closeReq && closeReq.addEventListener('click', () => { requestsModal.classList.add('hidden'); document.body.classList.remove('modal-open'); });
 
-  function showModal() { modal.classList.remove('hidden'); }
+  function openCreateTeamPage() { location.href = getCreateTeamHref(); }
   function hideModal() { modal.classList.add('hidden'); newTeamName.value = ''; newTeamDesc.value = ''; }
-
-  createBtn.addEventListener('click', showModal);
-  openCreate.addEventListener('click', showModal);
-  // prevent background scroll and focus input when showing
-  function openModal() { document.body.classList.add('modal-open'); showModal(); setTimeout(() => newTeamName.focus(), 80); }
   function closeModal() { document.body.classList.remove('modal-open'); hideModal(); }
-  createBtn.addEventListener('click', openModal);
-  openCreate.addEventListener('click', openModal);
+  createBtn.addEventListener('click', openCreateTeamPage);
+  openCreate.addEventListener('click', openCreateTeamPage);
   modalCancel.addEventListener('click', closeModal);
 
   modalCreate.addEventListener('click', () => {
@@ -257,9 +264,8 @@
   document.addEventListener('click', (e) => {
     const li = e.target.closest('#contestsList li'); if (!li) return;
     const cid = Number(li.dataset.cid);
-    const cur = getSelectedContestId();
-    if (cur === cid) { setSelectedContestId(null); } else { setSelectedContestId(cid); }
-    render();
+    setSelectedContestId(cid);
+    location.href = withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
   });
 
   render();

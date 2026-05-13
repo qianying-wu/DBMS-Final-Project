@@ -4,8 +4,8 @@ Content-Type: application/json
 
 {
   "com_id": 1,
-  "userWrite_id": 101,
-  "userRec_id": 102,
+  "userWrite_id": 1,
+  "userRec_id": 2,
   "star": 5,
   "rev_content": "合作愉快，技術很強！"
 }
@@ -16,8 +16,8 @@ Content-Type: application/json
 
 {
   "com_id": 1,
-  "userWrite_id": 101,
-  "userRec_id": 102,
+  "userWrite_id": 1,
+  "userRec_id": 2,
   "star": 4,
   "rev_content": "這個人真的是垃圾"
 }

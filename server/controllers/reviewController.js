@@ -1,5 +1,6 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import { checkContent } from '../util/wordfilter.js'; // 匯入工具
 
 dotenv.config();
 
@@ -29,9 +30,14 @@ export const submitReview = async (req, res) => {
 
     // 3. 髒話過濾
     if (rev_content) {
-        const foundBadWord = forbiddenWords.find(word => rev_content.includes(word));
-        if (foundBadWord) {
-            return res.status(400).json({ ok: false, error: `評論包含不當用語: ${foundBadWord}` });
+        const { isBad, cleanText } = checkContent(rev_content);
+
+        if (isBad) {
+            return res.status(400).json({ 
+                ok: false, 
+                error: '評論包含不當用語，請修正後再提交！',
+                // (選填) 也可以給他看過濾後的樣子： suggestion: cleanText 
+            });
         }
     }
 
