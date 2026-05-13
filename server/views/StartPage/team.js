@@ -60,6 +60,10 @@
     return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
   }
 
+  function teamInfoHref(id) {
+    return withUserParam(`/team-info.html?teamId=${encodeURIComponent(id)}`);
+  }
+
   function getCreateTeamHref() {
     const selectedContest = getSelectedContestId();
     const contestParam = selectedContest == null ? '' : `?contestId=${encodeURIComponent(selectedContest)}`;
@@ -111,6 +115,7 @@
       return `<li><input type="checkbox" data-id="${t.id}" /> <strong>${t.name}</strong></li>`;
     }).filter(Boolean);
     document.getElementById('myFavs').innerHTML = favEls.length ? `<ul class="fav-list">${favEls.join('')}</ul>` : '尚無收藏';
+    updateRemoveFavoritesButton();
 
     // render my managed teams (teams where I'm owner)
     const managed = teams.filter(t => t.owner === ME.id);
@@ -168,30 +173,17 @@
   function toggleFavorite(id) { const f = loadFavorites(); const idx = f.indexOf(id); if (idx >= 0) f.splice(idx, 1); else f.push(id); saveFavorites(f); render(); }
 
   function openTeamDetail(id) {
-    const teams = loadTeams(); const t = teams.find(x => x.id === id); if (!t) return alert('找不到隊伍');
-    const join = confirm(`隊伍：${t.name}\n${t.desc}\n成員 ${t.members}/${t.slots}\n\n要加入此隊伍嗎？`);
-    if (join) {
-      if (t.members >= t.slots) { alert('隊伍已額滿，無法加入'); return; }
-      // create a join request (pending)
-      const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
-      const me = { id: 9999, name: '你自己' };
-      const my = JSON.parse(localStorage.getItem('myTeams') || '[]');
-      if (my.find(x => x.id === t.id)) return alert('你已在此隊伍');
-      reqs.push({ id: Date.now(), teamId: t.id, teamName: t.name, user: me, status: 'pending' });
-      localStorage.setItem('joinRequests', JSON.stringify(reqs));
-      window.AppNotifications?.add({
-        type: 'join-request',
-        userId: t.owner,
-        sourceId: `${t.id}:${me.id}`,
-        sourceKey: `join-request:${t.id}:${me.id}`,
-        message: `${me.name} 申請加入你的隊伍「${t.name}」`
-      });
-      alert('已送出加入申請，等待隊長審核');
-    }
+    location.href = teamInfoHref(id);
   }
 
   // Remove selected favorites
   const removeBtn = document.getElementById('removeSelectedFavs');
+  function updateRemoveFavoritesButton() {
+    if (!removeBtn) return;
+    const hasChecked = Boolean(document.querySelector('#myFavs input[type=checkbox]:checked'));
+    removeBtn.hidden = !hasChecked;
+  }
+  document.getElementById('myFavs')?.addEventListener('change', updateRemoveFavoritesButton);
   removeBtn && removeBtn.addEventListener('click', () => {
     const boxes = Array.from(document.querySelectorAll('#myFavs input[type=checkbox]:checked'));
     if (!boxes.length) return alert('請先選取要移除的收藏');
@@ -209,10 +201,24 @@
     if (team.owner !== ME.id) return alert('只有隊長可以管理本隊的加入請求');
     const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]').filter(r => r.teamId === teamId && r.status === 'pending');
     if (!reqs.length) { alert('目前沒有待審核申請'); return; }
-    requestsList.innerHTML = reqs.map(r => {
-      return `<div class="req-item" data-req="${r.id}"><div><strong>${r.user.name}</strong> 申請加入 <em>${r.teamName}</em></div><div class="req-actions"><button class="btn" data-act="approve" data-id="${r.id}">批准</button><button class="btn outline" data-act="deny" data-id="${r.id}">拒絕</button></div></div>`;
-    }).join('');
+    requestsList.innerHTML = renderRequests(reqs);
     requestsModal.classList.remove('hidden'); document.body.classList.add('modal-open');
+  }
+
+  function renderRequests(reqs) {
+    return reqs.map(r => {
+      const app = r.application || {};
+      const answers = Array.isArray(app.answers) ? app.answers : [];
+      return `<div class="req-item" data-req="${r.id}">
+        <div><strong>${escapeHtml(app.applicantName || r.user.name)}</strong> 申請加入 <em>${escapeHtml(r.teamName)}</em></div>
+        <div class="req-detail">
+          <div>聯絡方式：${escapeHtml(app.applicantContact || '未填寫')}</div>
+          <div>申請理由：${escapeHtml(app.applicantReason || '未填寫')}</div>
+          ${answers.length ? `<ul>${answers.map(item => `<li><strong>${escapeHtml(item.question)}</strong><br>${escapeHtml(item.answer || '未回答')}</li>`).join('')}</ul>` : ''}
+        </div>
+        <div class="req-actions"><button class="btn" data-act="approve" data-id="${r.id}">批准</button><button class="btn outline" data-act="deny" data-id="${r.id}">拒絕</button></div>
+      </div>`;
+    }).join('');
   }
 
   requestsList && requestsList.addEventListener('click', (e) => {
@@ -263,7 +269,7 @@
     // refresh modal list
     const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').filter(r => r.teamId === reqs[idx].teamId && r.status === 'pending');
     if (pending.length) {
-      requestsList.innerHTML = pending.map(r => `<div class="req-item" data-req="${r.id}"><div><strong>${r.user.name}</strong> 申請加入 <em>${r.teamName}</em></div><div class="req-actions"><button class="btn" data-act="approve" data-id="${r.id}">批准</button><button class="btn outline" data-act="deny" data-id="${r.id}">拒絕</button></div></div>`).join('');
+      requestsList.innerHTML = renderRequests(pending);
     } else { requestsModal.classList.add('hidden'); document.body.classList.remove('modal-open'); }
   });
 

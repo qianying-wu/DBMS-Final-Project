@@ -52,6 +52,21 @@
             </div>
           </div>
 
+          <div class="info-block contest-detail-block">
+            <h3>比賽詳細資訊</h3>
+            <div class="contest-detail-grid">
+              <div>
+                <strong>比賽名稱</strong>
+                <span id="displayContestName">比賽名稱</span>
+              </div>
+              <div>
+                <strong>比賽日期</strong>
+                <span id="displayContestDate">日期未定</span>
+              </div>
+            </div>
+            <p id="displayContestInfo" class="desc-text">比賽資訊會顯示在這裡。</p>
+          </div>
+
           <div class="info-block">
             <h3>主題 / 說明</h3>
             <p id="displayDesc" class="desc-text">
@@ -68,6 +83,25 @@
           <div class="info-block application-block">
             <h3>申請加入隊伍</h3>
             <form id="applyForm" class="create-form" style="display: none;">
+              <section class="required-application-fields full">
+                <h4>必填資料</h4>
+                <label>
+                  姓名
+                  <input id="applicantName" type="text" required placeholder="請輸入你的姓名">
+                </label>
+                <label>
+                  聯絡方式
+                  <input id="applicantContact" type="text" required placeholder="Email、LINE 或其他可聯絡方式">
+                </label>
+                <label class="full">
+                  申請理由
+                  <textarea id="applicantReason" rows="4" required placeholder="說明你想加入的原因、能投入的時間與可協助的部分"></textarea>
+                </label>
+              </section>
+
+              <section class="custom-question-fields full">
+                <h4>隊長提問</h4>
+              </section>
               <div id="applicationQuestions"></div>
               
               <div class="form-actions">

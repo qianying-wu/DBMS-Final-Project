@@ -47,6 +47,11 @@
     return String(value).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  function withUserParam(path){
+    const userId = params.get('userId');
+    return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
+  }
+
   // 1. 核心渲染函式：將隊伍資料填入 HTML
   function renderTeamInfo() {
     const teams = loadTeams();
@@ -61,12 +66,15 @@
     }
 
     // 找出所屬比賽
-    const contest = contests.find(c => Number(c.id) === Number(team.contestId)) || { name: '未知比賽' };
+    const contest = contests.find(c => Number(c.id) === Number(team.contestId)) || { name: '未知比賽', date: '日期未定', info: '尚未填寫比賽資訊。' };
 
     // 填入基本資訊
     document.title = `${team.name} - 隊伍資訊`;
     $('displayTeamName').textContent = team.name;
     $('displayContestLabel').textContent = contest.name;
+    $('displayContestName').textContent = contest.name;
+    $('displayContestDate').textContent = contest.date || '日期未定';
+    $('displayContestInfo').textContent = contest.info || '尚未填寫比賽資訊。';
     $('displayMemberCount').textContent = team.members;
     $('displayMaxSlots').textContent = team.slots;
     
@@ -105,7 +113,7 @@
     const otherTeams = teams.filter(t => Number(t.contestId) === Number(contest.id) && Number(t.id) !== currentTeamId);
     $('otherTeams').innerHTML = otherTeams.length ? otherTeams.map(t => `
       <li>
-        <a href="/team-info.html?teamId=${t.id}" style="text-decoration:none; color:inherit;">
+        <a href="${withUserParam(`/team-info.html?teamId=${encodeURIComponent(t.id)}`)}" style="text-decoration:none; color:inherit;">
           <strong>${t.name}</strong>
           <div>${t.members} / ${t.slots} 人</div>
         </a>
@@ -123,6 +131,13 @@
     // 如果自己是隊長，隱藏申請按鈕
     if (isOwner) {
       $('actionButtons').style.display = 'none';
+    }
+
+    const alreadyJoined = JSON.parse(localStorage.getItem('myTeams') || '[]').some(item => Number(item.id) === Number(team.id));
+    const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').some(req => Number(req.teamId) === Number(team.id) && Number(req.user?.id) === Number(ME.id) && req.status === 'pending');
+    if (alreadyJoined || pending || Number(team.members) >= Number(team.slots)) {
+      $('applyBtn').disabled = true;
+      $('applyBtn').textContent = alreadyJoined ? '已在隊伍中' : pending ? '審核中...' : '隊伍已額滿';
     }
   }
 
@@ -146,8 +161,22 @@
       const teams = loadTeams();
       const team = teams.find(t => Number(t.id) === currentTeamId);
       if (team) {
+        if (Number(team.members) >= Number(team.slots)) return alert('隊伍已額滿，無法申請');
         const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
-        reqs.push({ id: Date.now(), teamId: team.id, teamName: team.name, user: ME, status: 'pending' });
+        if (reqs.some(req => Number(req.teamId) === Number(team.id) && Number(req.user?.id) === Number(ME.id) && req.status === 'pending')) {
+          return alert('你已送出申請，請等待隊長審核');
+        }
+        const answers = Array.from(document.querySelectorAll('#applicationQuestions textarea')).map((textarea, index) => ({
+          question: textarea.dataset.question || `Q${index + 1}`,
+          answer: textarea.value.trim()
+        }));
+        const application = {
+          applicantName: $('applicantName').value.trim(),
+          applicantContact: $('applicantContact').value.trim(),
+          applicantReason: $('applicantReason').value.trim(),
+          answers
+        };
+        reqs.push({ id: Date.now(), teamId: team.id, teamName: team.name, user: ME, status: 'pending', application });
         localStorage.setItem('joinRequests', JSON.stringify(reqs));
         window.AppNotifications?.add({
           type: 'join-request',
@@ -168,10 +197,8 @@
     // 其他導覽按鈕
     $('contactBtn').addEventListener('click', () => { alert('測試中'); });
     $('backBtn').addEventListener('click', () => { history.back(); });
-    const userId = params.get('userId');
-    const userSuffix = userId ? `?userId=${encodeURIComponent(userId)}` : '';
-    $('avatarBtn').addEventListener('click', () => { location.href = `/profile.html${userSuffix}`; });
-    document.querySelector('.logo-link')?.setAttribute('href', `/user.html${userSuffix}`);
+    $('avatarBtn').addEventListener('click', () => { location.href = withUserParam('/profile.html'); });
+    document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/user.html'));
   }
 
   // 3. 執行初始化
