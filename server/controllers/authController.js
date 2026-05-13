@@ -1,39 +1,31 @@
-// server/controllers/authController.js
-//import mysql from 'mysql2/promise';
-//import dotenv from 'dotenv';
 import pool from '../models/db.js';
 
 //dotenv.config();
-
-
-// 建立資料庫連線池
-// const pool = mysql.createPool({
-//     host: process.env.DB_HOST,
-//     port: process.env.DB_PORT, 
-//     user: process.env.DB_USER,
-//     password: process.env.DB_PASSWORD,
-//     database: process.env.DB_NAME,
-//     ssl: { rejectUnauthorized: false } // Aiven 雲端連線建議加上此行
-// });
 
 // --- 註冊邏輯 ---
 export const register = async (req, res) => {
     console.log('後端收到的內容:', req.body); 
     const { account,userName,userPsw,userEmail} = req.body || {};
     
-    if (!account || !userPsw) {  
+    if (!account || !userPsw || !userName || !userEmail) {  
         return res.status(400).json({ ok: false, error: '資料填寫不完整' });
     }
 
     try {
         // 1. 檢查使用者是否已存在 (SQL: SELECT)
         const [existing] = await pool.execute(
-            'SELECT account FROM user WHERE account = ?',
-            [account]
+            'SELECT account, userEmail FROM user WHERE account = ? OR userEmail = ?',
+            [account, userEmail]
         );
-
         if (existing.length > 0) {
-            return res.status(409).json({ ok: false, error: '該使用者帳號已存在' });
+            // 精確判斷是哪一個重複
+            const conflict = existing[0];
+            if (conflict.account === account) {
+                return res.status(409).json({ ok: false, error: '使用者帳號已存在，請更換帳號' });
+            }
+            if (conflict.userEmail === userEmail) {
+                return res.status(409).json({ ok: false, error: '此 Email 已被註冊' });
+            }
         }
 
         // 2. 執行註冊 (SQL: INSERT)
@@ -49,6 +41,20 @@ export const register = async (req, res) => {
 
 
     } catch (err) {
+
+        console.log('捕獲到的錯誤代碼:', err.code);
+        console.log('捕獲到的完整訊息:', err.sqlMessage || err.message);
+
+        if (err.code === 'ER_DUP_ENTRY') {
+            // 根據錯誤訊息判斷是帳號重複還是 Email 重複
+            if (err.sqlMessage.includes('userEmail')) {
+                return res.status(409).json({ ok: false, error: '此 Email 已被註冊' });
+            } else if (err.sqlMessage.includes('account')) {
+                return res.status(409).json({ ok: false, error: '此帳號已存在' });
+            }
+            // 如果分不出來，就給個通用的提示
+            return res.status(409).json({ ok: false, error: '帳號或 Email 已被使用' });
+        }
         console.error('Database Error (Register):', err.message);
         res.status(500).json({ ok: false, error: '伺服器錯誤，無法完成註冊' });
     }
@@ -56,28 +62,28 @@ export const register = async (req, res) => {
 
 // --- 登入邏輯 ---
 export const login = async (req, res) => {
-    const {account, password} = req.body || {};
+    const {account, userPsw} = req.body || {};
 
-    if (!account || !password) {
+    if (!account || !userPsw) {
         return res.status(400).json({ 
             ok: false, 
-            error: '請完整輸入帳號、密碼並選擇身分' 
+            error: '請完整輸入帳號、密碼' 
         });
     }
 
     try {
         // 1. 尋找使用者 (SQL: SELECT)
-        // 同時比對帳號、密碼與身分
+        // 同時比對帳號、密碼
         const [rows] = await pool.execute(
             'SELECT user_id, account FROM user WHERE account = ? AND userPsw = ?',
-            [account, password]
+            [account, userPsw]
         );
 
         // 2. 比對結果
         if (rows.length === 0) {
             return res.status(401).json({ 
                 ok: false, 
-                error: '帳號、密碼或身分錯誤' 
+                error: '帳號、密碼錯誤' 
             });
         }
 
