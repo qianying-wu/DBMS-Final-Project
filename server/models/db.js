@@ -28,11 +28,3 @@ const pool = mysql.createPool({
 
 export default pool; // 直接導出即可，不需要 .promise()
 
-async function runTest() {
-  const mysql = await pool.getConnection();
-  const result = await mysql.query("SELECT 1+1");
-  console.log(result);
-  process.exit();
-}
-
-runTest();

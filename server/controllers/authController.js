@@ -1,31 +1,27 @@
 // server/controllers/authController.js
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
+//import mysql from 'mysql2/promise';
+//import dotenv from 'dotenv';
+import pool from '../models/db.js';
 
-dotenv.config();
-const requiredEnv = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
-const missing = requiredEnv.filter(k => !process.env[k]);
-if (missing.length > 0) {
-    console.error('Missing required DB environment variables:', missing.join(', '));
-    // throw early so developer notices and doesn't get confusing DB auth errors
-    throw new Error(`Missing required DB environment variables: ${missing.join(', ')}`);
-}
+//dotenv.config();
+
 
 // 建立資料庫連線池
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT, 
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    ssl: { rejectUnauthorized: false } // Aiven 雲端連線建議加上此行
-});
+// const pool = mysql.createPool({
+//     host: process.env.DB_HOST,
+//     port: process.env.DB_PORT, 
+//     user: process.env.DB_USER,
+//     password: process.env.DB_PASSWORD,
+//     database: process.env.DB_NAME,
+//     ssl: { rejectUnauthorized: false } // Aiven 雲端連線建議加上此行
+// });
 
 // --- 註冊邏輯 ---
 export const register = async (req, res) => {
-    const { account, password} = req.body || {};
+    console.log('後端收到的內容:', req.body); 
+    const { account,userName,userPsw,userEmail} = req.body || {};
     
-    if (!account || !password) {
+    if (!account || !userPsw) {  
         return res.status(400).json({ ok: false, error: '資料填寫不完整' });
     }
 
@@ -41,14 +37,16 @@ export const register = async (req, res) => {
         }
 
         // 2. 執行註冊 (SQL: INSERT)
-        // 我們不需要手動處理 id，因為資料庫設定了 AUTO_INCREMENT
+        // user_id 是 AUTO_INCREMENT
         const [result] = await pool.execute(
-            'INSERT INTO user (account, userPsw) VALUES (?, ?)',
-            [account, password]
+            'INSERT INTO user (account,userName,userPsw,userEmail) VALUES (?, ?, ?, ?)',
+            [account, userName, userPsw, userEmail]
+           
         );
 
-        // 3. 回傳結果 (insertId 是資料庫自動產生的新 ID)
+        // 3. 成功的話
         res.json({ ok: true, userId: result.insertId, message: '註冊成功' });
+
 
     } catch (err) {
         console.error('Database Error (Register):', err.message);
