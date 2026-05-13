@@ -13,8 +13,6 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME,
 });
 
-const forbiddenWords = ['混蛋', '垃圾', '廢物', '懶惰'];
-
 export const submitReview = async (req, res) => {
     // 1. 從 req.body 拿資料 (這就是 postman 傳來的東西)
     const {com_id, userWrite_id, userRec_id, star, rev_content } = req.body;
@@ -30,7 +28,7 @@ export const submitReview = async (req, res) => {
 
     // 3. 髒話過濾
     if (rev_content) {
-        const { isBad, cleanText } = checkContent(rev_content);
+        const isBad = checkContent(rev_content);
 
         if (isBad) {
             return res.status(400).json({ 
