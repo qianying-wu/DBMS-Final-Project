@@ -38,6 +38,7 @@
     if (!u || !p) { out.textContent = '請填寫完整！'; return; }
     try {
       const path = mode === 'login' ? '/login' : '/register';      
+
       const resp = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ account: u, password: p}) });
       const json = await resp.json().catch(()=>({}));
       if (resp.ok) {
@@ -52,6 +53,7 @@
           mode = 'login'; render();
           out.textContent += '\n註冊成功，請以新帳號登入';
         }
+
       } else {
         out.textContent = JSON.stringify({ status: resp.status, body: json }, null, 2);
       }

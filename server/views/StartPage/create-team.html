@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>創建新隊伍</title>
+    <link rel="stylesheet" href="/create-team.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <button id="backBtn" class="icon-btn" aria-label="回到組隊">←</button>
+      <div class="logo">競賽組隊</div>
+      <div class="actions">
+        <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
+        <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
+      </div>
+    </header>
+
+    <main class="create-layout">
+      <aside class="panel left-panel">
+        <section class="panel-section first">
+          <h4>發起招募</h4>
+          <div class="step-list">
+            <div class="active">填寫隊伍資料</div>
+            <div>確認比賽資訊</div>
+            <div>送出招募</div>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h4>本比賽隊伍</h4>
+          <ul id="contestTeams" class="team-list"></ul>
+        </section>
+      </aside>
+
+      <section class="main-panel">
+        <section id="contestSummary" class="contest-summary"></section>
+
+        <section class="form-section">
+          <div class="section-heading">
+            <h2>創建新隊伍</h2>
+            <span id="contestLabel" class="contest-label"></span>
+          </div>
+
+          <form id="createForm" class="create-form">
+            <label>
+              隊伍名稱
+              <input id="teamName" type="text" placeholder="例如：AI 聯合隊">
+            </label>
+
+            <label>
+              隊伍人數上限
+              <input id="teamSlots" type="number" min="1" max="12" value="4">
+            </label>
+
+            <label class="full">
+              招募需求
+              <input id="teamSkills" type="text" placeholder="例如：前端、資料分析、簡報">
+            </label>
+
+            <label class="full">
+              主題 / 說明
+              <textarea id="teamDesc" rows="6" placeholder="簡短描述隊伍方向、目前進度、希望找到的成員"></textarea>
+            </label>
+
+            <section class="questions-section full">
+              <div class="questions-heading">
+                <div>
+                  <h3>給申請人的提問：</h3>
+                  <p>申請人送出加入申請前會先回答這些問題。</p>
+                </div>
+                <button id="addQuestion" class="add-question-btn" type="button" aria-label="新增提問">+</button>
+              </div>
+              <div id="questionsList" class="questions-list"></div>
+            </section>
+
+            <div class="form-actions">
+              <button class="btn primary" type="submit">建立</button>
+              <button id="cancelBtn" class="btn outline" type="button">取消</button>
+            </div>
+          </form>
+        </section>
+      </section>
+
+      <aside class="panel right-panel">
+        <section class="panel-section first">
+          <h4>我的隊伍</h4>
+          <div id="myTeams" class="box">尚未加入隊伍</div>
+        </section>
+
+        <section class="panel-section">
+          <h4>關注的比賽 / 隊伍</h4>
+          <div id="followed" class="box">尚無關注</div>
+        </section>
+      </aside>
+    </main>
+
+    <script src="/create-team.js"></script>
+  </body>
+</html>

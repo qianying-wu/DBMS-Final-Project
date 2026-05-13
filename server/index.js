@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import * as authController from './controllers/authController.js';
+let authController;
 import * as reviewController from './controllers/reviewController.js';
 
 // 手動定義 __filename 和 __dirname
@@ -25,6 +25,26 @@ app.get('/test', (req, res) => {
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(startPageDir, 'startPage.html')); 
+});
+
+app.get('/profile', (req, res) => {
+    res.sendFile(path.join(startPageDir, 'profile.html'));
+});
+
+app.get('/team', (req, res) => {
+    res.sendFile(path.join(startPageDir, 'team.html'));
+});
+
+app.get('/contest', (req, res) => {
+    res.sendFile(path.join(startPageDir, 'contest.html'));
+});
+
+app.get('/create-team', (req, res) => {
+    res.sendFile(path.join(startPageDir, 'create-team.html'));
+});
+
+app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
+    res.status(204).end();
 });
 
 // app.post('/login', (req, res) => {
@@ -54,9 +74,46 @@ app.get('/', (req, res) => {
 //     mockUsers[username] = { password, role, id };
 //     res.json({ ok: true, userId: id });
 // });
-app.post('/register', authController.register);
-app.post('/login', authController.login);
-app.post('/submit-review', reviewController.submitReview);
+function registerMockAuthHandlers(reason = 'USE_MOCK=1') {
+    console.log(`Starting in MOCK mode (${reason}) - using in-memory auth handlers`);
+    const mockUsers = new Map();
+    let nextId = 1;
+
+    app.post('/register', (req, res) => {
+        const { account, password } = req.body || {};
+        if (!account || !password) return res.status(400).json({ ok: false, error: 'account and password required' });
+        if (mockUsers.has(account)) return res.status(409).json({ ok: false, error: 'user exists' });
+        const id = nextId++;
+        mockUsers.set(account, { id, account, password });
+        return res.json({ ok: true, userId: id, message: 'mock register success' });
+    });
+
+    app.post('/login', (req, res) => {
+        const { account, password } = req.body || {};
+        if (!account || !password) return res.status(400).json({ ok: false, error: 'account and password required' });
+        const u = mockUsers.get(account);
+        if (!u || u.password !== password) return res.status(401).json({ ok: false, error: 'invalid credentials' });
+        return res.json({ ok: true, userId: u.id, message: 'mock login success' });
+    });
+
+    app.post('/submit-review', reviewController.submitReview);
+}
+
+// conditional auth handlers: mock when USE_MOCK=1 to avoid requiring DB env
+if (process.env.USE_MOCK === '1') {
+    registerMockAuthHandlers('USE_MOCK=1');
+} else {
+    // load real auth controller (may throw if env missing)
+    (async () => {
+        authController = await import('./controllers/authController.js');
+        app.post('/register', authController.register);
+        app.post('/login', authController.login);
+        app.post('/submit-review', reviewController.submitReview);
+    })().catch(err => {
+        console.warn(`Real auth unavailable: ${err.message}`);
+        registerMockAuthHandlers('missing DB config');
+    });
+}
 
 // 4. 啟動伺服器
 app.listen(port, () => {

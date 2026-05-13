@@ -8,10 +8,10 @@
   </head>
   <body>
     <header class="topbar">
-      <a href="user.html"><div class="logo">競賽組隊</div></a>
+      <div class="logo">競賽組隊</div>
       <div class="actions">
         <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
-        <button id="teamBtn" class="icon-btn" aria-label="組隊">🤝</button>
+        <a id="teamBtn" class="icon-btn" aria-label="組隊" href="team.html">🤝</a>
         <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
       </div>
     </header>
@@ -36,7 +36,17 @@
               <label>照片
                 <div class="photo-row">
                   <input id="photo" type="file" accept="image/*">
-                  <div id="photoPreview" class="photo-preview">預覽</div>
+                  <div class="photo-editor">
+                    <div id="photoPreview" class="photo-preview">
+                      <span id="photoPlaceholder">預覽</span>
+                      <img id="photoImage" alt="">
+                    </div>
+                    <div class="photo-controls">
+                      <label for="photoScale">大小</label>
+                      <input id="photoScale" type="range" min="1" max="3" step="0.01" value="1">
+                      <button id="resetPhoto" type="button" class="btn outline small">置中</button>
+                    </div>
+                  </div>
                 </div>
               </label>
             </div>

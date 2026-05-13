@@ -3,6 +3,13 @@ import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 
 dotenv.config();
+const requiredEnv = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+const missing = requiredEnv.filter(k => !process.env[k]);
+if (missing.length > 0) {
+    console.error('Missing required DB environment variables:', missing.join(', '));
+    // throw early so developer notices and doesn't get confusing DB auth errors
+    throw new Error(`Missing required DB environment variables: ${missing.join(', ')}`);
+}
 
 // 建立資料庫連線池
 const pool = mysql.createPool({
