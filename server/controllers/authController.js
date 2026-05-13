@@ -24,7 +24,7 @@ export const register = async (req, res) => {
                 return res.status(409).json({ ok: false, error: '使用者帳號已存在，請更換帳號' });
             }
             if (conflict.userEmail === userEmail) {
-                return res.status(409).json({ ok: false, error: '此 Email 已被註冊' });
+                return res.status(409).json({ ok: false, error: '此 Email 已被註冊 哈哈' });
             }
         }
 
@@ -42,13 +42,13 @@ export const register = async (req, res) => {
 
     } catch (err) {
 
-        console.log('捕獲到的錯誤代碼:', err.code);
-        console.log('捕獲到的完整訊息:', err.sqlMessage || err.message);
+        // // console.log('捕獲到的錯誤代碼:', err.code);
+        // // console.log('捕獲到的完整訊息:', err.sqlMessage || err.message);
 
         if (err.code === 'ER_DUP_ENTRY') {
             // 根據錯誤訊息判斷是帳號重複還是 Email 重複
             if (err.sqlMessage.includes('userEmail')) {
-                return res.status(409).json({ ok: false, error: '此 Email 已被註冊' });
+                return res.status(409).json({ ok: false, error: '此 Email 已被註冊 哈' });
             } else if (err.sqlMessage.includes('account')) {
                 return res.status(409).json({ ok: false, error: '此帳號已存在' });
             }
