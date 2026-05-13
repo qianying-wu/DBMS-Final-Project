@@ -1,7 +1,7 @@
 // server/controllers/authController.js
 //import mysql from 'mysql2/promise';
 //import dotenv from 'dotenv';
-import db from '../models/db.js';
+import pool from '../models/db.js';
 
 //dotenv.config();
 
@@ -20,7 +20,7 @@ export const register = async (req, res) => {
     console.log('後端收到的內容:', req.body); 
     const { account,userName,userPsw,userEmail} = req.body || {};
     
-    if (!username || !password) {
+    if (!account || !userPsw) {
         return res.status(400).json({ ok: false, error: '資料填寫不完整' });
     }
 
@@ -39,7 +39,7 @@ export const register = async (req, res) => {
         // user_id 是 AUTO_INCREMENT
         const [result] = await pool.execute(
             'INSERT INTO user (account,userName,userPsw,userEmail) VALUES (?, ?, ?, ?)',
-            [username, username, password, email]
+            [account, userName, userPsw, userEmail]
         );
 
         // 3. 成功的話
