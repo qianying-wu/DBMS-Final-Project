@@ -18,9 +18,9 @@ import pool from '../models/db.js';
 
 // --- 註冊邏輯 ---
 export const register = async (req, res) => {
-    console.log('後端收到的內容:', req.body); 
     const { account,userName,userPsw,userEmail} = req.body || {};
-    
+    console.log('後端收到的內容:', req.body); 
+
     if (!account || !userPsw) {  
         return res.status(400).json({ ok: false, error: '資料填寫不完整' });
     }
@@ -56,12 +56,12 @@ export const register = async (req, res) => {
 
 // --- 登入邏輯 ---
 export const login = async (req, res) => {
-    const {account, password} = req.body || {};
+    const {account, userPsw} = req.body || {};
 
-    if (!account || !password) {
+    if (!account || !userPsw) {
         return res.status(400).json({ 
             ok: false, 
-            error: '請完整輸入帳號、密碼並選擇身分' 
+            error: '請完整輸入帳號和密碼' 
         });
     }
 
@@ -70,7 +70,7 @@ export const login = async (req, res) => {
         // 同時比對帳號、密碼與身分
         const [rows] = await pool.execute(
             'SELECT user_id, account FROM user WHERE account = ? AND userPsw = ?',
-            [account, password]
+            [account, userPsw]
         );
 
         // 2. 比對結果

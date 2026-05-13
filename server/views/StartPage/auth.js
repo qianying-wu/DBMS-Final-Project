@@ -34,12 +34,11 @@
   back.addEventListener('click', () => { window.location.href = '/startPage.html'; });
 
   submit.addEventListener('click', async () => {
-    const u = account.value; const p = password.value;
-    if (!u || !p) { out.textContent = '請填寫完整！'; return; }
+    const a = account.value; const p = password.value; const u = username.value; const e = userEmail.value;
     try {
       const path = mode === 'login' ? '/login' : '/register';      
 
-      const resp = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ account: u, password: p}) });
+      const resp = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ account: a, userName: u, userPsw: p, userEmail: e}) });
       const json = await resp.json().catch(()=>({}));
       if (resp.ok) {
         out.textContent = JSON.stringify(json, null, 2);
