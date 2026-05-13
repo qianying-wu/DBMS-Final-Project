@@ -1,7 +1,7 @@
 (function () {
   const $ = id => document.getElementById(id);
   const teamsGrid = $('teamsGrid');
-  const leftTeams = $('leftTeams');
+  const contestsGrid = $('contestsGrid');
   const myTeams = $('myTeams');
   const followed = $('followed');
   const createBtn = $('createBtn');
@@ -18,24 +18,35 @@
 
   function loadTeams() {
     const raw = localStorage.getItem('teams');
-    if (raw) return JSON.parse(raw);
-    // seed mock data
-    const seed = [
-      { id: 1, name: 'AI 聯合隊', desc: '需要前端與資料處理', members: 2, slots: 3, owner: 1111, contestId: 10 },
-      { id: 2, name: '機器人挑戰隊', desc: '尋找機構工程師', members: 1, slots: 4, owner: 2222, contestId: 11 },
-      // ensure slots >= members to avoid UI inconsistency; this one is owned by current mock user
-      { id: 3, name: '資料探勘小隊', desc: '統計/ML', members: 3, slots: 4, owner: ME.id, contestId: 10 }
-    ];
+    if (raw) {
+      const defaultNames = ['AI 聯合隊', '機器人挑戰隊', '資料探勘小隊'];
+      const teams = JSON.parse(raw).filter(team => !defaultNames.includes(team.name));
+      if (teams.length !== JSON.parse(raw).length) localStorage.setItem('teams', JSON.stringify(teams));
+      return teams;
+    }
+    const seed = [];
     localStorage.setItem('teams', JSON.stringify(seed));
     return seed;
   }
   function loadContests() {
     const raw = localStorage.getItem('contests');
-    if (raw) return JSON.parse(raw);
     const seed = [
       { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽' },
-      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽' }
+      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽' },
+      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰' },
+      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽' },
+      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽' },
+      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽' }
     ];
+    if (raw) {
+      const existing = JSON.parse(raw);
+      const merged = [...existing];
+      seed.forEach(contest => {
+        if (!merged.some(item => Number(item.id) === Number(contest.id))) merged.push(contest);
+      });
+      if (merged.length !== existing.length) localStorage.setItem('contests', JSON.stringify(merged));
+      return merged;
+    }
     localStorage.setItem('contests', JSON.stringify(seed));
     return seed;
   }
@@ -59,10 +70,11 @@
     const teams = loadTeams();
     const favs = loadFavorites();
     const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
+    if (window.AppNotifications) window.AppNotifications.ensureContestNotifications(loadContests());
     teamsGrid.innerHTML = '';
-    leftTeams.innerHTML = '';
     const selectedContest = getSelectedContestId();
     const contests = loadContests();
+    renderContestOverview(contests, teams, selectedContest);
     teams.forEach(t => {
       // if a contest is selected, only show teams that belong to it
       if (selectedContest != null && Number(t.contestId || 0) !== Number(selectedContest)) return;
@@ -87,9 +99,6 @@
       `;
       teamsGrid.appendChild(card);
 
-      const li = document.createElement('li'); li.dataset.id = t.id;
-      li.innerHTML = `<span style="flex:1">${t.name}</span> <button class="fav-btn ${isFav ? 'active' : ''}" data-id="${t.id}" aria-pressed="${isFav}">${isFav ? '♥' : '♡'}</button>`;
-      leftTeams.appendChild(li);
     });
 
     // update myTeams (mock: none)
@@ -123,7 +132,26 @@
     let contestInfoWrap = document.getElementById(contestInfoWrapId);
     if (!contestInfoWrap) { contestInfoWrap = document.createElement('div'); contestInfoWrap.id = contestInfoWrapId; contestInfoWrap.className = 'contest-info'; document.querySelector('.content').insertBefore(contestInfoWrap, document.getElementById('teamsGrid')) }
     const selected = contests.find(x => x.id === selectedContest);
-    if (selected) contestInfoWrap.innerHTML = `<h3>${selected.name}</h3><div>${selected.date}</div><p>${selected.info}</p>`; else contestInfoWrap.innerHTML = `<h3>全部比賽</h3><div>顯示所有隊伍</div>`;
+    if (selected) contestInfoWrap.innerHTML = `<h3>${selected.name}</h3><div>${selected.date}</div><p>${selected.info}</p>`; else contestInfoWrap.innerHTML = `<h3>全部比賽</h3><div>顯示所有比賽與隊伍</div>`;
+  }
+
+  function renderContestOverview(contests, teams, selectedContest) {
+    if (!contestsGrid) return;
+    contestsGrid.innerHTML = contests.map(contest => {
+      const contestTeams = teams.filter(team => Number(team.contestId) === Number(contest.id));
+      const openings = contestTeams.reduce((sum, team) => sum + Math.max((team.slots || 0) - (team.members || 0), 0), 0);
+      return `
+        <article class="contest-card ${Number(selectedContest) === Number(contest.id) ? 'active' : ''}" data-cid="${contest.id}">
+          <h3>${escapeHtml(contest.name)}</h3>
+          <div class="contest-date">${escapeHtml(contest.date || '日期未定')}</div>
+          <p>${escapeHtml(contest.info || '尚未填寫比賽資訊')}</p>
+          <div class="contest-stats">
+            <span>${contestTeams.length} 隊</span>
+            <span>${openings} 缺額</span>
+          </div>
+        </article>
+      `;
+    }).join('');
   }
 
   teamsGrid.addEventListener('click', e => {
@@ -133,12 +161,6 @@
     if (btn.classList.contains('fav-btn')) { toggleFavorite(Number(teamId)); return; }
     if (btn.classList.contains('manage-btn')) { openRequestsForTeam(Number(teamId)); return; }
     openTeamDetail(Number(teamId));
-  });
-
-  // handle fav toggle in left list
-  leftTeams.addEventListener('click', e => {
-    const btn = e.target.closest('button'); if (!btn) return;
-    const id = btn.dataset.id; if (!id) return; toggleFavorite(Number(id));
   });
 
   function loadFavorites() { return JSON.parse(localStorage.getItem('favorites') || '[]'); }
@@ -157,6 +179,13 @@
       if (my.find(x => x.id === t.id)) return alert('你已在此隊伍');
       reqs.push({ id: Date.now(), teamId: t.id, teamName: t.name, user: me, status: 'pending' });
       localStorage.setItem('joinRequests', JSON.stringify(reqs));
+      window.AppNotifications?.add({
+        type: 'join-request',
+        userId: t.owner,
+        sourceId: `${t.id}:${me.id}`,
+        sourceKey: `join-request:${t.id}:${me.id}`,
+        message: `${me.name} 申請加入你的隊伍「${t.name}」`
+      });
       alert('已送出加入申請，等待隊長審核');
     }
   }
@@ -197,17 +226,39 @@
         // auto-deny when full
         reqs[idx].status = 'denied';
         localStorage.setItem('joinRequests', JSON.stringify(reqs));
+        window.AppNotifications?.add({
+          type: 'application-result',
+          userId: reqs[idx].user.id,
+          sourceId: reqs[idx].id,
+          sourceKey: `application-result:${reqs[idx].id}:denied-full`,
+          message: `你的加入申請未通過：${reqs[idx].teamName}（隊伍已額滿）`
+        });
         alert('隊伍已額滿，無法批准本申請（已自動拒絕）。');
       } else {
         reqs[idx].status = 'approved';
         teams[tIdx].members = (teams[tIdx].members || 0) + 1; saveTeams(teams);
         const my = JSON.parse(localStorage.getItem('myTeams') || '[]'); if (!my.find(x => x.id === reqs[idx].teamId)) { my.push(teams[tIdx]); localStorage.setItem('myTeams', JSON.stringify(my)); }
         localStorage.setItem('joinRequests', JSON.stringify(reqs));
+        window.AppNotifications?.add({
+          type: 'application-result',
+          userId: reqs[idx].user.id,
+          sourceId: reqs[idx].id,
+          sourceKey: `application-result:${reqs[idx].id}:approved`,
+          message: `你的加入申請已通過：${teams[tIdx].name}`
+        });
         alert('已批准');
         render();
       }
     } else {
-      reqs[idx].status = 'denied'; localStorage.setItem('joinRequests', JSON.stringify(reqs)); alert('已拒絕');
+      reqs[idx].status = 'denied'; localStorage.setItem('joinRequests', JSON.stringify(reqs));
+      window.AppNotifications?.add({
+        type: 'application-result',
+        userId: reqs[idx].user.id,
+        sourceId: reqs[idx].id,
+        sourceKey: `application-result:${reqs[idx].id}:denied`,
+        message: `你的加入申請未通過：${reqs[idx].teamName}`
+      });
+      alert('已拒絕');
     }
     // refresh modal list
     const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').filter(r => r.teamId === reqs[idx].teamId && r.status === 'pending');
@@ -257,13 +308,22 @@
   // notify / avatar handlers
   const notifyBtn = document.getElementById('notifyBtn');
   const avatarBtn = document.getElementById('avatarBtn');
-  if (notifyBtn) notifyBtn.addEventListener('click', () => { alert('目前無新通知'); });
-  if (avatarBtn) avatarBtn.addEventListener('click', () => { location.href = '/profile.html'; });
+  const homeLink = document.getElementById('homeLink');
+  if (homeLink) homeLink.href = withUserParam('/user.html');
+  if (avatarBtn) avatarBtn.addEventListener('click', () => { location.href = withUserParam('/profile.html'); });
 
   // contest selection handler (delegated)
   document.addEventListener('click', (e) => {
     const li = e.target.closest('#contestsList li'); if (!li) return;
     const cid = Number(li.dataset.cid);
+    setSelectedContestId(cid);
+    location.href = withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
+  });
+
+  contestsGrid && contestsGrid.addEventListener('click', e => {
+    const card = e.target.closest('[data-cid]');
+    if (!card) return;
+    const cid = Number(card.dataset.cid);
     setSelectedContestId(cid);
     location.href = withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
   });
