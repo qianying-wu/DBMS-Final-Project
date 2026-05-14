@@ -2,22 +2,26 @@
   const $ = id => document.getElementById(id);
   const ME = { id: 9999, name: '你自己' };
   const params = new URLSearchParams(location.search);
+  const currentUserId = params.get('userId') && params.get('userId') !== 'unknown' ? params.get('userId') : String(ME.id);
   const contestId = Number(params.get('contestId')) || Number(params.get('id')) || 10;
   const questions = ['請簡單介紹你的背景和想加入的原因'];
 
   function loadContests(){
     const raw = localStorage.getItem('contests');
     const seed = [
-      { id: 10, name: '全國資料科學競賽', date:'2026-07-20', info:'針對資料科學專題的校內外隊伍競賽' },
-      { id: 11, name: '全國機器人盃', date:'2026-09-10', info:'機器人實作與競賽' },
-      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰' },
-      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽' },
-      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽' },
-      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽' }
+      { id: 10, name: '全國資料科學競賽', date:'2026-07-20', info:'針對資料科學專題的校內外隊伍競賽', officialUrl: 'https://www.kaggle.com/competitions' },
+      { id: 11, name: '全國機器人盃', date:'2026-09-10', info:'機器人實作與競賽', officialUrl: 'https://www.robocup.org/' },
+      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰', officialUrl: 'https://devpost.com/hackathons' },
+      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽', officialUrl: 'https://www.drivendata.org/competitions/' },
+      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽', officialUrl: 'https://www.hultprize.org/' },
+      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽', officialUrl: 'https://www.fintechfestival.sg/' }
     ];
     if (raw) {
       const existing = JSON.parse(raw);
-      const merged = [...existing];
+      const merged = existing.map(contest => {
+        const defaults = seed.find(item => Number(item.id) === Number(contest.id));
+        return defaults ? { ...defaults, ...contest, officialUrl: contest.officialUrl || defaults.officialUrl } : contest;
+      });
       seed.forEach(contest => {
         if (!merged.some(item => Number(item.id) === Number(contest.id))) merged.push(contest);
       });
@@ -42,6 +46,8 @@
   }
 
   function saveTeams(teams){ localStorage.setItem('teams', JSON.stringify(teams)); }
+  function loadFavorites(){ return JSON.parse(localStorage.getItem('favorites')||'[]'); }
+  function loadContestFavorites(){ return JSON.parse(localStorage.getItem('favoriteContests')||'[]').map(Number); }
 
   function escapeAttr(value){
     return String(value).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -83,6 +89,7 @@
     `;
 
     $('contestLabel').textContent = `建立於：${contest.name}`;
+    $('officialContestLink').href = contest.officialUrl || '#';
     $('contestTeams').innerHTML = teams.length ? teams.map(team => `
       <li>
         <strong>${team.name}</strong>
@@ -90,12 +97,15 @@
       </li>
     `).join('') : '<li>目前沒有隊伍</li>';
 
-    const my = JSON.parse(localStorage.getItem('myTeams')||'[]').filter(team => Number(team.contestId) === Number(contest.id));
+    const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${currentUserId}`)||'[]');
+    const my = loadTeams().filter(team => joinedIds.some(id => Number(id) === Number(team.id)) && Number(team.contestId) === Number(contest.id));
     $('myTeams').textContent = my.length ? my.map(team => team.name).join('\n') : '尚未加入隊伍';
 
-    const favs = JSON.parse(localStorage.getItem('favorites')||'[]');
+    const favs = loadFavorites();
     const followed = teams.filter(team => favs.includes(team.id));
-    $('followed').textContent = followed.length ? followed.map(team => team.name).join('\n') : '尚無關注';
+    $('myFavs').textContent = followed.length ? followed.map(team => team.name).join('\n') : '尚無收藏';
+    const favoriteContests = loadContestFavorites().map(id => loadContests().find(item => Number(item.id) === Number(id))).filter(Boolean);
+    $('followed').textContent = favoriteContests.length ? favoriteContests.map(item => `${item.name}\n${item.date}`).join('\n\n') : '尚無關注';
   }
 
   function renderQuestions(){
@@ -146,9 +156,10 @@
       desc: descParts.join('\n'),
       members: 1,
       slots,
-      owner: ME.id,
+      owner: currentUserId,
       contestId: getContest().id,
-      applicationQuestions
+      applicationQuestions,
+      requireResume: $('requireResume').checked
     });
     saveTeams(teams);
     alert('已建立隊伍');
@@ -157,7 +168,6 @@
 
   $('cancelBtn').addEventListener('click', () => { location.href = contestHref(); });
   $('backBtn').addEventListener('click', () => { location.href = contestHref(); });
-  $('avatarBtn').addEventListener('click', () => { location.href = withUserParam('/profile.html'); });
   document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/user.html'));
 
   render();

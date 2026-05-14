@@ -25,6 +25,8 @@ body{font-family:Arial,'Noto Sans TC',sans-serif;margin:0;background:#faf7f2;col
 .step-list div{padding:10px;border-bottom:1px solid #f0ebe5}
 .step-list div:last-child{border-bottom:0}
 .step-list .active{background:#fff7ec;color:#6b4f3a;font-weight:700}
+.step-link{display:block;padding:10px;border-bottom:1px solid #f0ebe5;color:#3f342c;text-decoration:none}
+.step-link:hover{background:#fff7ec;color:#6b4f3a}
 .team-list{list-style:none;margin:0;padding:0}
 .team-list li{border:1px solid rgba(96,116,135,0.16);border-radius:8px;padding:9px 10px;margin-bottom:8px;background:rgba(255,255,255,0.72)}
 .contest-summary{border:2px solid #d6c2ad;border-radius:16px;padding:18px 22px;margin:4px auto 22px;max-width:680px;background:#fffdf9}
@@ -39,6 +41,8 @@ body{font-family:Arial,'Noto Sans TC',sans-serif;margin:0;background:#faf7f2;col
 .create-form{display:grid;grid-template-columns:1fr 180px;gap:16px}
 .create-form label{display:flex;flex-direction:column;gap:7px;font-weight:700;color:#3f342c}
 .create-form label.full{grid-column:1 / -1}
+.create-form .check-row{flex-direction:row;align-items:center}
+.create-form .check-row input{width:auto}
 .questions-section.full{grid-column:1 / -1}
 .questions-section{border:1px solid #eadfd2;border-radius:10px;padding:14px;background:#fffdf9}
 .questions-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:12px}

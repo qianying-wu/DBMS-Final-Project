@@ -1,29 +1,31 @@
 (function(){
   const $ = id => document.getElementById(id);
-  // 模擬當前使用者
-  const ME = { id: 9999, name: '你自己' }; 
-  
   // 從網址列取得要查看的隊伍 ID (例如：team-info.html?teamId=1)
   const params = new URLSearchParams(location.search);
   const currentTeamId = Number(params.get('teamId')) || 1; // 預設抓 ID 為 1 的隊伍測試
+  const userIdParam = params.get('userId');
+  const ME = { id: userIdParam && userIdParam !== 'unknown' ? userIdParam : '9999', name: '你自己' };
 
   // 沿用共用的讀取資料邏輯
   function loadContests(){
     const raw = localStorage.getItem('contests');
     const seed = [
-      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽' },
-      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽' },
-      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰' },
-      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽' },
-      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽' },
-      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽' }
+      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽', officialUrl: 'https://www.kaggle.com/competitions' },
+      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽', officialUrl: 'https://www.robocup.org/' },
+      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰', officialUrl: 'https://devpost.com/hackathons' },
+      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽', officialUrl: 'https://www.drivendata.org/competitions/' },
+      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽', officialUrl: 'https://www.hultprize.org/' },
+      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽', officialUrl: 'https://www.fintechfestival.sg/' }
     ];
     if (!raw) {
       localStorage.setItem('contests', JSON.stringify(seed));
       return seed;
     }
     const existing = JSON.parse(raw);
-    const merged = [...existing];
+    const merged = existing.map(contest => {
+      const defaults = seed.find(item => Number(item.id) === Number(contest.id));
+      return defaults ? { ...defaults, ...contest, officialUrl: contest.officialUrl || defaults.officialUrl } : contest;
+    });
     seed.forEach(contest => {
       if (!merged.some(item => Number(item.id) === Number(contest.id))) merged.push(contest);
     });
@@ -47,6 +49,10 @@
     return String(value).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  function loadProfiles(){
+    return JSON.parse(localStorage.getItem('profiles') || '[]');
+  }
+
   function withUserParam(path){
     const userId = params.get('userId');
     return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
@@ -66,7 +72,7 @@
     }
 
     // 找出所屬比賽
-    const contest = contests.find(c => Number(c.id) === Number(team.contestId)) || { name: '未知比賽', date: '日期未定', info: '尚未填寫比賽資訊。' };
+    const contest = contests.find(c => Number(c.id) === Number(team.contestId)) || { name: '未知比賽', date: '日期未定', info: '尚未填寫比賽資訊。', officialUrl: '#' };
 
     // 填入基本資訊
     document.title = `${team.name} - 隊伍資訊`;
@@ -75,6 +81,8 @@
     $('displayContestName').textContent = contest.name;
     $('displayContestDate').textContent = contest.date || '日期未定';
     $('displayContestInfo').textContent = contest.info || '尚未填寫比賽資訊。';
+    $('officialContestLink').href = contest.officialUrl || '#';
+    $('officialContestButton').href = contest.officialUrl || '#';
     $('displayMemberCount').textContent = team.members;
     $('displayMaxSlots').textContent = team.slots;
     
@@ -90,7 +98,7 @@
     }
 
     // 渲染成員列表 (這裡先寫死隊長，實務上會從 team.memberList 陣列去 map)
-    const isOwner = team.owner === ME.id;
+    const isOwner = String(team.owner) === String(ME.id);
     $('memberList').innerHTML = `
       <li>👑 ${isOwner ? ME.name : '隊長 (ID: '+team.owner+')'}</li>
       ${Array.from({length: team.members - 1}).map((_, i) => `<li>👤 隊員 ${i+1}</li>`).join('')}
@@ -98,11 +106,22 @@
 
     // 準備申請表單的提問
     const questions = team.applicationQuestions || [];
+    const profiles = loadProfiles();
+    if (team.requireResume) {
+      $('resumeSelectWrap').style.display = 'flex';
+      $('resumeSelect').required = true;
+      $('resumeSelect').innerHTML = profiles.length
+        ? profiles.map(profile => `<option value="${escapeAttr(profile.id)}">${escapeAttr(profile.name || profile.data?.name || '履歷')}</option>`).join('')
+        : '<option value="">尚未建立履歷</option>';
+    } else {
+      $('resumeSelectWrap').style.display = 'none';
+      $('resumeSelect').required = false;
+    }
     if (questions.length > 0) {
       $('applicationQuestions').innerHTML = questions.map((q, index) => `
         <div class="application-question-item">
           <p>Q${index + 1}: ${escapeAttr(q)}</p>
-          <textarea rows="3" placeholder="請輸入你的回答" required></textarea>
+          <textarea rows="3" data-question="${escapeAttr(q)}" placeholder="請輸入你的回答" required></textarea>
         </div>
       `).join('');
     } else {
@@ -121,20 +140,20 @@
     `).join('') : '<li>無其他隊伍</li>';
 
     // 渲染右側：我的隊伍與關注 (沿用舊邏輯)
-    const my = JSON.parse(localStorage.getItem('myTeams')||'[]').filter(t => Number(t.contestId) === Number(contest.id));
+    const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${ME.id}`)||'[]');
+    const my = teams.filter(t => joinedIds.some(id => Number(id) === Number(t.id)) && Number(t.contestId) === Number(contest.id));
     $('myTeams').textContent = my.length ? my.map(t => t.name).join('\n') : '尚未加入隊伍';
 
     const favs = JSON.parse(localStorage.getItem('favorites')||'[]');
     const followed = teams.filter(t => favs.includes(t.id));
-    $('followed').textContent = followed.length ? followed.map(t => t.name).join('\n') : '尚無關注';
+    $('myFavs').textContent = followed.length ? followed.map(t => t.name).join('\n') : '尚無收藏';
+    const favoriteContestIds = JSON.parse(localStorage.getItem('favoriteContests')||'[]').map(Number);
+    const favoriteContests = favoriteContestIds.map(id => contests.find(item => Number(item.id) === Number(id))).filter(Boolean);
+    $('followed').textContent = favoriteContests.length ? favoriteContests.map(item => `${item.name}\n${item.date}`).join('\n\n') : '尚無關注';
     
-    // 如果自己是隊長，隱藏申請按鈕
-    if (isOwner) {
-      $('actionButtons').style.display = 'none';
-    }
-
-    const alreadyJoined = JSON.parse(localStorage.getItem('myTeams') || '[]').some(item => Number(item.id) === Number(team.id));
-    const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').some(req => Number(req.teamId) === Number(team.id) && Number(req.user?.id) === Number(ME.id) && req.status === 'pending');
+    const userTeamIds = JSON.parse(localStorage.getItem(`myTeams:${ME.id}`) || '[]');
+    const alreadyJoined = userTeamIds.some(id => Number(id) === Number(team.id));
+    const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').some(req => Number(req.teamId) === Number(team.id) && String(req.user?.id) === String(ME.id) && req.status === 'pending');
     if (alreadyJoined || pending || Number(team.members) >= Number(team.slots)) {
       $('applyBtn').disabled = true;
       $('applyBtn').textContent = alreadyJoined ? '已在隊伍中' : pending ? '審核中...' : '隊伍已額滿';
@@ -163,7 +182,7 @@
       if (team) {
         if (Number(team.members) >= Number(team.slots)) return alert('隊伍已額滿，無法申請');
         const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
-        if (reqs.some(req => Number(req.teamId) === Number(team.id) && Number(req.user?.id) === Number(ME.id) && req.status === 'pending')) {
+        if (reqs.some(req => Number(req.teamId) === Number(team.id) && String(req.user?.id) === String(ME.id) && req.status === 'pending')) {
           return alert('你已送出申請，請等待隊長審核');
         }
         const answers = Array.from(document.querySelectorAll('#applicationQuestions textarea')).map((textarea, index) => ({
@@ -174,8 +193,14 @@
           applicantName: $('applicantName').value.trim(),
           applicantContact: $('applicantContact').value.trim(),
           applicantReason: $('applicantReason').value.trim(),
-          answers
+          answers,
+          resume: null
         };
+        if (team.requireResume) {
+          const selectedResume = loadProfiles().find(profile => String(profile.id) === String($('resumeSelect').value));
+          if (!selectedResume) return alert('請先建立並選擇要附上的履歷');
+          application.resume = selectedResume;
+        }
         reqs.push({ id: Date.now(), teamId: team.id, teamName: team.name, user: ME, status: 'pending', application });
         localStorage.setItem('joinRequests', JSON.stringify(reqs));
         window.AppNotifications?.add({
@@ -183,7 +208,8 @@
           userId: team.owner,
           sourceId: `${team.id}:${ME.id}`,
           sourceKey: `join-request:${team.id}:${ME.id}`,
-          message: `${ME.name} 申請加入你的隊伍「${team.name}」`
+          message: `${ME.name} 申請加入你的隊伍「${team.name}」`,
+          action: { type: 'review-request', teamId: team.id }
         });
       }
       alert('已送出加入申請！隊長審核後會發送通知。');
@@ -197,7 +223,6 @@
     // 其他導覽按鈕
     $('contactBtn').addEventListener('click', () => { alert('測試中'); });
     $('backBtn').addEventListener('click', () => { history.back(); });
-    $('avatarBtn').addEventListener('click', () => { location.href = withUserParam('/profile.html'); });
     document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/user.html'));
   }
 

@@ -9,6 +9,10 @@
       body{font-family:'Noto Sans TC', Arial, sans-serif;margin:0;background:#f5f7fa;color:#263238}
       .topbar{height:64px;background:#fff;border-bottom:1px solid #e8edf2;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
       .logo{font-weight:700;color:#38506b}
+      .actions{display:flex;gap:10px;align-items:center}
+      .icon-btn,.avatar-btn{background:transparent;border:1px solid transparent;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:18px;text-decoration:none;line-height:1}
+      .icon-btn:hover,.avatar-btn:hover{background:#f1f5f7}
+      .avatar-btn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}
       .logout{background:transparent;border:1px solid #cfd8dc;border-radius:8px;padding:8px 12px;cursor:pointer;color:#38506b}
       .layout{max-width:1040px;margin:0 auto;padding:32px 20px}
       .welcome{margin-bottom:20px}
@@ -33,7 +37,11 @@
   <body>
     <header class="topbar">
       <a id="homeLink" href="/user.html"><div class="logo">競賽組隊｜管理員</div></a>
-      <button id="logout" class="logout">登出</button>
+      <div class="actions">
+        <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
+        <a id="teamBtn" class="icon-btn" aria-label="組隊" href="/team.html">🤝</a>
+        <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
+      </div>
     </header>
 
     <main class="layout">
@@ -64,14 +72,18 @@
 
       <div id="info"></div>
       <div id="apiResult"></div>
+      <button id="logout" class="logout">登出</button>
     </main>
 
+    <script src="/notifications.js"></script>
+    <script src="/account-menu.js"></script>
     <script>
       const qs = new URLSearchParams(location.search);
       const id = qs.get('userId') || 'unknown';
       document.getElementById('info').textContent = 'maintenance userId: ' + id;
       document.getElementById('homeLink').href = '/user.html?userId=' + encodeURIComponent(id);
       document.getElementById('teamLink').href = '/team.html?userId=' + encodeURIComponent(id) + '&role=maintenance';
+      document.getElementById('teamBtn').href = '/team.html?userId=' + encodeURIComponent(id) + '&role=maintenance';
       document.getElementById('userLink').href = '/user.html?userId=' + encodeURIComponent(id);
       document.getElementById('logout').addEventListener('click', () => {
         location.href = '/startPage.html';

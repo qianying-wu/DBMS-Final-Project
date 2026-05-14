@@ -12,6 +12,7 @@
       <a class="logo-link" href="/user.html"><div class="logo">競賽組隊</div></a>
       <div class="actions">
         <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
+        <a id="teamBtn" class="icon-btn" aria-label="組隊" href="/team.html">🤝</a>
         <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
       </div>
     </header>
@@ -22,7 +23,7 @@
           <h4>發起招募</h4>
           <div class="step-list">
             <div class="active">填寫隊伍資料</div>
-            <div>確認比賽資訊</div>
+            <a id="officialContestLink" class="step-link" href="#" target="_blank" rel="noopener">確認比賽資訊</a>
             <div>送出招募</div>
           </div>
         </section>
@@ -63,6 +64,11 @@
               <textarea id="teamDesc" rows="6" placeholder="簡短描述隊伍方向、目前進度、希望找到的成員"></textarea>
             </label>
 
+            <label class="full check-row">
+              <input id="requireResume" type="checkbox">
+              要求申請者附上履歷
+            </label>
+
             <section class="questions-section full">
               <div class="questions-heading">
                 <div>
@@ -88,6 +94,11 @@
           <div id="myTeams" class="box">尚未加入隊伍</div>
         </section>
 
+        <section class="panel-section">
+          <h4>我的收藏</h4>
+          <div id="myFavs" class="box">尚無收藏</div>
+        </section>
+
         <section class="panel-section panel-section-follow">
           <h4>關注的比賽 / 隊伍</h4>
           <div id="followed" class="box">尚無關注</div>
@@ -96,6 +107,7 @@
     </main>
 
     <script src="/notifications.js"></script>
+    <script src="/account-menu.js"></script>
     <script src="/create-team.js"></script>
   </body>
 </html>

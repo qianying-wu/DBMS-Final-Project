@@ -13,6 +13,7 @@
       <a class="logo-link" href="/user.html"><div class="logo">競賽組隊</div></a>
       <div class="actions">
         <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
+        <a id="teamBtn" class="icon-btn" aria-label="組隊" href="/team.html">🤝</a>
         <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
       </div>
     </header>
@@ -23,7 +24,7 @@
           <h4>隊伍導覽</h4>
           <div class="step-list">
             <div class="active">隊伍詳細資訊</div>
-            <div>比賽官方頁面</div>
+            <a id="officialContestLink" class="step-link" href="#" target="_blank" rel="noopener">比賽官方頁面</a>
           </div>
         </section>
 
@@ -65,6 +66,7 @@
               </div>
             </div>
             <p id="displayContestInfo" class="desc-text">比賽資訊會顯示在這裡。</p>
+            <a id="officialContestButton" class="btn outline official-contest-button" href="#" target="_blank" rel="noopener">前往比賽官方頁面</a>
           </div>
 
           <div class="info-block">
@@ -97,6 +99,10 @@
                   申請理由
                   <textarea id="applicantReason" rows="4" required placeholder="說明你想加入的原因、能投入的時間與可協助的部分"></textarea>
                 </label>
+                <label id="resumeSelectWrap" class="full" style="display:none">
+                  附上履歷
+                  <select id="resumeSelect"></select>
+                </label>
               </section>
 
               <section class="custom-question-fields full">
@@ -126,6 +132,11 @@
         </section>
 
         <section class="panel-section">
+          <h4>我的收藏</h4>
+          <div id="myFavs" class="box">尚無收藏</div>
+        </section>
+
+        <section class="panel-section">
           <h4>關注的比賽 / 隊伍</h4>
           <div id="followed" class="box">尚無關注</div>
         </section>
@@ -133,6 +144,7 @@
     </main>
 
     <script src="/notifications.js"></script>
+    <script src="/account-menu.js"></script>
     <script src="/team-info.js"></script>
   </body>
 </html>

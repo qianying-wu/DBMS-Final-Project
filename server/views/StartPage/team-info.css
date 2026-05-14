@@ -71,6 +71,12 @@
   margin-bottom: 5px;
 }
 
+.official-contest-button {
+  display: inline-flex;
+  margin-top: 14px;
+  text-decoration: none;
+}
+
 /* 技能標籤 */
 .skills-tags {
   display: inline-block;
@@ -111,6 +117,18 @@
   color: #3f342c;
   font-weight: 700;
   font-size: 14px;
+}
+
+.step-link {
+  display: block;
+  padding: 10px;
+  border-bottom: 1px solid #f0ebe5;
+  color: #4f3827;
+  text-decoration: none;
+}
+
+.step-link:hover {
+  background: #fff7ec;
 }
 
 /* 申請加入區塊 (重點提示) */
