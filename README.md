@@ -18,3 +18,4 @@ pnpm add mysql2
 
 npm install dotenv
 
+npm install bcrypt
