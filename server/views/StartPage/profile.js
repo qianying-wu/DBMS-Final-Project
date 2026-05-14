@@ -127,11 +127,28 @@
   }
 
   function loadTeams(){
-    return JSON.parse(localStorage.getItem('teams')||'[]');
+    const defaultNames = ['AI 聯合隊', '機器人挑戰隊', '資料探勘小隊'];
+    const teams = JSON.parse(localStorage.getItem('teams')||'[]').filter(team => !defaultNames.includes(team.name));
+    localStorage.setItem('teams', JSON.stringify(teams));
+    return teams;
   }
 
   function loadContests(){
-    return JSON.parse(localStorage.getItem('contests')||'[]');
+    const seed = [
+      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽' },
+      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽' },
+      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰' },
+      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽' },
+      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽' },
+      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽' }
+    ];
+    const existing = JSON.parse(localStorage.getItem('contests')||'[]');
+    const merged = [...existing];
+    seed.forEach(contest => {
+      if (!merged.some(item => Number(item.id) === Number(contest.id))) merged.push(contest);
+    });
+    localStorage.setItem('contests', JSON.stringify(merged));
+    return merged;
   }
 
   function renderSyncedSidebar(){
@@ -314,7 +331,7 @@
     const notifyBtn = document.getElementById('notifyBtn');
     const avatarBtn = document.getElementById('avatarBtn');
     const teamBtn = document.getElementById('teamBtn');
-    if (notifyBtn) notifyBtn.addEventListener('click', showNotifications);
+    if (notifyBtn && !window.AppNotifications) notifyBtn.addEventListener('click', showNotifications);
     if (teamBtn) {
       const teamHref = getTeamHref();
       teamBtn.setAttribute('href', teamHref);
@@ -331,13 +348,14 @@
     const teamBtn = document.getElementById('teamBtn');
     if (teamBtn) teamBtn.setAttribute('href', 'team.html');
   }
+  document.querySelector('.logo-link')?.setAttribute('href', new URLSearchParams(window.location.search).get('userId') ? `/user.html?userId=${encodeURIComponent(new URLSearchParams(window.location.search).get('userId'))}` : '/user.html');
   window.addEventListener('storage', e=>{
     if (['myTeams','favorites','teams','contests'].includes(e.key)) renderSyncedSidebar();
-    if (e.key === 'notifications') updateNotificationBadge();
+    if (e.key === 'notifications' && !window.AppNotifications) updateNotificationBadge();
   });
 
     load();
-    updateNotificationBadge();
+    if (!window.AppNotifications) updateNotificationBadge();
   }
 
   // ensure init runs after DOM is ready; log startup errors

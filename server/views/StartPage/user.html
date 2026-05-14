@@ -32,7 +32,7 @@
   </head>
   <body>
     <header class="topbar">
-      <a href="user.html"><div class="logo">競賽組隊</div></a>
+      <a id="homeLink" href="user.html"><div class="logo">競賽組隊</div></a>
       <button id="logout" class="logout">登出</button>
     </header>
 
@@ -63,6 +63,7 @@
       const qs = new URLSearchParams(location.search);
       const id = qs.get('userId') || 'unknown';
       document.getElementById('info').textContent = 'userId: ' + id;
+      document.getElementById('homeLink').href = '/user.html?userId=' + encodeURIComponent(id);
       document.getElementById('profileLink').href = '/profile.html?userId=' + encodeURIComponent(id);
       document.getElementById('teamLink').href = '/team.html?userId=' + encodeURIComponent(id);
       document.getElementById('logout').addEventListener('click', () => {

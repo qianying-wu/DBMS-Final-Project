@@ -10,16 +10,46 @@
   // 沿用共用的讀取資料邏輯
   function loadContests(){
     const raw = localStorage.getItem('contests');
-    return raw ? JSON.parse(raw) : [];
+    const seed = [
+      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽' },
+      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽' },
+      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰' },
+      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽' },
+      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽' },
+      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽' }
+    ];
+    if (!raw) {
+      localStorage.setItem('contests', JSON.stringify(seed));
+      return seed;
+    }
+    const existing = JSON.parse(raw);
+    const merged = [...existing];
+    seed.forEach(contest => {
+      if (!merged.some(item => Number(item.id) === Number(contest.id))) merged.push(contest);
+    });
+    if (merged.length !== existing.length) localStorage.setItem('contests', JSON.stringify(merged));
+    return merged;
   }
 
   function loadTeams(){
     const raw = localStorage.getItem('teams');
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) {
+      localStorage.setItem('teams', '[]');
+      return [];
+    }
+    const defaultNames = ['AI 聯合隊', '機器人挑戰隊', '資料探勘小隊'];
+    const teams = JSON.parse(raw).filter(team => !defaultNames.includes(team.name));
+    if (teams.length !== JSON.parse(raw).length) localStorage.setItem('teams', JSON.stringify(teams));
+    return teams;
   }
 
   function escapeAttr(value){
     return String(value).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function withUserParam(path){
+    const userId = params.get('userId');
+    return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
   }
 
   // 1. 核心渲染函式：將隊伍資料填入 HTML
@@ -36,12 +66,15 @@
     }
 
     // 找出所屬比賽
-    const contest = contests.find(c => Number(c.id) === Number(team.contestId)) || { name: '未知比賽' };
+    const contest = contests.find(c => Number(c.id) === Number(team.contestId)) || { name: '未知比賽', date: '日期未定', info: '尚未填寫比賽資訊。' };
 
     // 填入基本資訊
     document.title = `${team.name} - 隊伍資訊`;
     $('displayTeamName').textContent = team.name;
     $('displayContestLabel').textContent = contest.name;
+    $('displayContestName').textContent = contest.name;
+    $('displayContestDate').textContent = contest.date || '日期未定';
+    $('displayContestInfo').textContent = contest.info || '尚未填寫比賽資訊。';
     $('displayMemberCount').textContent = team.members;
     $('displayMaxSlots').textContent = team.slots;
     
@@ -80,7 +113,7 @@
     const otherTeams = teams.filter(t => Number(t.contestId) === Number(contest.id) && Number(t.id) !== currentTeamId);
     $('otherTeams').innerHTML = otherTeams.length ? otherTeams.map(t => `
       <li>
-        <a href="/team-info.html?teamId=${t.id}" style="text-decoration:none; color:inherit;">
+        <a href="${withUserParam(`/team-info.html?teamId=${encodeURIComponent(t.id)}`)}" style="text-decoration:none; color:inherit;">
           <strong>${t.name}</strong>
           <div>${t.members} / ${t.slots} 人</div>
         </a>
@@ -98,6 +131,13 @@
     // 如果自己是隊長，隱藏申請按鈕
     if (isOwner) {
       $('actionButtons').style.display = 'none';
+    }
+
+    const alreadyJoined = JSON.parse(localStorage.getItem('myTeams') || '[]').some(item => Number(item.id) === Number(team.id));
+    const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').some(req => Number(req.teamId) === Number(team.id) && Number(req.user?.id) === Number(ME.id) && req.status === 'pending');
+    if (alreadyJoined || pending || Number(team.members) >= Number(team.slots)) {
+      $('applyBtn').disabled = true;
+      $('applyBtn').textContent = alreadyJoined ? '已在隊伍中' : pending ? '審核中...' : '隊伍已額滿';
     }
   }
 
@@ -118,6 +158,34 @@
     // 送出申請表單
     $('applyForm').addEventListener('submit', (e) => {
       e.preventDefault();
+      const teams = loadTeams();
+      const team = teams.find(t => Number(t.id) === currentTeamId);
+      if (team) {
+        if (Number(team.members) >= Number(team.slots)) return alert('隊伍已額滿，無法申請');
+        const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
+        if (reqs.some(req => Number(req.teamId) === Number(team.id) && Number(req.user?.id) === Number(ME.id) && req.status === 'pending')) {
+          return alert('你已送出申請，請等待隊長審核');
+        }
+        const answers = Array.from(document.querySelectorAll('#applicationQuestions textarea')).map((textarea, index) => ({
+          question: textarea.dataset.question || `Q${index + 1}`,
+          answer: textarea.value.trim()
+        }));
+        const application = {
+          applicantName: $('applicantName').value.trim(),
+          applicantContact: $('applicantContact').value.trim(),
+          applicantReason: $('applicantReason').value.trim(),
+          answers
+        };
+        reqs.push({ id: Date.now(), teamId: team.id, teamName: team.name, user: ME, status: 'pending', application });
+        localStorage.setItem('joinRequests', JSON.stringify(reqs));
+        window.AppNotifications?.add({
+          type: 'join-request',
+          userId: team.owner,
+          sourceId: `${team.id}:${ME.id}`,
+          sourceKey: `join-request:${team.id}:${ME.id}`,
+          message: `${ME.name} 申請加入你的隊伍「${team.name}」`
+        });
+      }
       alert('已送出加入申請！隊長審核後會發送通知。');
       // 實務上這裡要把答案存進資料庫
       $('applyForm').style.display = 'none';
@@ -129,8 +197,8 @@
     // 其他導覽按鈕
     $('contactBtn').addEventListener('click', () => { alert('測試中'); });
     $('backBtn').addEventListener('click', () => { history.back(); });
-    $('notifyBtn').addEventListener('click', () => { alert('目前無新通知'); });
-    $('avatarBtn').addEventListener('click', () => { location.href = '/profile.html'; });
+    $('avatarBtn').addEventListener('click', () => { location.href = withUserParam('/profile.html'); });
+    document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/user.html'));
   }
 
   // 3. 執行初始化

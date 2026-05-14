@@ -6,23 +6,36 @@
 
   function loadContests(){
     const raw = localStorage.getItem('contests');
-    if (raw) return JSON.parse(raw);
     const seed = [
       { id: 10, name: '全國資料科學競賽', date:'2026-07-20', info:'針對資料科學專題的校內外隊伍競賽' },
-      { id: 11, name: '全國機器人盃', date:'2026-09-10', info:'機器人實作與競賽' }
+      { id: 11, name: '全國機器人盃', date:'2026-09-10', info:'機器人實作與競賽' },
+      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰' },
+      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽' },
+      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽' },
+      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽' }
     ];
+    if (raw) {
+      const existing = JSON.parse(raw);
+      const merged = [...existing];
+      seed.forEach(contest => {
+        if (!merged.some(item => Number(item.id) === Number(contest.id))) merged.push(contest);
+      });
+      if (merged.length !== existing.length) localStorage.setItem('contests', JSON.stringify(merged));
+      return merged;
+    }
     localStorage.setItem('contests', JSON.stringify(seed));
     return seed;
   }
 
   function loadTeams(){
     const raw = localStorage.getItem('teams');
-    if (raw) return JSON.parse(raw);
-    const seed = [
-      { id:1, name:'AI 聯合隊', desc:'需要前端與資料處理', members:2, slots:3, owner:1111, contestId:10 },
-      { id:2, name:'機器人挑戰隊', desc:'尋找機構工程師', members:1, slots:4, owner:2222, contestId:11 },
-      { id:3, name:'資料探勘小隊', desc:'統計/ML', members:3, slots:4, owner:ME.id, contestId:10 }
-    ];
+    if (raw) {
+      const defaultNames = ['AI 聯合隊', '機器人挑戰隊', '資料探勘小隊'];
+      const teams = JSON.parse(raw).filter(team => !defaultNames.includes(team.name));
+      if (teams.length !== JSON.parse(raw).length) localStorage.setItem('teams', JSON.stringify(teams));
+      return teams;
+    }
+    const seed = [];
     localStorage.setItem('teams', JSON.stringify(seed));
     return seed;
   }
@@ -49,10 +62,15 @@
     return withUserParam(`/create-team.html?contestId=${encodeURIComponent(getContest().id)}`);
   }
 
+  function teamInfoHref(id){
+    return withUserParam(`/team-info.html?teamId=${encodeURIComponent(id)}`);
+  }
+
   function render(){
     const contest = getContest();
     const teams = contestTeams();
     const favs = loadFavorites();
+    window.AppNotifications?.ensureContestNotifications(loadContests());
     document.title = `${contest.name} / 組隊`;
 
     $('contestSummary').innerHTML = `
@@ -109,14 +127,7 @@
   function openTeamDetail(id){
     const team = loadTeams().find(item => item.id === id);
     if (!team) return alert('找不到隊伍');
-    const join = confirm(`隊伍：${team.name}\n${team.desc}\n成員 ${team.members}/${team.slots}\n\n要加入此隊伍嗎？`);
-    if (!join) return;
-    if (team.members >= team.slots) return alert('隊伍已額滿，無法加入');
-
-    const reqs = JSON.parse(localStorage.getItem('joinRequests')||'[]');
-    reqs.push({ id: Date.now(), teamId: team.id, teamName: team.name, user: ME, status: 'pending' });
-    localStorage.setItem('joinRequests', JSON.stringify(reqs));
-    alert('已送出加入申請，等待隊長審核');
+    location.href = teamInfoHref(id);
   }
 
   function openCreateTeamPage(){
@@ -139,8 +150,8 @@
   });
 
   $('backBtn').addEventListener('click', ()=>{ location.href = withUserParam('/team.html'); });
-  $('notifyBtn').addEventListener('click', ()=>{ alert('目前無新通知'); });
   $('avatarBtn').addEventListener('click', ()=>{ location.href = withUserParam('/profile.html'); });
+  document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/user.html'));
 
   render();
 })();

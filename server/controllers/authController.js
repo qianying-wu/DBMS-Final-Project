@@ -4,7 +4,6 @@ import pool from '../models/db.js';
 
 // --- 註冊邏輯 ---
 export const register = async (req, res) => {
-    console.log('後端收到的內容:', req.body); 
     const { account,userName,userPsw,userEmail} = req.body || {};
     
     if (!account || !userPsw || !userName || !userEmail) {  
