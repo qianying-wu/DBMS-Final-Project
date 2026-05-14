@@ -2,6 +2,7 @@
   const $ = id => document.getElementById(id);
   const ME = { id: 9999, name: '你自己' };
   const params = new URLSearchParams(location.search);
+  const currentUserId = params.get('userId') && params.get('userId') !== 'unknown' ? params.get('userId') : String(ME.id);
   const contestId = Number(params.get('contestId')) || Number(params.get('id')) || 10;
 
   function loadContests(){
@@ -43,6 +44,7 @@
   function saveTeams(teams){ localStorage.setItem('teams', JSON.stringify(teams)); }
   function loadFavorites(){ return JSON.parse(localStorage.getItem('favorites')||'[]'); }
   function saveFavorites(favs){ localStorage.setItem('favorites', JSON.stringify(favs)); }
+  function loadContestFavorites(){ return JSON.parse(localStorage.getItem('favoriteContests')||'[]').map(Number); }
 
   function getContest(){
     const contests = loadContests();
@@ -109,11 +111,15 @@
       `;
     }).join('') : '<div class="box">目前還沒有隊伍，先創建自己的隊伍吧。</div>';
 
-    const my = JSON.parse(localStorage.getItem('myTeams')||'[]').filter(team => Number(team.contestId) === Number(contest.id));
+    const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${currentUserId}`)||'[]');
+    const my = loadTeams().filter(team => joinedIds.some(id => Number(id) === Number(team.id)) && Number(team.contestId) === Number(contest.id));
     $('myTeams').textContent = my.length ? my.map(team => team.name).join('\n') : '尚未加入隊伍';
 
-    const followed = teams.filter(team => favs.includes(team.id));
-    $('followed').textContent = followed.length ? followed.map(team => team.name).join('\n') : '尚無關注';
+    const favoriteTeams = loadTeams().filter(team => favs.includes(team.id));
+    $('myFavs').textContent = favoriteTeams.length ? favoriteTeams.map(team => team.name).join('\n') : '尚無收藏';
+
+    const favoriteContests = loadContestFavorites().map(id => loadContests().find(item => Number(item.id) === Number(id))).filter(Boolean);
+    $('followed').textContent = favoriteContests.length ? favoriteContests.map(item => `${item.name}\n${item.date}`).join('\n\n') : '尚無關注';
   }
 
   function toggleFavorite(id){
@@ -150,7 +156,6 @@
   });
 
   $('backBtn').addEventListener('click', ()=>{ location.href = withUserParam('/team.html'); });
-  $('avatarBtn').addEventListener('click', ()=>{ location.href = withUserParam('/profile.html'); });
   document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/user.html'));
 
   render();

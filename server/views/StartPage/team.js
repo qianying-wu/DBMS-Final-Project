@@ -2,7 +2,8 @@
   const $ = id => document.getElementById(id);
   const teamsGrid = $('teamsGrid');
   const contestsGrid = $('contestsGrid');
-  const myTeams = $('myTeams');
+  const myJoinedTeams = $('myJoinedTeams');
+  const myOwnedTeams = $('myOwnedTeams');
   const followed = $('followed');
   const createBtn = $('createBtn');
   const openCreate = $('openCreate');
@@ -15,6 +16,7 @@
   // mock current user
   const ME = { id: 9999, name: '你自己' };
   const params = new URLSearchParams(location.search);
+  const currentUserId = params.get('userId') && params.get('userId') !== 'unknown' ? params.get('userId') : String(ME.id);
 
   function loadTeams() {
     const raw = localStorage.getItem('teams');
@@ -73,28 +75,29 @@
   function render() {
     const teams = loadTeams();
     const favs = loadFavorites();
+    const contestFavs = loadContestFavorites();
     const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
     if (window.AppNotifications) window.AppNotifications.ensureContestNotifications(loadContests());
     teamsGrid.innerHTML = '';
     const selectedContest = getSelectedContestId();
     const contests = loadContests();
-    renderContestOverview(contests, teams, selectedContest);
+    renderContestOverview(contests, teams, selectedContest, contestFavs);
     teams.forEach(t => {
       // if a contest is selected, only show teams that belong to it
       if (selectedContest != null && Number(t.contestId || 0) !== Number(selectedContest)) return;
       const isFav = favs.includes(t.id);
       const card = document.createElement('div'); card.className = 'team-card';
-      const isOwner = t.owner === ME.id;
+      const isOwner = String(t.owner) === String(currentUserId) || (String(currentUserId) === String(ME.id) && Number(t.owner) === Number(ME.id));
       const pending = reqs.filter(r => r.teamId === t.id && r.status === 'pending').length;
       const contest = contests.find(c => c.id && Number(c.id) === Number(t.contestId));
       const contestName = contest ? contest.name : '';
       card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-          <div style="display:flex;align-items:center;gap:8px"><h4 style="margin:0">${t.name}</h4>${isOwner && pending ? `<span class="pending-count">${pending}</span>` : ''}</div>
+          <div style="display:flex;align-items:center;gap:8px"><h4 style="margin:0">${escapeHtml(t.name)}</h4>${isOwner && pending ? `<span class="pending-count">${pending}</span>` : ''}</div>
           <button class="fav-btn ${isFav ? 'active' : ''}" data-id="${t.id}" aria-pressed="${isFav}">${isFav ? '♥' : '♡'}</button>
         </div>
-  <div class="team-meta">${t.desc}</div>
-  ${contestName ? `<div class="team-contest">比賽：<strong>${contestName}</strong></div>` : ''}
+  <div class="team-meta">${escapeHtml(t.desc || '')}</div>
+  ${contestName ? `<div class="team-contest">比賽：<strong>${escapeHtml(contestName)}</strong></div>` : ''}
         <div>成員 ${t.members} / ${t.slots}</div>
         <div style="margin-top:8px">
           <button class="btn" data-id="${t.id}">查看 / 加入</button>
@@ -105,58 +108,83 @@
 
     });
 
-    // update myTeams (mock: none)
-    const my = JSON.parse(localStorage.getItem('myTeams') || '[]');
-    myTeams.textContent = my.length ? my.map(x => x.name).join('\n') : '尚未加入隊伍';
+    cleanupLegacyMyTeams(teams);
+    const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${currentUserId}`) || '[]');
+    const joined = joinedIds.map(id => teams.find(team => Number(team.id) === Number(id))).filter(Boolean);
+    myJoinedTeams.innerHTML = joined.length ? `<ul class="managed-list">${joined.map(team => `<li><span>${escapeHtml(team.name)}</span></li>`).join('')}</ul>` : '尚未加入隊伍';
 
     // render favorites in right sidebar
     const favEls = favs.map(id => {
       const t = teams.find(x => x.id === id); if (!t) return null;
-      return `<li><input type="checkbox" data-id="${t.id}" /> <strong>${t.name}</strong></li>`;
+      return `<li><strong>${escapeHtml(t.name)}</strong></li>`;
     }).filter(Boolean);
     document.getElementById('myFavs').innerHTML = favEls.length ? `<ul class="fav-list">${favEls.join('')}</ul>` : '尚無收藏';
-    updateRemoveFavoritesButton();
 
-    // render my managed teams (teams where I'm owner)
-    const managed = teams.filter(t => t.owner === ME.id);
+    // render owned teams with management entry
+    const managed = teams.filter(t => String(t.owner) === String(currentUserId) || (String(currentUserId) === String(ME.id) && Number(t.owner) === Number(ME.id)));
     if (managed.length) {
       const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
       const items = managed.map(t => {
         const pending = reqs.filter(r => r.teamId === t.id && r.status === 'pending').length;
         return `<li><span>${t.name}</span><span class="pending-count">${pending}</span> <button class="btn outline manage-btn" data-team="${t.id}">管理</button></li>`;
       });
-      document.getElementById('myManaged').innerHTML = `<ul class="managed-list">${items.join('')}</ul>`;
+      myOwnedTeams.innerHTML = `<ul class="managed-list">${items.join('')}</ul>`;
     } else {
-      document.getElementById('myManaged').textContent = '尚未管理任何隊伍';
+      myOwnedTeams.textContent = '尚未建立隊伍';
     }
     // render contests list in left sidebar
-    document.getElementById('contestsList').innerHTML = contests.map(c => `<li data-cid="${c.id}" class="contest-item" style="${selectedContest === c.id ? 'background:#f6efe6' : ''}"><strong>${c.name}</strong><div style="font-size:12px;color:#666">${c.date}</div></li>`).join('');
+    document.getElementById('contestsList').innerHTML = contests.map(c => `<li data-cid="${c.id}" class="contest-item" style="${selectedContest === c.id ? 'background:#f6efe6' : ''}"><strong>${escapeHtml(c.name)}</strong><div style="font-size:12px;color:#666">${escapeHtml(c.date)}</div></li>`).join('');
 
     // render contest info in content area (if selected)
     const contestInfoWrapId = 'contestInfoWrap';
     let contestInfoWrap = document.getElementById(contestInfoWrapId);
     if (!contestInfoWrap) { contestInfoWrap = document.createElement('div'); contestInfoWrap.id = contestInfoWrapId; contestInfoWrap.className = 'contest-info'; document.querySelector('.content').insertBefore(contestInfoWrap, document.getElementById('teamsGrid')) }
     const selected = contests.find(x => x.id === selectedContest);
-    if (selected) contestInfoWrap.innerHTML = `<h3>${selected.name}</h3><div>${selected.date}</div><p>${selected.info}</p>`; else contestInfoWrap.innerHTML = `<h3>全部比賽</h3><div>顯示所有比賽與隊伍</div>`;
+    if (selected) contestInfoWrap.innerHTML = `<h3>${escapeHtml(selected.name)}</h3><div>${escapeHtml(selected.date)}</div><p>${escapeHtml(selected.info)}</p>`; else contestInfoWrap.innerHTML = `<h3>全部比賽</h3><div>顯示所有比賽與隊伍</div>`;
+
+    renderFollowedContests(contests, contestFavs);
   }
 
-  function renderContestOverview(contests, teams, selectedContest) {
+  function renderContestOverview(contests, teams, selectedContest, contestFavs = loadContestFavorites()) {
     if (!contestsGrid) return;
     contestsGrid.innerHTML = contests.map(contest => {
       const contestTeams = teams.filter(team => Number(team.contestId) === Number(contest.id));
-      const openings = contestTeams.reduce((sum, team) => sum + Math.max((team.slots || 0) - (team.members || 0), 0), 0);
+      const isContestFav = contestFavs.includes(Number(contest.id));
       return `
         <article class="contest-card ${Number(selectedContest) === Number(contest.id) ? 'active' : ''}" data-cid="${contest.id}">
+          <button class="contest-fav-btn ${isContestFav ? 'active' : ''}" data-contest-fav="${contest.id}" type="button" aria-pressed="${isContestFav}">${isContestFav ? '♥' : '♡'}</button>
           <h3>${escapeHtml(contest.name)}</h3>
           <div class="contest-date">${escapeHtml(contest.date || '日期未定')}</div>
           <p>${escapeHtml(contest.info || '尚未填寫比賽資訊')}</p>
           <div class="contest-stats">
             <span>${contestTeams.length} 隊</span>
-            <span>${openings} 缺額</span>
           </div>
         </article>
       `;
     }).join('');
+  }
+
+  function cleanupLegacyMyTeams(teams) {
+    const raw = JSON.parse(localStorage.getItem('myTeams') || '[]');
+    if (!raw.length) return;
+    const validIds = raw.map(item => item.id ?? item).filter(id => teams.some(team => Number(team.id) === Number(id)));
+    localStorage.setItem(`myTeams:${currentUserId}`, JSON.stringify(validIds));
+    localStorage.removeItem('myTeams');
+  }
+
+  function loadContestFavorites() { return JSON.parse(localStorage.getItem('favoriteContests') || '[]').map(Number); }
+  function saveContestFavorites(favs) { localStorage.setItem('favoriteContests', JSON.stringify(favs)); }
+  function toggleContestFavorite(id) {
+    const favs = loadContestFavorites();
+    const index = favs.indexOf(Number(id));
+    if (index >= 0) favs.splice(index, 1); else favs.push(Number(id));
+    saveContestFavorites(favs);
+    render();
+  }
+
+  function renderFollowedContests(contests, contestFavs) {
+    const followedContests = contestFavs.map(id => contests.find(contest => Number(contest.id) === Number(id))).filter(Boolean);
+    followed.textContent = followedContests.length ? followedContests.map(contest => `${contest.name}\n${contest.date}`).join('\n\n') : '尚無關注';
   }
 
   teamsGrid.addEventListener('click', e => {
@@ -168,6 +196,12 @@
     openTeamDetail(Number(teamId));
   });
 
+  myOwnedTeams.addEventListener('click', e => {
+    const btn = e.target.closest('.manage-btn');
+    if (!btn) return;
+    openRequestsForTeam(Number(btn.dataset.team));
+  });
+
   function loadFavorites() { return JSON.parse(localStorage.getItem('favorites') || '[]'); }
   function saveFavorites(f) { localStorage.setItem('favorites', JSON.stringify(f)); }
   function toggleFavorite(id) { const f = loadFavorites(); const idx = f.indexOf(id); if (idx >= 0) f.splice(idx, 1); else f.push(id); saveFavorites(f); render(); }
@@ -176,21 +210,6 @@
     location.href = teamInfoHref(id);
   }
 
-  // Remove selected favorites
-  const removeBtn = document.getElementById('removeSelectedFavs');
-  function updateRemoveFavoritesButton() {
-    if (!removeBtn) return;
-    const hasChecked = Boolean(document.querySelector('#myFavs input[type=checkbox]:checked'));
-    removeBtn.hidden = !hasChecked;
-  }
-  document.getElementById('myFavs')?.addEventListener('change', updateRemoveFavoritesButton);
-  removeBtn && removeBtn.addEventListener('click', () => {
-    const boxes = Array.from(document.querySelectorAll('#myFavs input[type=checkbox]:checked'));
-    if (!boxes.length) return alert('請先選取要移除的收藏');
-    const ids = boxes.map(b => Number(b.dataset.id));
-    let f = loadFavorites(); f = f.filter(id => !ids.includes(id)); saveFavorites(f); render();
-  });
-
   // Requests modal handling
   const requestsModal = document.getElementById('requestsModal');
   const requestsList = document.getElementById('requestsList');
@@ -198,23 +217,36 @@
   function openRequestsForTeam(teamId) {
     const teams = loadTeams(); const team = teams.find(t => t.id === teamId);
     if (!team) return alert('找不到隊伍');
-    if (team.owner !== ME.id) return alert('只有隊長可以管理本隊的加入請求');
+    const isOwner = String(team.owner) === String(currentUserId) || (String(currentUserId) === String(ME.id) && Number(team.owner) === Number(ME.id));
+    if (!isOwner) return alert('只有隊長可以管理本隊的加入請求');
     const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]').filter(r => r.teamId === teamId && r.status === 'pending');
     if (!reqs.length) { alert('目前沒有待審核申請'); return; }
-    requestsList.innerHTML = renderRequests(reqs);
+    requestsList.innerHTML = renderRequests(reqs, team);
     requestsModal.classList.remove('hidden'); document.body.classList.add('modal-open');
   }
 
-  function renderRequests(reqs) {
+  function renderRequests(reqs, team = null) {
     return reqs.map(r => {
       const app = r.application || {};
       const answers = Array.isArray(app.answers) ? app.answers : [];
+      const teamQuestions = team?.applicationQuestions || [];
+      const resume = app.resume;
       return `<div class="req-item" data-req="${r.id}">
         <div><strong>${escapeHtml(app.applicantName || r.user.name)}</strong> 申請加入 <em>${escapeHtml(r.teamName)}</em></div>
         <div class="req-detail">
           <div>聯絡方式：${escapeHtml(app.applicantContact || '未填寫')}</div>
           <div>申請理由：${escapeHtml(app.applicantReason || '未填寫')}</div>
-          ${answers.length ? `<ul>${answers.map(item => `<li><strong>${escapeHtml(item.question)}</strong><br>${escapeHtml(item.answer || '未回答')}</li>`).join('')}</ul>` : ''}
+          ${resume ? `<div class="attached-resume"><strong>附上履歷：${escapeHtml(resume.name || resume.data?.name || '履歷')}</strong>
+            ${resume.id ? `<a class="btn outline" href="/resume-view.html?userId=${encodeURIComponent(r.user?.id || currentUserId)}&resumeId=${encodeURIComponent(resume.id)}">查看制式履歷</a>` : ''}<br>
+            學校：${escapeHtml(resume.data?.school || '未填寫')}　年級：${escapeHtml(resume.data?.grade || '未填寫')}<br>
+            專長：${escapeHtml((resume.data?.tags || []).join('、') || '未填寫')}<br>
+            經歷：${escapeHtml(resume.data?.experience || '未填寫')}<br>
+            自我介紹：${escapeHtml(resume.data?.intro || '未填寫')}
+          </div>` : ''}
+          ${answers.length ? `<ul>${answers.map((item, index) => {
+            const question = item.question && !/^Q\d+$/i.test(item.question) ? item.question : (teamQuestions[index] || item.question || `Q${index + 1}`);
+            return `<li><strong>Q${index + 1}: ${escapeHtml(question)}</strong><br>${escapeHtml(item.answer || '未回答')}</li>`;
+          }).join('')}</ul>` : ''}
         </div>
         <div class="req-actions"><button class="btn" data-act="approve" data-id="${r.id}">批准</button><button class="btn outline" data-act="deny" data-id="${r.id}">拒絕</button></div>
       </div>`;
@@ -243,7 +275,7 @@
       } else {
         reqs[idx].status = 'approved';
         teams[tIdx].members = (teams[tIdx].members || 0) + 1; saveTeams(teams);
-        const my = JSON.parse(localStorage.getItem('myTeams') || '[]'); if (!my.find(x => x.id === reqs[idx].teamId)) { my.push(teams[tIdx]); localStorage.setItem('myTeams', JSON.stringify(my)); }
+        const my = JSON.parse(localStorage.getItem(`myTeams:${reqs[idx].user.id}`) || '[]'); if (!my.some(id => Number(id) === Number(reqs[idx].teamId))) { my.push(reqs[idx].teamId); localStorage.setItem(`myTeams:${reqs[idx].user.id}`, JSON.stringify(my)); }
         localStorage.setItem('joinRequests', JSON.stringify(reqs));
         window.AppNotifications?.add({
           type: 'application-result',
@@ -269,11 +301,14 @@
     // refresh modal list
     const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').filter(r => r.teamId === reqs[idx].teamId && r.status === 'pending');
     if (pending.length) {
-      requestsList.innerHTML = renderRequests(pending);
+      const teams = loadTeams();
+      const team = teams.find(t => Number(t.id) === Number(reqs[idx].teamId));
+      requestsList.innerHTML = renderRequests(pending, team);
     } else { requestsModal.classList.add('hidden'); document.body.classList.remove('modal-open'); }
   });
 
   closeReq && closeReq.addEventListener('click', () => { requestsModal.classList.add('hidden'); document.body.classList.remove('modal-open'); });
+  window.AppReview = { openTeamRequests: openRequestsForTeam };
 
   function openCreateTeamPage() { location.href = getCreateTeamHref(); }
   function hideModal() { modal.classList.add('hidden'); newTeamName.value = ''; newTeamDesc.value = ''; }
@@ -313,10 +348,8 @@
 
   // notify / avatar handlers
   const notifyBtn = document.getElementById('notifyBtn');
-  const avatarBtn = document.getElementById('avatarBtn');
   const homeLink = document.getElementById('homeLink');
   if (homeLink) homeLink.href = withUserParam('/user.html');
-  if (avatarBtn) avatarBtn.addEventListener('click', () => { location.href = withUserParam('/profile.html'); });
 
   // contest selection handler (delegated)
   document.addEventListener('click', (e) => {
@@ -327,6 +360,12 @@
   });
 
   contestsGrid && contestsGrid.addEventListener('click', e => {
+    const favBtn = e.target.closest('[data-contest-fav]');
+    if (favBtn) {
+      e.stopPropagation();
+      toggleContestFavorite(Number(favBtn.dataset.contestFav));
+      return;
+    }
     const card = e.target.closest('[data-cid]');
     if (!card) return;
     const cid = Number(card.dataset.cid);
@@ -334,7 +373,18 @@
     location.href = withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
   });
 
+  document.querySelectorAll('[data-my-team-tab]').forEach(button => {
+    button.addEventListener('click', () => {
+      const tab = button.dataset.myTeamTab;
+      document.querySelectorAll('[data-my-team-tab]').forEach(item => item.classList.toggle('active', item === button));
+      myJoinedTeams.hidden = tab !== 'joined';
+      myOwnedTeams.hidden = tab !== 'owned';
+    });
+  });
+
   render();
+  const manageTeamId = params.get('manageTeamId');
+  if (manageTeamId) setTimeout(() => openRequestsForTeam(Number(manageTeamId)), 0);
 
   // ==============================
   // 全域懸浮搜尋功能邏輯 (新增)

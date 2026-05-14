@@ -16,20 +16,31 @@
       </div>
     </header>
 
-    <main class="layout">
-      <aside class="sidebar left">
-        <h3>履歷表</h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <button id="addResume" class="btn">新增履歷</button>
-          <button id="delResume" class="btn outline">刪除</button>
+    <main class="layout profile-layout">
+      <section class="content profile-content">
+        <div id="resumeHome" class="resume-home">
+          <div class="profile-heading">
+            <div>
+              <h2 class="page-title">個人履歷</h2>
+              <p>建立不同用途的履歷，申請隊伍時可以選擇要附上的版本。</p>
+            </div>
+          </div>
+
+          <div id="resumeGallery" class="resume-gallery"></div>
         </div>
-        <ul id="resumeList" class="resume-list"></ul>
-      </aside>
 
-      <section class="content">
-        <h2 class="page-title">個人履歷</h2>
+        <div id="resumeEditor" class="card editor-card" hidden>
+          <div class="editor-heading">
+            <div>
+              <span class="eyebrow">履歷編輯</span>
+              <h2 id="editorTitle">新增履歷</h2>
+            </div>
+            <div class="editor-actions">
+              <button id="backToGallery" type="button" class="btn outline">返回列表</button>
+              <button id="viewResumeBtn" type="button" class="btn outline">查看制式履歷</button>
+            </div>
+          </div>
 
-        <div class="card">
           <form id="profileForm">
             <div class="row">
               <label>姓名<input id="name" type="text" placeholder="你的名字"></label>
@@ -77,21 +88,15 @@
             <div class="actions-row">
               <button id="saveBtn" type="button" class="btn primary">儲存</button>
               <button id="exportBtn" type="button" class="btn outline">匯出 JSON</button>
+              <button id="delResume" type="button" class="btn outline danger">刪除此履歷</button>
             </div>
           </form>
         </div>
       </section>
-
-      <aside class="sidebar right">
-        <h3>我的隊伍</h3>
-        <div class="box" id="myTeams">尚未加入隊伍</div>
-
-        <h3 style="margin-top:18px">關注的比賽 / 訊息</h3>
-        <div class="list" id="followed">無</div>
-      </aside>
     </main>
 
     <script src="/notifications.js"></script>
+    <script src="/account-menu.js"></script>
     <script src="/profile.js"></script>
   </body>
 </html>

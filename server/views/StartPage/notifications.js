@@ -43,6 +43,7 @@
       message: notification.message,
       sourceId: notification.sourceId || null,
       sourceKey,
+      action: notification.action || null,
       createdAt: notification.createdAt || new Date().toISOString(),
       read: false,
       readBy: []
@@ -69,6 +70,27 @@
     const userId = getCurrentUserId();
     const unread = load().filter(item => matchesUser(item, userId) && !isRead(item, userId)).length;
     notifyBtn.textContent = unread ? `🔔 ${unread}` : '🔔';
+  }
+
+  function injectStyle(){
+    if (document.getElementById('notificationsStyle')) return;
+    const style = document.createElement('style');
+    style.id = 'notificationsStyle';
+    style.textContent = `
+      .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);z-index:900}
+      .notification-card{max-width:520px;width:min(520px,calc(100vw - 28px))}
+      .modal-card{background:#fff;padding:24px;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+      .notification-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+      .notification-item{border:1px solid #eee;border-radius:8px;background:#fff;padding:10px}
+      .notification-item.unread{border-color:#d4b283;background:#fff8ef}
+      .notification-item strong{display:block;color:#3f342c;line-height:1.4}
+      .notification-item span{display:block;color:#7b6a59;font-size:13px;margin-top:5px}
+      .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+      .btn{padding:10px 14px;border-radius:8px;border:none;cursor:pointer}
+      .btn.outline{background:#fff;border:1px solid #ddd;color:#333}
+      .empty-note{color:#8a735e;font-size:14px}
+    `;
+    document.head.appendChild(style);
   }
 
   function markVisibleRead(){
@@ -98,6 +120,7 @@
             <div class="notification-item ${isRead(item) ? '' : 'unread'}">
               <strong>${escapeHtml(item.message)}</strong>
               <span>${new Date(item.createdAt).toLocaleString('zh-TW')}</span>
+              ${item.action?.type === 'review-request' ? `<button class="btn outline notification-action" data-team="${escapeHtml(item.action.teamId)}">查看</button>` : ''}
             </div>
           `).join('') : '<div class="empty-note">目前沒有通知</div>'}
         </div>
@@ -110,10 +133,23 @@
     markVisibleRead();
     updateBadge();
     modal.addEventListener('click', event => { if (event.target === modal) modal.remove(); });
+    modal.addEventListener('click', event => {
+      const action = event.target.closest('.notification-action');
+      if (!action) return;
+      const teamId = action.dataset.team;
+      modal.remove();
+      if (window.AppReview?.openTeamRequests) {
+        window.AppReview.openTeamRequests(Number(teamId));
+      } else {
+        const userId = new URLSearchParams(location.search).get('userId');
+        location.href = `/team.html?${userId ? `userId=${encodeURIComponent(userId)}&` : ''}manageTeamId=${encodeURIComponent(teamId)}`;
+      }
+    });
     document.getElementById('closeNotificationModal').addEventListener('click', () => modal.remove());
   }
 
   function bind(){
+    injectStyle();
     document.getElementById('notifyBtn')?.addEventListener('click', show);
     updateBadge();
   }

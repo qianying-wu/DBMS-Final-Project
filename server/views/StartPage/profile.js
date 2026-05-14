@@ -3,8 +3,13 @@
   const $ = id => document.getElementById(id);
   const saveBtn = $('saveBtn');
   const exportBtn = $('exportBtn');
-  const addResume = $('addResume');
   const delResume = $('delResume');
+  const resumeHome = $('resumeHome');
+  const resumeEditor = $('resumeEditor');
+  const resumeGallery = $('resumeGallery');
+  const backToGallery = $('backToGallery');
+  const viewResumeBtn = $('viewResumeBtn');
+  const editorTitle = $('editorTitle');
   const addTag = $('addTag');
   const newTag = $('newTag');
   const tagsWrap = $('tags');
@@ -13,7 +18,6 @@
   const photoImage = $('photoImage');
   const photoScale = $('photoScale');
   const resetPhoto = $('resetPhoto');
-  const resumeList = document.getElementById('resumeList');
   const myTeamsBox = $('myTeams');
   const followedBox = $('followed');
   let photoState = { src: null, scale: 1, x: 0, y: 0 };
@@ -71,6 +75,19 @@
     const date = value ? new Date(value) : new Date();
     if (Number.isNaN(date.getTime())) return '時間未記錄';
     return date.toLocaleString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function normalizeProfiles(){
+    const ps = loadProfiles().map((profile, index) => ({
+      ...profile,
+      id: profile.id || Date.now() + index,
+      name: profile.name || profile.data?.name || `履歷 ${index + 1}`,
+      createdAt: profile.createdAt || profile.updatedAt || new Date().toISOString(),
+      updatedAt: profile.updatedAt || profile.createdAt || new Date().toISOString(),
+      data: profile.data || {}
+    }));
+    saveProfiles(ps);
+    return ps;
   }
 
   function loadNotifications(){
@@ -152,9 +169,19 @@
   }
 
   function renderSyncedSidebar(){
-    const joinedTeams = JSON.parse(localStorage.getItem('myTeams')||'[]');
+    if (!myTeamsBox || !followedBox) return;
     const allTeams = loadTeams();
     const contests = loadContests();
+    const userId = new URLSearchParams(window.location.search).get('userId');
+    const currentUserId = userId && userId !== 'unknown' ? userId : '9999';
+    const legacyJoined = JSON.parse(localStorage.getItem('myTeams')||'[]');
+    if (legacyJoined.length) {
+      const migrated = legacyJoined.map(item => item.id ?? item).filter(id => allTeams.some(team => Number(team.id) === Number(id)));
+      localStorage.setItem(`myTeams:${currentUserId}`, JSON.stringify(migrated));
+      localStorage.removeItem('myTeams');
+    }
+    const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${currentUserId}`)||'[]');
+    const joinedTeams = joinedIds.map(id => allTeams.find(team => Number(team.id) === Number(id))).filter(Boolean);
     const favoriteIds = JSON.parse(localStorage.getItem('favorites')||'[]');
     const favoriteTeams = favoriteIds.map(id=>allTeams.find(team=>Number(team.id)===Number(id))).filter(Boolean);
 
@@ -175,41 +202,73 @@
     }).join('') : '無';
   }
 
-  function renderResumeList(){
-    const ps = loadProfiles(); resumeList.innerHTML = '';
+  function getResumeViewHref(id){
+    const userId = new URLSearchParams(window.location.search).get('userId');
+    const params = new URLSearchParams();
+    if (userId) params.set('userId', userId);
+    params.set('resumeId', id);
+    return `/resume-view.html?${params.toString()}`;
+  }
+
+  function renderResumeGallery(){
+    const ps = normalizeProfiles();
+    resumeGallery.innerHTML = '';
     const activeId = getActiveProfileId();
-    ps.forEach(p=>{
-      const li = document.createElement('li'); li.dataset.id = p.id;
-      if (String(p.id) === String(activeId)) li.className='active';
-      // inline editable name
-      const nameSpan = document.createElement('span'); nameSpan.className='resume-name';
-      nameSpan.textContent = p.name || ('履歷 ' + p.id);
-      nameSpan.contentEditable = true;
-      nameSpan.spellcheck = false;
-      nameSpan.addEventListener('input', (e)=>{
-        // update stored name immediately
-        const ps2 = loadProfiles();
-        const idx = ps2.findIndex(x=>String(x.id)===String(p.id));
-        if (idx>=0){ ps2[idx].name = nameSpan.textContent; saveProfiles(ps2); }
+    ps.forEach(p => {
+      const card = document.createElement('article');
+      card.className = `resume-card${String(p.id) === String(activeId) ? ' open' : ''}`;
+      card.dataset.id = p.id;
+      card.innerHTML = `
+        <div class="resume-cover"><span class="resume-ribbon">開啟</span></div>
+        <div class="resume-body">
+          <h3 class="resume-title" contenteditable="true" spellcheck="false">${escapeHtml(p.name || '未命名履歷')}</h3>
+          <span class="resume-time">${formatDateTime(p.updatedAt || p.createdAt)}</span>
+          <div class="resume-card-actions">
+            <button class="icon-action view-resume" type="button" aria-label="查看履歷">查看</button>
+            <button class="icon-action edit-resume" type="button" aria-label="編輯履歷">...</button>
+          </div>
+        </div>
+      `;
+      const title = card.querySelector('.resume-title');
+      title.addEventListener('click', event => event.stopPropagation());
+      title.addEventListener('input', () => {
+        const next = loadProfiles();
+        const idx = next.findIndex(item => String(item.id) === String(p.id));
+        if (idx >= 0) {
+          next[idx].name = title.textContent.trim() || '未命名履歷';
+          next[idx].updatedAt = new Date().toISOString();
+          saveProfiles(next);
+          if (String(p.id) === String(getActiveProfileId())) editorTitle.textContent = next[idx].name;
+        }
       });
-
-      nameSpan.addEventListener('click', (e)=>{ e.stopPropagation(); });
-
-      li.appendChild(nameSpan);
-      li.onclick = ()=>{ loadProfile(p.id); };
-      resumeList.appendChild(li);
+      title.addEventListener('blur', renderResumeGallery);
+      resumeGallery.appendChild(card);
     });
+
+    const addCard = document.createElement('button');
+    addCard.id = 'addResume';
+    addCard.className = 'add-resume-card';
+    addCard.type = 'button';
+    addCard.innerHTML = `
+      <strong>＋ 新增履歷</strong>
+      <span>針對不同工作客製化履歷，申請隊伍時選擇要附上的版本。</span>
+    `;
+    resumeGallery.appendChild(addCard);
   }
 
   function loadProfile(id){
-    setActiveProfileId(id); renderResumeList(); load();
+    setActiveProfileId(id);
+    loadEditorData();
+    showEditor();
   }
 
-  function load(){
+  function loadEditorData(){
     const activeId = getActiveProfileId();
     const ps = loadProfiles();
     const profile = ps.find(x=>String(x.id)===String(activeId)) || ps[0] || null;
     const data = profile ? profile.data : {};
+    if (profile && !activeId) setActiveProfileId(profile.id);
+    editorTitle.textContent = profile?.name || '新增履歷';
     $('name').value = data.name||'';
     $('school').value = data.school||'';
     $('grade').value = data.grade||'';
@@ -218,25 +277,69 @@
     const tags = data.tags||[]; renderTags(tags);
     window._tags = tags;
     setPhotoFromData(data);
-    renderResumeList();
+  }
+
+  function showGallery(){
+    resumeHome.hidden = false;
+    resumeEditor.hidden = true;
+    renderResumeGallery();
     renderSyncedSidebar();
+  }
+
+  function showEditor(){
+    resumeHome.hidden = true;
+    resumeEditor.hidden = false;
+    renderResumeGallery();
+  }
+
+  function load(){
+    loadEditorData();
+    showGallery();
   }
 
   addTag.addEventListener('click', ()=>{
     const v = newTag.value.trim(); if(!v) return; window._tags = window._tags||[]; window._tags.push(v); newTag.value=''; renderTags(window._tags);
   });
 
-  addResume.addEventListener('click', ()=>{
+  resumeGallery.addEventListener('click', event => {
+    const addCard = event.target.closest('#addResume');
+    const viewButton = event.target.closest('.view-resume');
+    const card = event.target.closest('.resume-card');
+
+    if (addCard) {
+      createResume();
+      return;
+    }
+
+    if (viewButton && card) {
+      event.stopPropagation();
+      window.location.href = getResumeViewHref(card.dataset.id);
+      return;
+    }
+
+    if (card && !event.target.closest('.resume-title')) loadProfile(card.dataset.id);
+  });
+
+  function createResume(){
     const ps = loadProfiles(); const id = Date.now();
-    const newProfile = { id, name: '新履歷', data: {} };
-    ps.unshift(newProfile); saveProfiles(ps); setActiveProfileId(id); load();
+    const now = new Date().toISOString();
+    const newProfile = { id, name: '新履歷', createdAt: now, updatedAt: now, data: {} };
+    ps.unshift(newProfile); saveProfiles(ps); setActiveProfileId(id); loadEditorData(); showEditor();
+  }
+
+  backToGallery.addEventListener('click', showGallery);
+
+  viewResumeBtn.addEventListener('click', ()=>{
+    const activeId = getActiveProfileId();
+    if (!activeId) { alert('請先新增或選擇一份履歷'); return; }
+    window.location.href = getResumeViewHref(activeId);
   });
 
   delResume.addEventListener('click', ()=>{
     const activeId = getActiveProfileId(); if(!activeId){ alert('沒有選中的履歷'); return; }
     let ps = loadProfiles(); ps = ps.filter(p=>String(p.id)!==String(activeId)); saveProfiles(ps);
     if (ps.length) setActiveProfileId(ps[0].id); else localStorage.removeItem('activeProfileId');
-    load();
+    showGallery();
   });
 
   exportBtn.addEventListener('click', ()=>{
@@ -259,7 +362,7 @@
     if (!activeId) return;
     const ps = loadProfiles();
     const idx = ps.findIndex(p=>String(p.id)===String(activeId));
-    if (idx>=0){ ps[idx].name = v || ps[idx].name; saveProfiles(ps); renderResumeList(); }
+    if (idx>=0){ ps[idx].data = { ...(ps[idx].data || {}), name: v }; ps[idx].updatedAt = new Date().toISOString(); saveProfiles(ps); }
   });
 
   saveBtn.addEventListener('click', ()=>{
@@ -272,13 +375,13 @@
     // save into active profile
     let ps = loadProfiles(); let activeId = getActiveProfileId();
     if (!activeId) { // create one
-      const id = Date.now(); ps.unshift({ id, name: data.name || '履歷', data }); setActiveProfileId(id);
+      const id = Date.now(); const now = new Date().toISOString(); ps.unshift({ id, name: data.name || '履歷', createdAt: now, updatedAt: now, data }); setActiveProfileId(id);
     } else {
       const idx = ps.findIndex(p=>String(p.id)===String(activeId));
-      if (idx>=0) { ps[idx].data = data; ps[idx].name = data.name || ps[idx].name; }
-      else { ps.unshift({ id: activeId, name: data.name||'履歷', data }); }
+      if (idx>=0) { ps[idx].data = data; ps[idx].updatedAt = new Date().toISOString(); }
+      else { ps.unshift({ id: activeId, name: data.name||'履歷', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), data }); }
     }
-    saveProfiles(ps); renderResumeList(); alert('已儲存到 localStorage');
+    saveProfiles(ps); renderResumeGallery(); alert('已儲存到 localStorage');
   });
 
   photo.addEventListener('change', e=>{
@@ -341,7 +444,6 @@
       });
       teamBtn.setAttribute('data-href', teamHref);
     }
-    if (avatarBtn) avatarBtn.addEventListener('click', ()=>{ alert('打開個人檔案設定'); });
   } catch (err) {
     console.error('Error binding top-right buttons:', err);
     // ensure team button still navigates as fallback

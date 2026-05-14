@@ -30,6 +30,10 @@ body{font-family:Arial, 'Noto Sans TC', sans-serif;margin:0;background:#faf7f2;c
 .side-card-follow{background:#fffaf1;border-color:#ecd7ae}
 .side-card-follow::before{background:#d49b3f}
 .side-card .box{background:rgba(255,255,255,0.72);box-shadow:none}
+.team-tabs{display:grid;grid-template-columns:1fr;gap:8px}
+.team-tab{border:1px solid rgba(96,116,135,0.16);background:rgba(255,255,255,0.72);border-radius:8px;padding:9px 10px;text-align:left;cursor:pointer;color:#4f3827;font-weight:700}
+.team-tab.active{border-color:#7ba66a;background:#fff}
+.my-team-panel{margin-top:8px}
 .subtle-action{width:100%;margin-top:8px;background:rgba(255,255,255,0.55)}
 .simple-list{list-style:none;padding:0;margin:0}
 .simple-list li{padding:9px 10px;border-radius:6px;border:1px solid rgba(96,116,135,0.16);margin-bottom:8px;cursor:pointer;background:rgba(255,255,255,0.68)}
@@ -39,6 +43,9 @@ body{font-family:Arial, 'Noto Sans TC', sans-serif;margin:0;background:#faf7f2;c
 .card{background:#fff;padding:18px;border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,0.06)}
 .contests-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:16px}
 .contest-card{background:#fff;border:1px solid #dbe7ef;border-radius:8px;padding:14px;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}
+.contest-card{position:relative}
+.contest-fav-btn{position:absolute;right:10px;top:10px;background:#fff;border:1px solid #eadfd2;border-radius:8px;padding:5px 8px;cursor:pointer;color:#7b6a59}
+.contest-fav-btn.active{color:#d45b6f;background:#fff5f7}
 .contest-card:hover{background:#f7fbff;border-color:#9bb8cf;transform:translateY(-1px)}
 .contest-card.active{border-color:#d4b283;background:#fff9ef}
 .contest-card h3{margin:0 0 7px;color:#4f3827;font-size:18px}
@@ -61,6 +68,7 @@ body{font-family:Arial, 'Noto Sans TC', sans-serif;margin:0;background:#faf7f2;c
 .requests-modal .req-detail{background:#fffaf2;border:1px solid #eadfd2;border-radius:8px;margin-top:8px;padding:9px 10px;color:#4f3827;font-size:14px;line-height:1.5}
 .requests-modal .req-detail ul{margin:8px 0 0;padding-left:18px}
 .requests-modal .req-detail li{margin-top:7px}
+.attached-resume{margin-top:8px;padding:8px;border:1px solid #d9e5cf;border-radius:8px;background:#f8fbf6}
 .requests-modal .req-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
 .managed-list{list-style:none;padding:0;margin:0}
 .managed-list li{display:flex;justify-content:space-between;align-items:center;padding:6px 4px;border-bottom:1px solid #f6f2ef}

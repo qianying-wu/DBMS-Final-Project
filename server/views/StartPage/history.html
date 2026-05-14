@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>歷史紀錄</title>
+    <link rel="stylesheet" href="/profile.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="logo-link" href="/user.html"><div class="logo">競賽組隊</div></a>
+      <div class="actions">
+        <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
+        <a id="teamBtn" class="icon-btn" aria-label="組隊" href="/team.html">🤝</a>
+        <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
+      </div>
+    </header>
+    <main class="layout" style="grid-template-columns:1fr;max-width:900px;margin:0 auto">
+      <section class="content">
+        <h2 class="page-title">歷史紀錄</h2>
+        <div class="card" id="historyContent"></div>
+      </section>
+    </main>
+    <script src="/notifications.js"></script>
+    <script src="/account-menu.js"></script>
+    <script>
+      const qs = new URLSearchParams(location.search);
+      const userId = qs.get('userId') || '9999';
+      document.querySelector('.logo-link').href = '/user.html?userId=' + encodeURIComponent(userId);
+      const teams = JSON.parse(localStorage.getItem('teams') || '[]');
+      const contests = JSON.parse(localStorage.getItem('contests') || '[]');
+      const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${userId}`) || '[]');
+      const joined = joinedIds.map(id => teams.find(t => Number(t.id) === Number(id))).filter(Boolean);
+      const owned = teams.filter(t => String(t.owner) === String(userId));
+      const applications = JSON.parse(localStorage.getItem('joinRequests') || '[]').filter(r => String(r.user?.id) === String(userId));
+      function contestName(team){ return contests.find(c => Number(c.id) === Number(team.contestId))?.name || '未指定比賽'; }
+      function list(items, render, empty){ return items.length ? `<ul class="resume-list">${items.map(render).join('')}</ul>` : `<div class="empty-note">${empty}</div>`; }
+      document.getElementById('historyContent').innerHTML = `
+        <h3>加入過的隊伍</h3>${list(joined, t => `<li><strong>${t.name}</strong><span>${contestName(t)}</span></li>`, '尚未加入任何隊伍')}
+        <h3>建立過的隊伍</h3>${list(owned, t => `<li><strong>${t.name}</strong><span>${contestName(t)}</span></li>`, '尚未建立任何隊伍')}
+        <h3>申請紀錄</h3>${list(applications, r => `<li><strong>${r.teamName}</strong><span>${r.status}</span></li>`, '尚無申請紀錄')}
+      `;
+    </script>
+  </body>
+</html>
