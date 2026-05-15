@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>競賽詳情 - 競賽組隊平台</title>
+  <link rel="stylesheet" href="contests-detail.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="contests.html"><div class="logo">← 返回列表</div></a>
+  </header>
+
+  <main class="detail-layout">
+    <div id="contestHeader" class="detail-header">
+      </div>
+
+    <div class="detail-body">
+      <div class="detail-main">
+        <section class="info-block">
+          <h3>競賽介紹</h3>
+          <div id="contestInfo"></div>
+        </section>
+        <section class="info-block">
+          <h3>競賽規則</h3>
+          <div id="contestRules"></div>
+        </section>
+      </div>
+
+      <aside class="detail-sidebar">
+        <div class="sticky-box">
+          <h3>重要時程</h3>
+          <ul id="timelineList" class="timeline"></ul>
+          <button id="goToTeamBtn" class="btn primary block">查看此比賽的隊伍</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="contests-detail.js"></script>
+</body>
+</html>
