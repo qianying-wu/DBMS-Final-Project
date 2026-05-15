@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>創建新隊伍</title>
+    <title>發起招募</title>
     <link rel="stylesheet" href="/create-team.css">
   </head>
   <body>
@@ -19,17 +19,8 @@
 
     <main class="create-layout">
       <aside class="panel left-panel">
-        <section class="panel-section panel-section-steps first">
-          <h4>發起招募</h4>
-          <div class="step-list">
-            <div class="active">填寫隊伍資料</div>
-            <a id="officialContestLink" class="step-link" href="#" target="_blank" rel="noopener">確認比賽資訊</a>
-            <div>送出招募</div>
-          </div>
-        </section>
-
-        <section class="panel-section panel-section-teams">
-          <h4>本比賽隊伍</h4>
+        <section class="panel-section panel-section-teams first">
+          <h4>目前選擇比賽的隊伍</h4>
           <ul id="contestTeams" class="team-list"></ul>
         </section>
       </aside>
@@ -39,11 +30,43 @@
 
         <section class="form-section">
           <div class="section-heading">
-            <h2>創建新隊伍</h2>
+            <h2>發起招募</h2>
             <span id="contestLabel" class="contest-label"></span>
           </div>
 
           <form id="createForm" class="create-form">
+            <section class="contest-editor full">
+              <div class="questions-heading">
+                <div>
+                  <h3>比賽資訊</h3>
+                  <p>可以選擇既有比賽，或新增一個比賽後直接建立隊伍。</p>
+                </div>
+              </div>
+              <label class="full">
+                比賽來源
+                <select id="contestSelect"></select>
+              </label>
+
+              <div id="newContestFields" class="new-contest-fields" hidden>
+                <label>
+                  比賽名稱
+                  <input id="newContestName" type="text" placeholder="例如：校園 AI 創意挑戰賽">
+                </label>
+                <label>
+                  比賽日期
+                  <input id="newContestDate" type="date">
+                </label>
+                <label class="full">
+                  比賽官方頁面
+                  <input id="newContestUrl" type="url" placeholder="https://example.com">
+                </label>
+                <label class="full">
+                  比賽說明
+                  <textarea id="newContestInfo" rows="4" placeholder="簡短說明比賽主題、形式或參賽內容"></textarea>
+                </label>
+              </div>
+            </section>
+
             <label>
               隊伍名稱
               <input id="teamName" type="text" placeholder="例如：AI 聯合隊">
@@ -81,7 +104,7 @@
             </section>
 
             <div class="form-actions">
-              <button class="btn primary" type="submit">建立</button>
+              <button class="btn primary" type="submit">送出招募</button>
               <button id="cancelBtn" class="btn outline" type="button">取消</button>
             </div>
           </form>
