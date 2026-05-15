@@ -61,8 +61,8 @@
   }
 
   function createTeamHref(){
-    return withUserParam('/create-team.html');
-  }
+  return withUserParam(`/create-team.html?contestId=${encodeURIComponent(contestId)}`);
+}
 
   function teamInfoHref(id){
     return withUserParam(`/team-info.html?teamId=${encodeURIComponent(id)}`);
