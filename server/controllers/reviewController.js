@@ -1,6 +1,4 @@
-import mysql from 'mysql2/promise';
 import pool from '../models/db.js';
-import dotenv from 'dotenv';
 import { checkContent } from '../util/wordfilter.js'; // 匯入工具
 
 //dotenv.config();
