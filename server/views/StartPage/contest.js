@@ -61,7 +61,7 @@
   }
 
   function createTeamHref(){
-    return withUserParam(`/create-team.html?contestId=${encodeURIComponent(getContest().id)}`);
+    return withUserParam('/create-team.html');
   }
 
   function teamInfoHref(id){
@@ -88,13 +88,6 @@
       <p>${contest.info}</p>
       <p>可以在此查看目前正在招募的隊伍，也可以直接建立自己的隊伍並開始招募成員。</p>
     `;
-
-    $('contestTeams').innerHTML = teams.length ? teams.map(team => `
-      <li data-team="${team.id}">
-        <strong>${team.name}</strong>
-        <div>${team.members} / ${team.slots} 人</div>
-      </li>
-    `).join('') : '<li>目前沒有隊伍</li>';
 
     $('teamCards').innerHTML = teams.length ? teams.map(team => {
       const isFav = favs.includes(team.id);
@@ -141,7 +134,6 @@
   }
 
   $('createBtn').addEventListener('click', openCreateTeamPage);
-  $('openCreate').addEventListener('click', openCreateTeamPage);
 
   $('teamCards').addEventListener('click', e=>{
     const favBtn = e.target.closest('[data-fav]');
@@ -150,10 +142,6 @@
     if (joinBtn) openTeamDetail(Number(joinBtn.dataset.id));
   });
 
-  $('contestTeams').addEventListener('click', e=>{
-    const item = e.target.closest('[data-team]');
-    if (item) openTeamDetail(Number(item.dataset.team));
-  });
 
   $('backBtn').addEventListener('click', ()=>{ location.href = withUserParam('/team.html'); });
   document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/user.html'));

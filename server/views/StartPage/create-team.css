@@ -54,7 +54,12 @@ body{font-family:Arial,'Noto Sans TC',sans-serif;margin:0;background:#faf7f2;col
 .question-row input{min-width:0}
 .remove-question{width:36px;height:36px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:18px}
 .create-form input,.create-form textarea{width:100%;border:1px solid #d9d3ce;border-radius:8px;padding:12px;font:inherit;background:#fff}
+.create-form select{width:100%;border:1px solid #d9d3ce;border-radius:8px;padding:12px;font:inherit;background:#fff}
 .create-form input:focus,.create-form textarea:focus{outline:2px solid #d9a037;border-color:#d9a037}
+.create-form select:focus{outline:2px solid #d9a037;border-color:#d9a037}
+.contest-editor{border:1px solid #d7e2ec;border-radius:10px;padding:14px;background:#f8fbff}
+.new-contest-fields{display:grid;grid-template-columns:1fr 180px;gap:16px;margin-top:12px}
+.new-contest-fields[hidden]{display:none}
 .form-actions{grid-column:1 / -1;display:flex;justify-content:flex-end;gap:10px;margin-top:4px}
 .btn{padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
 .btn.primary{background:#d7b67f;color:#fff}
@@ -78,7 +83,7 @@ body{font-family:Arial,'Noto Sans TC',sans-serif;margin:0;background:#faf7f2;col
   .main-panel{order:1}
   .left-panel{order:2}
   .right-panel{order:3}
-  .summary-grid,.create-form{grid-template-columns:1fr}
+  .summary-grid,.create-form,.new-contest-fields{grid-template-columns:1fr}
 }
 
 @media (max-width: 560px){

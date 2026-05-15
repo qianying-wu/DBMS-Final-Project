@@ -67,9 +67,7 @@
   }
 
   function getCreateTeamHref() {
-    const selectedContest = getSelectedContestId();
-    const contestParam = selectedContest == null ? '' : `?contestId=${encodeURIComponent(selectedContest)}`;
-    return withUserParam(`/create-team.html${contestParam}`);
+    return withUserParam('/create-team.html');
   }
 
   function render() {

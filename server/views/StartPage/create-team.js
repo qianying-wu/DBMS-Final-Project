@@ -3,7 +3,8 @@
   const ME = { id: 9999, name: '你自己' };
   const params = new URLSearchParams(location.search);
   const currentUserId = params.get('userId') && params.get('userId') !== 'unknown' ? params.get('userId') : String(ME.id);
-  const contestId = Number(params.get('contestId')) || Number(params.get('id')) || 10;
+  const initialContestId = Number(params.get('contestId')) || Number(params.get('id')) || null;
+  let selectedContestId = initialContestId || null;
   const questions = ['請簡單介紹你的背景和想加入的原因'];
 
   function loadContests(){
@@ -32,6 +33,10 @@
     return seed;
   }
 
+  function saveContests(contests){
+    localStorage.setItem('contests', JSON.stringify(contests));
+  }
+
   function loadTeams(){
     const raw = localStorage.getItem('teams');
     if (raw) {
@@ -55,7 +60,8 @@
 
   function getContest(){
     const contests = loadContests();
-    return contests.find(contest => Number(contest.id) === contestId) || contests[0];
+    if ($('contestSelect')?.value === 'new') return null;
+    return contests.find(contest => Number(contest.id) === Number(selectedContestId)) || contests[0];
   }
 
   function withUserParam(path){
@@ -64,11 +70,13 @@
   }
 
   function contestHref(){
-    return withUserParam(`/contest.html?id=${encodeURIComponent(getContest().id)}`);
+    const contest = getContest();
+    return contest ? withUserParam(`/contest.html?id=${encodeURIComponent(contest.id)}`) : withUserParam('/team.html');
   }
 
   function getContestTeams(){
     const contest = getContest();
+    if (!contest) return [];
     return loadTeams().filter(team => Number(team.contestId) === Number(contest.id));
   }
 
@@ -77,19 +85,23 @@
     const teams = getContestTeams();
     window.AppNotifications?.ensureContestNotifications(loadContests());
     const openings = teams.reduce((sum,team) => sum + Math.max((team.slots || 0) - (team.members || 0), 0), 0);
-    document.title = `創建新隊伍 / ${contest.name}`;
+    document.title = '發起招募';
 
     $('contestSummary').innerHTML = `
-      <h2>${contest.name}</h2>
+      <h2>發起招募</h2>
       <div class="summary-grid">
-        <div class="summary-item"><span>隊伍數量</span><strong>${teams.length}</strong></div>
-        <div class="summary-item"><span>比賽日期</span><strong>${contest.date}</strong></div>
-        <div class="summary-item"><span>招募缺額</span><strong>${openings} 人</strong></div>
+        <div class="summary-item"><span>比賽模式</span><strong>${contest ? '既有比賽' : '新增比賽'}</strong></div>
+        <div class="summary-item"><span>比賽日期</span><strong>${contest?.date || '建立後顯示'}</strong></div>
+        <div class="summary-item"><span>本比賽隊伍</span><strong>${contest ? `${teams.length} 隊` : '送出後建立'}</strong></div>
       </div>
     `;
 
-    $('contestLabel').textContent = `建立於：${contest.name}`;
-    $('officialContestLink').href = contest.officialUrl || '#';
+    $('contestLabel').textContent = contest ? `使用既有比賽：${contest.name}` : '新增比賽並建立隊伍';
+    const officialContestLink = $('officialContestLink');
+    if (officialContestLink) {
+      officialContestLink.href = contest?.officialUrl || '#';
+      officialContestLink.ariaDisabled = contest?.officialUrl ? 'false' : 'true';
+    }
     $('contestTeams').innerHTML = teams.length ? teams.map(team => `
       <li>
         <strong>${team.name}</strong>
@@ -98,7 +110,7 @@
     `).join('') : '<li>目前沒有隊伍</li>';
 
     const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${currentUserId}`)||'[]');
-    const my = loadTeams().filter(team => joinedIds.some(id => Number(id) === Number(team.id)) && Number(team.contestId) === Number(contest.id));
+    const my = loadTeams().filter(team => joinedIds.some(id => Number(id) === Number(team.id)) && (!contest || Number(team.contestId) === Number(contest.id)));
     $('myTeams').textContent = my.length ? my.map(team => team.name).join('\n') : '尚未加入隊伍';
 
     const favs = loadFavorites();
@@ -106,6 +118,57 @@
     $('myFavs').textContent = followed.length ? followed.map(team => team.name).join('\n') : '尚無收藏';
     const favoriteContests = loadContestFavorites().map(id => loadContests().find(item => Number(item.id) === Number(id))).filter(Boolean);
     $('followed').textContent = favoriteContests.length ? favoriteContests.map(item => `${item.name}\n${item.date}`).join('\n\n') : '尚無關注';
+  }
+
+  function renderContestSelect(){
+    const contests = loadContests();
+    const selectedValue = selectedContestId ? String(selectedContestId) : 'new';
+    $('contestSelect').innerHTML = `
+      <option value="new">＋ 新增比賽</option>
+      ${contests.map(contest => `<option value="${contest.id}">${escapeAttr(contest.name)}（${escapeAttr(contest.date || '日期未定')}）</option>`).join('')}
+    `;
+    $('contestSelect').value = selectedValue;
+    if ($('contestSelect').value !== selectedValue) $('contestSelect').value = 'new';
+  }
+
+  function toggleNewContestFields(){
+    const isNew = $('contestSelect').value === 'new';
+    $('newContestFields').hidden = !isNew;
+    selectedContestId = isNew ? null : Number($('contestSelect').value);
+    render();
+  }
+
+  function resolveContestForSubmit(){
+    if ($('contestSelect').value !== 'new') {
+      const contest = loadContests().find(item => Number(item.id) === Number($('contestSelect').value));
+      if (!contest) throw new Error('請選擇一個比賽');
+      return contest;
+    }
+
+    const name = $('newContestName').value.trim();
+    if (!name) throw new Error('請輸入比賽名稱');
+    const contests = loadContests();
+    const newContest = {
+      id: Date.now(),
+      name,
+      date: $('newContestDate').value || '日期未定',
+      info: $('newContestInfo').value.trim() || '尚未填寫比賽資訊',
+      officialUrl: $('newContestUrl').value.trim(),
+      owner: currentUserId,
+      createdAt: new Date().toISOString()
+    };
+    contests.unshift(newContest);
+    saveContests(contests);
+    selectedContestId = newContest.id;
+    localStorage.setItem('selectedContest', String(newContest.id));
+    window.AppNotifications?.add({
+      type: 'contest',
+      userId: 'all',
+      sourceId: newContest.id,
+      sourceKey: `contest:${newContest.id}`,
+      message: `新比賽：${newContest.name}，比賽日期 ${newContest.date || '未定'}`
+    });
+    return newContest;
   }
 
   function renderQuestions(){
@@ -145,6 +208,12 @@
     event.preventDefault();
     const name = $('teamName').value.trim();
     if (!name) return alert('請輸入隊伍名稱');
+    let contest;
+    try {
+      contest = resolveContestForSubmit();
+    } catch (error) {
+      return alert(error.message || error);
+    }
 
     const descParts = [$('teamDesc').value.trim(), $('teamSkills').value.trim() ? `需求：${$('teamSkills').value.trim()}` : ''].filter(Boolean);
     const slots = Number($('teamSlots').value) || 4;
@@ -157,19 +226,22 @@
       members: 1,
       slots,
       owner: currentUserId,
-      contestId: getContest().id,
+      contestId: contest.id,
       applicationQuestions,
       requireResume: $('requireResume').checked
     });
     saveTeams(teams);
     alert('已建立隊伍');
-    location.href = contestHref();
+    location.href = withUserParam(`/contest.html?id=${encodeURIComponent(contest.id)}`);
   });
 
-  $('cancelBtn').addEventListener('click', () => { location.href = contestHref(); });
-  $('backBtn').addEventListener('click', () => { location.href = contestHref(); });
+  $('cancelBtn').addEventListener('click', () => { location.href = withUserParam('/team.html'); });
+  $('backBtn').addEventListener('click', () => { location.href = withUserParam('/team.html'); });
   document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/team.html'));
+  $('contestSelect').addEventListener('change', toggleNewContestFields);
 
+  renderContestSelect();
+  toggleNewContestFields();
   render();
   renderQuestions();
 })();
