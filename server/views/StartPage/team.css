@@ -8,6 +8,8 @@ body{font-family:Arial, 'Noto Sans TC', sans-serif;margin:0;background:#faf7f2;c
 .icon-btn:hover{background:#f5f5f5}
 .avatar-btn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}
 .layout{display:grid;grid-template-columns:220px minmax(0,1fr) 260px;gap:18px;height:calc(100dvh - 64px);padding:20px;overflow:hidden}
+.loginBtn a{display: block;border-radius: 20px;width: 60px;height: 40px;text-align: center;line-height: 40px;text-decoration: none;color: black;font: 10px;background: #f4f4f4;}
+.loginBtn a:hover{background: #c5c5c5}
 .sidebar,.content{min-height:0;overflow-y:auto;overscroll-behavior:contain}
 .sidebar{padding-right:2px}
 .content{padding-right:6px}

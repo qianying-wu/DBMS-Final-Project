@@ -7,7 +7,6 @@
   const account = document.getElementById('account');
   const password = document.getElementById('password');
   const submit = document.getElementById('submit');
-  const back = document.getElementById('back');
   const out = document.getElementById('out');
   const username = document.getElementById('username');
   const userEmail = document.getElementById('userEmail');
@@ -31,7 +30,6 @@
 
   toLogin.addEventListener('click', () => { mode='login'; render(); });
   toRegister.addEventListener('click', () => { mode='register'; render(); });
-  back.addEventListener('click', () => { window.location.href = '/startPage.html'; });
 
   submit.addEventListener('click', async () => {
     const a = account.value; const p = password.value; const u = username.value; const e = userEmail.value;
@@ -45,7 +43,8 @@
         if (mode === 'login') {
           // redirect to role page with userId
           const id = json.userId || json.userId === 0 ? json.userId : '';
-          const target = `/user.html?id=${id}`;
+          localStorage.setItem('userId', id);
+          const target = `/team.html?id=${id}`;
           setTimeout(()=> location.href = target, 500);
         } else {
           // after successful register (stub) switch to login mode
@@ -60,4 +59,6 @@
   });
 
   render();
+
+  
 })();

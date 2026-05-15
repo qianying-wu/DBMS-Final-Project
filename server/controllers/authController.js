@@ -110,7 +110,7 @@ export const login = async (req, res) => {
         res.json({ 
             ok: true, 
             message: '登入成功',
-            userId: user.id,
+            userId: user.user_id,
         });
 
     } catch (err) {

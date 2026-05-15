@@ -16,21 +16,20 @@
     <input type="text" id="globalSearch" class="global-search-input" placeholder="搜尋比賽、隊伍或用戶...">
     <div class="actions">
       <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
-      <a id="teamBtn" class="icon-btn" aria-label="組隊" href="/team.html">🤝</a>
       <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
+    </div>
+    <div class="loginBtn">
+      <a href="auth.html">登入</a>
     </div>
   </header>
 
   <main class="layout">
     <aside class="sidebar left">
       <button id="openCreate" class="btn primary block">發起招募</button>
-      <div class="section section-filter">
-        <h4>搜尋/篩選</h4>
-        <input id="teamSearch" placeholder="搜尋隊名、主題或技能" />
-      </div>
+
 
       <div class="section section-contests">
-        <h4>比賽</h4>
+        <h4>比賽類型</h4>
         <ul id="contestsList" class="simple-list"></ul>
       </div>
     </aside>
@@ -116,6 +115,7 @@
       </div>
     </div>
   </div>
+  <script src="/auth-guard.js"></script>
   <script src="/notifications.js"></script>
   <script src="/account-menu.js"></script>
   <script src="/team.js"></script>

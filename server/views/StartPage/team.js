@@ -12,7 +12,6 @@
   const modalCancel = $('modalCancel');
   const newTeamName = $('newTeamName');
   const newTeamDesc = $('newTeamDesc');
-  const teamSearch = $('teamSearch');
   // mock current user
   const ME = { id: 9999, name: '你自己' };
   const params = new URLSearchParams(location.search);
@@ -333,18 +332,6 @@
 
   // Esc to close
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (!modal.classList.contains('hidden')) closeModal(); } });
-
-  teamSearch.addEventListener('input', () => {
-    const q = teamSearch.value.trim().toLowerCase();
-    const teams = loadTeams();
-    const filtered = teams.filter(t => t.name.toLowerCase().includes(q) || (t.desc || '').toLowerCase().includes(q));
-    teamsGrid.innerHTML = '';
-    filtered.forEach(t => {
-      const card = document.createElement('div'); card.className = 'team-card';
-      card.innerHTML = `<h4>${t.name}</h4><div class="team-meta">${t.desc}</div><div>成員 ${t.members} / ${t.slots}</div><div style="margin-top:8px"><button class="btn" data-id="${t.id}">查看 / 加入</button></div>`;
-      teamsGrid.appendChild(card);
-    });
-  });
 
   // notify / avatar handlers
   const notifyBtn = document.getElementById('notifyBtn');
