@@ -24,7 +24,7 @@ app.get('/test', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(startPageDir, 'startPage.html')); 
+    res.sendFile(path.join(startPageDir, 'team.html')); 
 });
 
 app.get('/profile', (req, res) => {

@@ -450,7 +450,7 @@
     const teamBtn = document.getElementById('teamBtn');
     if (teamBtn) teamBtn.setAttribute('href', 'team.html');
   }
-  document.querySelector('.logo-link')?.setAttribute('href', new URLSearchParams(window.location.search).get('userId') ? `/user.html?userId=${encodeURIComponent(new URLSearchParams(window.location.search).get('userId'))}` : '/user.html');
+  document.querySelector('.logo-link')?.setAttribute('href', new URLSearchParams(window.location.search).get('userId') ? `/team.html?userId=${encodeURIComponent(new URLSearchParams(window.location.search).get('userId'))}` : '/team.html');
   window.addEventListener('storage', e=>{
     if (['myTeams','favorites','teams','contests'].includes(e.key)) renderSyncedSidebar();
     if (e.key === 'notifications' && !window.AppNotifications) updateNotificationBadge();

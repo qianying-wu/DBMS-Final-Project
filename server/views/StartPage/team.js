@@ -349,7 +349,7 @@
   // notify / avatar handlers
   const notifyBtn = document.getElementById('notifyBtn');
   const homeLink = document.getElementById('homeLink');
-  if (homeLink) homeLink.href = withUserParam('/user.html');
+  if (homeLink) homeLink.href = withUserParam('/team.html');
 
   // contest selection handler (delegated)
   document.addEventListener('click', (e) => {

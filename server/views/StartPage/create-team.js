@@ -168,7 +168,7 @@
 
   $('cancelBtn').addEventListener('click', () => { location.href = contestHref(); });
   $('backBtn').addEventListener('click', () => { location.href = contestHref(); });
-  document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/user.html'));
+  document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/team.html'));
 
   render();
   renderQuestions();
