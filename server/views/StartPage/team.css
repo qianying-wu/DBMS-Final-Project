@@ -7,7 +7,7 @@ body{font-family:Arial, 'Noto Sans TC', sans-serif;margin:0;background:#faf7f2;c
 .icon-btn, .avatar-btn{background:transparent;border:1px solid transparent;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:18px}
 .icon-btn:hover{background:#f5f5f5}
 .avatar-btn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}
-.layout{display:grid;grid-template-columns:220px minmax(0,1fr) 260px;gap:18px;height:calc(100dvh - 64px);padding:20px;overflow:hidden}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:18px;height:calc(100dvh - 64px);padding:20px;overflow:hidden}
 .sidebar,.content{min-height:0;overflow-y:auto;overscroll-behavior:contain}
 .sidebar{padding-right:2px}
 .content{padding-right:6px}
@@ -41,9 +41,8 @@ body{font-family:Arial, 'Noto Sans TC', sans-serif;margin:0;background:#faf7f2;c
 .contest-info{background:#fff;padding:12px;border-radius:10px;border:1px solid #eee;margin-bottom:12px}
 .content .hero{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .card{background:#fff;padding:18px;border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,0.06)}
-.contests-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:16px}
-.contest-card{background:#fff;border:1px solid #dbe7ef;border-radius:8px;padding:14px;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}
-.contest-card{position:relative}
+.contests-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.contest-card{background:#fff;border:1px solid #dbe7ef;border-radius:8px;padding:14px;cursor:pointer;transition:background .18s,border-color .18s,transform .18s;aspect-ratio:1/1;display:flex;flex-direction:column;overflow:hidden;position:relative}
 .contest-fav-btn{position:absolute;right:10px;top:10px;background:#fff;border:1px solid #eadfd2;border-radius:8px;padding:5px 8px;cursor:pointer;color:#7b6a59}
 .contest-fav-btn.active{color:#d45b6f;background:#fff5f7}
 .contest-card:hover{background:#f7fbff;border-color:#9bb8cf;transform:translateY(-1px)}
@@ -113,9 +112,6 @@ a{
   text-decoration:none;
 }
 
-/* ==============================
-   全域懸浮搜尋 (純新增)
-   ============================== */
 .global-search-input {
   width: 320px; padding: 8px 16px; border-radius: 20px;
   border: 1px solid #e6ddd3; outline: none; background: #fdfdfc;
@@ -148,3 +144,25 @@ a{
 .search-results-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
 .search-list-item { padding: 12px; background: #fff; border: 1px solid #eee; border-radius: 8px; cursor: pointer; transition: all 0.2s;}
 .search-list-item:hover { border-color: #d4b283; background: #fffdf9; box-shadow: 0 4px 12px rgba(76, 55, 35, 0.05);}
+
+.carousel { width: 100%; height: 120px; overflow: hidden; border-radius: 10px; margin-bottom: 20px; position: relative; border: 1px solid #eadfd2; }
+.carousel-inner { display: flex; width: 100%; height: 100%; transition: transform 0.5s ease-in-out; }
+.carousel-item { min-width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; color: #6b4f3a; }
+.contest-card.and-more { align-items: center; justify-content: center; background: #fffcf8; border: 2px dashed #d4b283; }
+.contest-card.and-more:hover { background: #fff9ef; }
+.contest-card.and-more h3 { color: #d4b283; font-size: 20px; margin: 0; }
+
+/* 新增：限制 Logo 圖片的高度，避免撐開頂欄，並保持比例 */
+.logo-img {
+  height: 40px;      /* 配合頂欄 64px 的高度，40px~45px 左右視覺效果最好 */
+  width: auto;       /* 自動維持原圖片比例 */
+  display: block;    /* 消除 inline 元素的下方微小間隙 */
+  object-fit: contain;
+}
+
+/* 如果要調整圖片跟左邊邊界的距離，可以加在 homeLink 上 */
+#homeLink {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
