@@ -6,6 +6,7 @@
     <title>Login Test</title>
   </head>
   <body>
+    <!-- 測試用登入表單：送出後會呼叫 /login API。 -->
     <h1>Login Test</h1>
     <form id="loginForm">
       <label>Role: <input name="role" value="user"></label><br>
@@ -15,8 +16,11 @@
     </form>
     <pre id="out"></pre>
     <script>
+      // 取得表單與輸出區塊。
       const form = document.getElementById('loginForm');
       const out = document.getElementById('out');
+
+      // 攔截表單送出，改用 fetch 呼叫後端登入 API。
       form.addEventListener('submit', async e => {
         e.preventDefault();
         const data = {

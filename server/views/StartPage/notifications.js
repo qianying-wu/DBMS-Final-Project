@@ -1,6 +1,8 @@
 (function(){
+  // 預設使用者 ID：網址沒有帶 userId 時會使用這個本機測試帳號。
   const CURRENT_USER_ID = 9999;
 
+  // 將通知文字轉成安全 HTML，避免通知內容破壞畫面結構。
   function escapeHtml(value){
     return String(value ?? '').replace(/[&<>"']/g, char => ({
       '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
@@ -13,18 +15,22 @@
     return Number.isFinite(parsed) ? parsed : CURRENT_USER_ID;
   }
 
+  // 從 localStorage 讀取通知清單。
   function load(){
     return JSON.parse(localStorage.getItem('notifications') || '[]');
   }
 
+  // 將通知清單寫回 localStorage。
   function save(notifications){
     localStorage.setItem('notifications', JSON.stringify(notifications));
   }
 
+  // 判斷通知是否屬於目前使用者，或是發給所有人的通知。
   function matchesUser(notification, userId = getCurrentUserId()){
     return notification.userId === 'all' || Number(notification.userId) === Number(userId);
   }
 
+  // 全體通知用 readBy 紀錄已讀者；個人通知則使用 read 欄位。
   function isRead(notification, userId = getCurrentUserId()){
     if (notification.userId === 'all') {
       return Array.isArray(notification.readBy) && notification.readBy.includes(Number(userId));
@@ -32,6 +38,7 @@
     return Boolean(notification.read);
   }
 
+  // 新增通知，並用 sourceKey 避免同一來源重複產生通知。
   function add(notification){
     const notifications = load();
     const sourceKey = notification.sourceKey || `${notification.type || 'notice'}:${notification.sourceId || notification.message}`;
@@ -52,6 +59,7 @@
     updateBadge();
   }
 
+  // 依照比賽清單產生比賽通知。
   function ensureContestNotifications(contests){
     contests.forEach(contest => {
       add({
@@ -64,6 +72,7 @@
     });
   }
 
+  // 更新右上角通知按鈕上的未讀數字。
   function updateBadge(){
     const notifyBtn = document.getElementById('notifyBtn');
     if (!notifyBtn) return;
@@ -72,6 +81,7 @@
     notifyBtn.textContent = unread ? `🔔 ${unread}` : '🔔';
   }
 
+  // 動態加入通知彈窗所需的樣式。
   function injectStyle(){
     if (document.getElementById('notificationsStyle')) return;
     const style = document.createElement('style');
@@ -93,6 +103,7 @@
     document.head.appendChild(style);
   }
 
+  // 使用者打開通知視窗後，將目前可見通知標記為已讀。
   function markVisibleRead(){
     const userId = getCurrentUserId();
     const notifications = load().map(item => {
@@ -106,6 +117,7 @@
     save(notifications);
   }
 
+  // 顯示通知彈窗，並處理通知中的動作按鈕。
   function show(){
     document.getElementById('notificationModal')?.remove();
     const visible = load().filter(item => matchesUser(item)).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -148,12 +160,14 @@
     document.getElementById('closeNotificationModal').addEventListener('click', () => modal.remove());
   }
 
+  // 綁定通知按鈕，並在頁面載入時先同步一次未讀數。
   function bind(){
     injectStyle();
     document.getElementById('notifyBtn')?.addEventListener('click', show);
     updateBadge();
   }
 
+  // 對其他頁面公開通知相關方法。
   window.AppNotifications = { add, bind, ensureContestNotifications, updateBadge, getCurrentUserId };
 
   if (document.readyState === 'loading') {
