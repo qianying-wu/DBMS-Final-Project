@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/create-team.css">
   </head>
   <body>
+    <!-- 頁首：返回組隊頁、品牌連結、通知與帳號選單。 -->
     <header class="topbar">
       <button id="backBtn" class="icon-btn" aria-label="回到組隊">←</button>
       <a class="logo-link" href="/team.html"><div class="logo">競賽組隊</div></a>
@@ -16,7 +17,9 @@
       </div>
     </header>
 
+    <!-- 建立隊伍主版面：左側比賽隊伍、中間表單、右側個人狀態。 -->
     <main class="create-layout">
+      <!-- 左側：顯示目前選擇比賽底下已有的隊伍。 -->
       <aside class="panel left-panel">
         <section class="panel-section panel-section-teams first">
           <h4>目前選擇比賽的隊伍</h4>
@@ -25,8 +28,10 @@
       </aside>
 
       <section class="main-panel">
+        <!-- 比賽摘要會由 create-team.js 動態更新。 -->
         <section id="contestSummary" class="contest-summary"></section>
 
+        <!-- 建立招募表單。 -->
         <section class="form-section">
           <div class="section-heading">
             <h2>發起招募</h2>
@@ -34,6 +39,7 @@
           </div>
 
           <form id="createForm" class="create-form">
+            <!-- 比賽來源：可選既有比賽，也可以直接新增比賽。 -->
             <section class="contest-editor full">
               <div class="questions-heading">
                 <div>
@@ -66,6 +72,7 @@
               </div>
             </section>
 
+            <!-- 隊伍基本資料。 -->
             <label>
               隊伍名稱
               <input id="teamName" type="text" placeholder="例如：AI 聯合隊">
@@ -86,6 +93,7 @@
               <textarea id="teamDesc" rows="6" placeholder="簡短描述隊伍方向、目前進度、希望找到的成員"></textarea>
             </label>
 
+            <!-- 申請設定：是否要求履歷，以及申請者需要回答的問題。 -->
             <label class="full check-row">
               <input id="requireResume" type="checkbox">
               要求申請者附上履歷
@@ -102,6 +110,7 @@
               <div id="questionsList" class="questions-list"></div>
             </section>
 
+            <!-- 表單操作。 -->
             <div class="form-actions">
               <button class="btn primary" type="submit">送出招募</button>
               <button id="cancelBtn" class="btn outline" type="button">取消</button>
@@ -110,6 +119,7 @@
         </section>
       </section>
 
+      <!-- 右側：同步顯示我的隊伍、收藏與關注項目。 -->
       <aside class="panel right-panel">
         <section class="panel-section panel-section-mine first">
           <h4>我的隊伍</h4>
@@ -128,6 +138,7 @@
       </aside>
     </main>
 
+    <!-- 共用通知、帳號選單與建立隊伍邏輯。 -->
     <script src="/notifications.js"></script>
     <script src="/account-menu.js"></script>
     <script src="/create-team.js"></script>

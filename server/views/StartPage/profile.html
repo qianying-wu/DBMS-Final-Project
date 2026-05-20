@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/profile.css">
   </head>
   <body>
+    <!-- 頁首：提供返回組隊頁、通知與帳號選單入口。 -->
     <header class="topbar">
       <a class="logo-link" href="/team.html"><div class="logo">競賽組隊</div></a>
       <div class="actions">
@@ -15,8 +16,10 @@
       </div>
     </header>
 
+    <!-- 主要內容：上方是履歷列表，下方 hidden 區塊是履歷編輯器。 -->
     <main class="layout profile-layout">
       <section class="content profile-content">
+        <!-- 履歷列表首頁：由 profile.js 動態產生履歷卡片。 -->
         <div id="resumeHome" class="resume-home">
           <div class="profile-heading">
             <div>
@@ -28,6 +31,7 @@
           <div id="resumeGallery" class="resume-gallery"></div>
         </div>
 
+        <!-- 履歷編輯區：使用者選擇或新增履歷後才顯示。 -->
         <div id="resumeEditor" class="card editor-card" hidden>
           <div class="editor-heading">
             <div>
@@ -41,6 +45,7 @@
           </div>
 
           <form id="profileForm">
+            <!-- 基本資料與照片上傳。 -->
             <div class="row">
               <label>姓名<input id="name" type="text" placeholder="你的名字"></label>
               <label>照片
@@ -61,11 +66,13 @@
               </label>
             </div>
 
+            <!-- 學籍資料。 -->
             <div class="row">
               <label>學校<input id="school" type="text" placeholder="學校"></label>
               <label>年級<input id="grade" type="text" placeholder="年級"></label>
             </div>
 
+            <!-- 專長標籤，可新增與移除。 -->
             <div class="row">
               <label class="full">專長
                 <div class="tags" id="tags"></div>
@@ -76,6 +83,7 @@
               </label>
             </div>
 
+            <!-- 經歷與自我介紹。 -->
             <div class="row">
               <label class="full">個人經歷<textarea id="experience" placeholder="描述你的專案、比賽或經歷" rows="6"></textarea></label>
             </div>
@@ -84,6 +92,7 @@
               <label class="full">自我介紹<textarea id="intro" placeholder="一段短介紹" rows="4"></textarea></label>
             </div>
 
+            <!-- 表單操作按鈕。 -->
             <div class="actions-row">
               <button id="saveBtn" type="button" class="btn primary">儲存</button>
               <button id="exportBtn" type="button" class="btn outline">匯出 JSON</button>
@@ -94,6 +103,7 @@
       </section>
     </main>
 
+    <!-- 共用通知、帳號選單與本頁履歷邏輯。 -->
     <script src="/notifications.js"></script>
     <script src="/account-menu.js"></script>
     <script src="/profile.js"></script>

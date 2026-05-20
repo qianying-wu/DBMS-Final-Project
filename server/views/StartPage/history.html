@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/profile.css">
   </head>
   <body>
+    <!-- 頁首：保留回首頁、通知與帳號選單入口。 -->
     <header class="topbar">
       <a class="logo-link" href="/team.html"><div class="logo">競賽組隊</div></a>
       <div class="actions">
@@ -14,6 +15,8 @@
         <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
       </div>
     </header>
+
+    <!-- 歷史紀錄內容區：由下方 script 依 localStorage 資料產生。 -->
     <main class="layout" style="grid-template-columns:1fr;max-width:900px;margin:0 auto">
       <section class="content">
         <h2 class="page-title">歷史紀錄</h2>
@@ -23,17 +26,24 @@
     <script src="/notifications.js"></script>
     <script src="/account-menu.js"></script>
     <script>
+      // 讀取目前使用者，並同步頁首 logo 導向。
       const qs = new URLSearchParams(location.search);
       const userId = qs.get('userId') || '9999';
       document.querySelector('.logo-link').href = '/user.html?userId=' + encodeURIComponent(userId);
+
+      // 從 localStorage 取出隊伍、比賽與申請紀錄。
       const teams = JSON.parse(localStorage.getItem('teams') || '[]');
       const contests = JSON.parse(localStorage.getItem('contests') || '[]');
       const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${userId}`) || '[]');
       const joined = joinedIds.map(id => teams.find(t => Number(t.id) === Number(id))).filter(Boolean);
       const owned = teams.filter(t => String(t.owner) === String(userId));
       const applications = JSON.parse(localStorage.getItem('joinRequests') || '[]').filter(r => String(r.user?.id) === String(userId));
+
+      // 小型渲染工具：取得比賽名稱與清單 HTML。
       function contestName(team){ return contests.find(c => Number(c.id) === Number(team.contestId))?.name || '未指定比賽'; }
       function list(items, render, empty){ return items.length ? `<ul class="resume-list">${items.map(render).join('')}</ul>` : `<div class="empty-note">${empty}</div>`; }
+
+      // 將加入、建立與申請紀錄集中顯示在同一張卡片中。
       document.getElementById('historyContent').innerHTML = `
         <h3>加入過的隊伍</h3>${list(joined, t => `<li><strong>${t.name}</strong><span>${contestName(t)}</span></li>`, '尚未加入任何隊伍')}
         <h3>建立過的隊伍</h3>${list(owned, t => `<li><strong>${t.name}</strong><span>${contestName(t)}</span></li>`, '尚未建立任何隊伍')}
