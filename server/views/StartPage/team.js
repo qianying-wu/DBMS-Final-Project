@@ -13,28 +13,56 @@
   const modalCancel = $('modalCancel');
   const newTeamName = $('newTeamName');
   const newTeamDesc = $('newTeamDesc');
+<<<<<<< HEAD
   // mock current user
+=======
+  const teamSearch = $('teamSearch');
+  
+>>>>>>> 2c5885955d9fc5ac63d67067fefe9d33ea6e41db
   const ME = { id: 9999, name: '你自己' };
   const params = new URLSearchParams(location.search);
   const currentUserId = params.get('userId') && params.get('userId') !== 'unknown' ? params.get('userId') : String(ME.id);
   let currentPreferences = window.AppPreferences?.getFallbackPreferences(currentUserId) || [];
   let expandedContestCategory = localStorage.getItem('expandedContestCategory') || '';
 
+  // 廣告輪播邏輯
+  let currentAd = 0;
+  setInterval(() => {
+    const inner = document.querySelector('.carousel-inner');
+    if (!inner) return;
+    currentAd = (currentAd + 1) % 3;
+    inner.style.transform = `translateX(-${currentAd * 100}%)`;
+  }, 4000);
+
   function loadTeams() {
     const raw = localStorage.getItem('teams');
     if (raw) {
       const defaultNames = ['AI 聯合隊', '機器人挑戰隊', '資料探勘小隊'];
       const teams = JSON.parse(raw).filter(team => !defaultNames.includes(team.name));
-      if (teams.length !== JSON.parse(raw).length) localStorage.setItem('teams', JSON.stringify(teams));
+      if (teams.length === 0) {
+        const fakeTeams = [
+          { id: 101, name: "機器學習實戰", desc: "徵求對影像辨識有經驗的隊友", members: 2, slots: 4, owner: 1, contestId: 10 },
+          { id: 102, name: "醫療大數據分析", desc: "需要熟練 Pandas 的資料科學家", members: 1, slots: 3, owner: 2, contestId: 13 },
+          { id: 103, name: "FinTech 創新", desc: "目標是區塊鏈支付，缺前端", members: 3, slots: 5, owner: 3, contestId: 15 }
+        ];
+        fakeTeams.forEach(t => teams.push(t));
+      }
+      localStorage.setItem('teams', JSON.stringify(teams));
       return teams;
     }
-    const seed = [];
+    const seed = [
+      { id: 101, name: "機器學習實戰", desc: "徵求對影像辨識有經驗的隊友", members: 2, slots: 4, owner: 1, contestId: 10 },
+      { id: 102, name: "醫療大數據分析", desc: "需要熟練 Pandas 的資料科學家", members: 1, slots: 3, owner: 2, contestId: 13 },
+      { id: 103, name: "FinTech 創新", desc: "目標是區塊鏈支付，缺前端", members: 3, slots: 5, owner: 3, contestId: 15 }
+    ];
     localStorage.setItem('teams', JSON.stringify(seed));
     return seed;
   }
+  
   function loadContests() {
     const raw = localStorage.getItem('contests');
     const seed = [
+<<<<<<< HEAD
       { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽', preferenceKeys: ['data', 'ai'] },
       { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽', preferenceKeys: ['robotics', 'ai'] },
       { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰', preferenceKeys: ['web', 'app', 'startup', 'presentation'] },
@@ -48,11 +76,26 @@
         const defaults = seed.find(item => Number(item.id) === Number(contest.id));
         return defaults ? { ...defaults, ...contest, preferenceKeys: contest.preferenceKeys || defaults.preferenceKeys } : contest;
       });
+=======
+      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽' },
+      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰' },
+      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽' },
+      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽' },
+      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽' },
+      { id: 16, name: '區塊鏈創新應用賽', date: '2026-12-20', info: 'Web3 與智能合約應用開發' },
+      { id: 17, name: '智慧城市盃', date: '2027-01-10', info: '透過物聯網改善城市問題的實作賽' },
+      { id: 18, name: 'AI 語音應用黑客松', date: '2027-02-15', info: '挑戰 AI 語音辨識與合成應用' },
+      { id: 19, name: '資安防禦競賽', date: '2027-03-10', info: '實戰模擬網路攻擊與防禦' }
+    ];
+    if (raw) {
+      let existing = JSON.parse(raw);
+      let filteredExisting = existing.filter(item => Number(item.id) !== 11 && item.name !== '全國機器人盃');
+>>>>>>> 2c5885955d9fc5ac63d67067fefe9d33ea6e41db
       seed.forEach(contest => {
-        if (!merged.some(item => Number(item.id) === Number(contest.id))) merged.push(contest);
+        if (!filteredExisting.some(item => Number(item.id) === Number(contest.id))) filteredExisting.push(contest);
       });
-      if (merged.length !== existing.length) localStorage.setItem('contests', JSON.stringify(merged));
-      return merged;
+      localStorage.setItem('contests', JSON.stringify(filteredExisting));
+      return filteredExisting;
     }
     localStorage.setItem('contests', JSON.stringify(seed));
     return seed;
@@ -86,8 +129,8 @@
     const contests = loadContests();
     renderRecommendations(contests);
     renderContestOverview(contests, teams, selectedContest, contestFavs);
+    
     teams.forEach(t => {
-      // if a contest is selected, only show teams that belong to it
       if (selectedContest != null && Number(t.contestId || 0) !== Number(selectedContest)) return;
       const isFav = favs.includes(t.id);
       const card = document.createElement('div'); card.className = 'team-card';
@@ -100,16 +143,15 @@
           <div style="display:flex;align-items:center;gap:8px"><h4 style="margin:0">${escapeHtml(t.name)}</h4>${isOwner && pending ? `<span class="pending-count">${pending}</span>` : ''}</div>
           <button class="fav-btn ${isFav ? 'active' : ''}" data-id="${t.id}" aria-pressed="${isFav}">${isFav ? '♥' : '♡'}</button>
         </div>
-  <div class="team-meta">${escapeHtml(t.desc || '')}</div>
-  ${contestName ? `<div class="team-contest">比賽：<strong>${escapeHtml(contestName)}</strong></div>` : ''}
+        <div class="team-meta">${escapeHtml(t.desc || '')}</div>
+        ${contestName ? `<div class="team-contest">比賽：<strong>${escapeHtml(contestName)}</strong></div>` : ''}
         <div>成員 ${t.members} / ${t.slots}</div>
         <div style="margin-top:8px">
           <button class="btn" data-id="${t.id}">查看 / 加入</button>
-      ${isOwner ? `<button class="btn outline manage-btn" data-team="${t.id}">管理</button>` : ''}
+          ${isOwner ? `<button class="btn outline manage-btn" data-team="${t.id}">管理</button>` : ''}
         </div>
       `;
       teamsGrid.appendChild(card);
-
     });
 
     cleanupLegacyMyTeams(teams);
@@ -117,14 +159,12 @@
     const joined = joinedIds.map(id => teams.find(team => Number(team.id) === Number(id))).filter(Boolean);
     myJoinedTeams.innerHTML = joined.length ? `<ul class="managed-list">${joined.map(team => `<li><span>${escapeHtml(team.name)}</span></li>`).join('')}</ul>` : '尚未加入隊伍';
 
-    // render favorites in right sidebar
     const favEls = favs.map(id => {
       const t = teams.find(x => x.id === id); if (!t) return null;
       return `<li><strong>${escapeHtml(t.name)}</strong></li>`;
     }).filter(Boolean);
     document.getElementById('myFavs').innerHTML = favEls.length ? `<ul class="fav-list">${favEls.join('')}</ul>` : '尚無收藏';
 
-    // render owned teams with management entry
     const managed = teams.filter(t => String(t.owner) === String(currentUserId) || (String(currentUserId) === String(ME.id) && Number(t.owner) === Number(ME.id)));
     if (managed.length) {
       const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
@@ -136,19 +176,33 @@
     } else {
       myOwnedTeams.textContent = '尚未建立隊伍';
     }
+<<<<<<< HEAD
     // 左側比賽欄改為「類別標籤」展開清單，不直接攤開全部比賽。
     renderContestCategoryList(contests, selectedContest);
+=======
+>>>>>>> 2c5885955d9fc5ac63d67067fefe9d33ea6e41db
 
-    // render contest info in content area (if selected)
+    const contestsListEl = document.getElementById('contestsList');
+    if(contestsListEl) {
+       contestsListEl.innerHTML = contests.map(c => `<li data-cid="${c.id}" class="contest-item" style="${selectedContest === c.id ? 'background:#f6efe6' : ''}"><strong>${escapeHtml(c.name)}</strong><div style="font-size:12px;color:#666">${escapeHtml(c.date)}</div></li>`).join('');
+    }
+
     const contestInfoWrapId = 'contestInfoWrap';
     let contestInfoWrap = document.getElementById(contestInfoWrapId);
-    if (!contestInfoWrap) { contestInfoWrap = document.createElement('div'); contestInfoWrap.id = contestInfoWrapId; contestInfoWrap.className = 'contest-info'; document.querySelector('.content').insertBefore(contestInfoWrap, document.getElementById('teamsGrid')) }
+    if (!contestInfoWrap) { 
+      contestInfoWrap = document.createElement('div'); 
+      contestInfoWrap.id = contestInfoWrapId; 
+      contestInfoWrap.className = 'contest-info'; 
+      document.querySelector('.content').insertBefore(contestInfoWrap, document.getElementById('teamsGrid'));
+    }
     const selected = contests.find(x => x.id === selectedContest);
-    if (selected) contestInfoWrap.innerHTML = `<h3>${escapeHtml(selected.name)}</h3><div>${escapeHtml(selected.date)}</div><p>${escapeHtml(selected.info)}</p>`; else contestInfoWrap.innerHTML = `<h3>全部比賽</h3><div>顯示所有比賽與隊伍</div>`;
+    if (selected) contestInfoWrap.innerHTML = `<h3>${escapeHtml(selected.name)}</h3><div>${escapeHtml(selected.date)}</div><p>${escapeHtml(selected.info)}</p>`; 
+    else contestInfoWrap.innerHTML = `<h3>全部隊伍</h3><div>顯示所有跨比賽隊伍</div>`;
 
     renderFollowedContests(contests, contestFavs);
   }
 
+<<<<<<< HEAD
   // 將比賽依照個人化標籤分組，點擊類別才展開底下的比賽。
   function renderContestCategoryList(contests, selectedContest) {
     const list = document.getElementById('contestsList');
@@ -232,9 +286,13 @@
     `;
   }
 
+=======
+  // 移除行內 onclick，改用下方 event listener 統一代理
+>>>>>>> 2c5885955d9fc5ac63d67067fefe9d33ea6e41db
   function renderContestOverview(contests, teams, selectedContest, contestFavs = loadContestFavorites()) {
     if (!contestsGrid) return;
-    contestsGrid.innerHTML = contests.map(contest => {
+    const displayContests = contests.slice(0, 7);
+    let html = displayContests.map(contest => {
       const contestTeams = teams.filter(team => Number(team.contestId) === Number(contest.id));
       const isContestFav = contestFavs.includes(Number(contest.id));
       const contestTags = window.AppPreferences ? window.AppPreferences.inferContestTags(contest).slice(0, 3) : [];
@@ -243,14 +301,25 @@
           <button class="contest-fav-btn ${isContestFav ? 'active' : ''}" data-contest-fav="${contest.id}" type="button" aria-pressed="${isContestFav}">${isContestFav ? '♥' : '♡'}</button>
           <h3>${escapeHtml(contest.name)}</h3>
           <div class="contest-date">${escapeHtml(contest.date || '日期未定')}</div>
+<<<<<<< HEAD
           <p>${escapeHtml(contest.info || '尚未填寫比賽資訊')}</p>
           <div class="tag-row">${contestTags.map(key => `<span class="match-tag">${escapeHtml(window.AppPreferences.labelFor(key))}</span>`).join('')}</div>
+=======
+          <p style="flex:1;">${escapeHtml(contest.info || '尚未填寫比賽資訊')}</p>
+>>>>>>> 2c5885955d9fc5ac63d67067fefe9d33ea6e41db
           <div class="contest-stats">
             <span>${contestTeams.length} 隊</span>
           </div>
         </article>
       `;
     }).join('');
+
+    html += `
+      <article class="contest-card and-more">
+        <h3>And More...</h3>
+      </article>
+    `;
+    contestsGrid.innerHTML = html;
   }
 
   function cleanupLegacyMyTeams(teams) {
@@ -279,7 +348,6 @@
   teamsGrid.addEventListener('click', e => {
     const btn = e.target.closest('button'); if (!btn) return;
     const teamId = btn.dataset.id || btn.dataset.team; if (!teamId) return;
-    // favorite button handling
     if (btn.classList.contains('fav-btn')) { toggleFavorite(Number(teamId)); return; }
     if (btn.classList.contains('manage-btn')) { openRequestsForTeam(Number(teamId)); return; }
     openTeamDetail(Number(teamId));
@@ -299,7 +367,6 @@
     location.href = teamInfoHref(id);
   }
 
-  // Requests modal handling
   const requestsModal = document.getElementById('requestsModal');
   const requestsList = document.getElementById('requestsList');
   const closeReq = document.getElementById('closeReq');
@@ -325,17 +392,12 @@
         <div class="req-detail">
           <div>聯絡方式：${escapeHtml(app.applicantContact || '未填寫')}</div>
           <div>申請理由：${escapeHtml(app.applicantReason || '未填寫')}</div>
-          ${resume ? `<div class="attached-resume"><strong>附上履歷：${escapeHtml(resume.name || resume.data?.name || '履歷')}</strong>
-            ${resume.id ? `<a class="btn outline" href="/resume-view.html?userId=${encodeURIComponent(r.user?.id || currentUserId)}&resumeId=${encodeURIComponent(resume.id)}">查看制式履歷</a>` : ''}<br>
+          ${resume ? `<div class="attached-resume"><strong>附上履歷：${escapeHtml(resume.name || resume.data?.name || '履歷')}</strong><br>
             學校：${escapeHtml(resume.data?.school || '未填寫')}　年級：${escapeHtml(resume.data?.grade || '未填寫')}<br>
             專長：${escapeHtml((resume.data?.tags || []).join('、') || '未填寫')}<br>
             經歷：${escapeHtml(resume.data?.experience || '未填寫')}<br>
             自我介紹：${escapeHtml(resume.data?.intro || '未填寫')}
           </div>` : ''}
-          ${answers.length ? `<ul>${answers.map((item, index) => {
-            const question = item.question && !/^Q\d+$/i.test(item.question) ? item.question : (teamQuestions[index] || item.question || `Q${index + 1}`);
-            return `<li><strong>Q${index + 1}: ${escapeHtml(question)}</strong><br>${escapeHtml(item.answer || '未回答')}</li>`;
-          }).join('')}</ul>` : ''}
         </div>
         <div class="req-actions"><button class="btn" data-act="approve" data-id="${r.id}">批准</button><button class="btn outline" data-act="deny" data-id="${r.id}">拒絕</button></div>
       </div>`;
@@ -348,46 +410,22 @@
     if (act === 'approve') {
       const teams = loadTeams(); const tIdx = teams.findIndex(x => x.id === reqs[idx].teamId);
       if (tIdx < 0) { alert('隊伍不存在，無法批准'); return; }
-      // check capacity before approving
       if ((teams[tIdx].members || 0) >= (teams[tIdx].slots || 0)) {
-        // auto-deny when full
         reqs[idx].status = 'denied';
         localStorage.setItem('joinRequests', JSON.stringify(reqs));
-        window.AppNotifications?.add({
-          type: 'application-result',
-          userId: reqs[idx].user.id,
-          sourceId: reqs[idx].id,
-          sourceKey: `application-result:${reqs[idx].id}:denied-full`,
-          message: `你的加入申請未通過：${reqs[idx].teamName}（隊伍已額滿）`
-        });
         alert('隊伍已額滿，無法批准本申請（已自動拒絕）。');
       } else {
         reqs[idx].status = 'approved';
         teams[tIdx].members = (teams[tIdx].members || 0) + 1; saveTeams(teams);
         const my = JSON.parse(localStorage.getItem(`myTeams:${reqs[idx].user.id}`) || '[]'); if (!my.some(id => Number(id) === Number(reqs[idx].teamId))) { my.push(reqs[idx].teamId); localStorage.setItem(`myTeams:${reqs[idx].user.id}`, JSON.stringify(my)); }
         localStorage.setItem('joinRequests', JSON.stringify(reqs));
-        window.AppNotifications?.add({
-          type: 'application-result',
-          userId: reqs[idx].user.id,
-          sourceId: reqs[idx].id,
-          sourceKey: `application-result:${reqs[idx].id}:approved`,
-          message: `你的加入申請已通過：${teams[tIdx].name}`
-        });
         alert('已批准');
         render();
       }
     } else {
       reqs[idx].status = 'denied'; localStorage.setItem('joinRequests', JSON.stringify(reqs));
-      window.AppNotifications?.add({
-        type: 'application-result',
-        userId: reqs[idx].user.id,
-        sourceId: reqs[idx].id,
-        sourceKey: `application-result:${reqs[idx].id}:denied`,
-        message: `你的加入申請未通過：${reqs[idx].teamName}`
-      });
       alert('已拒絕');
     }
-    // refresh modal list
     const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').filter(r => r.teamId === reqs[idx].teamId && r.status === 'pending');
     if (pending.length) {
       const teams = loadTeams();
@@ -402,8 +440,9 @@
   function openCreateTeamPage() { location.href = getCreateTeamHref(); }
   function hideModal() { modal.classList.add('hidden'); newTeamName.value = ''; newTeamDesc.value = ''; }
   function closeModal() { document.body.classList.remove('modal-open'); hideModal(); }
+  
   createBtn.addEventListener('click', openCreateTeamPage);
-  openCreate.addEventListener('click', openCreateTeamPage);
+  if(openCreate) openCreate.addEventListener('click', openCreateTeamPage);
   modalCancel.addEventListener('click', closeModal);
 
   modalCreate.addEventListener('click', () => {
@@ -415,20 +454,31 @@
     closeModal(); render();
   });
 
-  // click outside modal to close
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) closeModal();
-  });
-
-  // Esc to close
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (!modal.classList.contains('hidden')) closeModal(); } });
 
+<<<<<<< HEAD
   // notify / avatar handlers
+=======
+  if(teamSearch) {
+    teamSearch.addEventListener('input', () => {
+      const q = teamSearch.value.trim().toLowerCase();
+      const teams = loadTeams();
+      const filtered = teams.filter(t => t.name.toLowerCase().includes(q) || (t.desc || '').toLowerCase().includes(q));
+      teamsGrid.innerHTML = '';
+      filtered.forEach(t => {
+        const card = document.createElement('div'); card.className = 'team-card';
+        card.innerHTML = `<h4>${t.name}</h4><div class="team-meta">${t.desc}</div><div>成員 ${t.members} / ${t.slots}</div><div style="margin-top:8px"><button class="btn" data-id="${t.id}">查看 / 加入</button></div>`;
+        teamsGrid.appendChild(card);
+      });
+    });
+  }
+
+>>>>>>> 2c5885955d9fc5ac63d67067fefe9d33ea6e41db
   const notifyBtn = document.getElementById('notifyBtn');
   const homeLink = document.getElementById('homeLink');
   if (homeLink) homeLink.href = withUserParam('/team.html');
 
-  // contest selection handler (delegated)
   document.addEventListener('click', (e) => {
     const categoryButton = e.target.closest('[data-contest-category]');
     if (categoryButton) {
@@ -454,6 +504,14 @@
       toggleContestFavorite(Number(favBtn.dataset.contestFav));
       return;
     }
+
+    // 修正點擊問題：改用事件代理處理 And More 的點擊跳轉，確保閉包內的 withUserParam 可被正確讀取
+    const andMoreCard = e.target.closest('.and-more');
+    if (andMoreCard) {
+      location.href = withUserParam('/contests.html');
+      return;
+    }
+
     const card = e.target.closest('[data-cid]');
     if (!card) return;
     const cid = Number(card.dataset.cid);
@@ -478,6 +536,8 @@
     });
   });
 
+  window.openTeamDetail = openTeamDetail;
+
   render();
   // 初次渲染後再向 API 讀取最新偏好，成功後重新計算推薦。
   window.AppPreferences?.loadUserPreferences(currentUserId).then(preferences => {
@@ -487,9 +547,7 @@
   const manageTeamId = params.get('manageTeamId');
   if (manageTeamId) setTimeout(() => openRequestsForTeam(Number(manageTeamId)), 0);
 
-  // ==============================
-  // 全域懸浮搜尋功能邏輯 (新增)
-  // ==============================
+  // 全域搜尋邏輯
   const globalSearch = $('globalSearch');
   const globalSearchOverlay = $('globalSearchOverlay');
   const btnExitSearch = $('btnExitSearch');
@@ -535,7 +593,6 @@
   function runGlobalSearch() {
     const q = globalSearch.value.trim().toLowerCase();
 
-    // 沒打字時的防呆提示
     if (q === '') {
       globalSearchResults.innerHTML = '<div style="padding: 30px; text-align: center; color: #8a735e;">請輸入關鍵字開始搜尋...</div>';
       return;
@@ -548,7 +605,11 @@
     if (currentGlobalTab === 'comp') {
       const res = contests.filter(c => c.name.toLowerCase().includes(q) || (c.info && c.info.toLowerCase().includes(q)));
       html = res.map(c => `
+<<<<<<< HEAD
         <div class="search-list-item" onclick="document.querySelector('#contestsList [data-cid=\\'${c.id}\\']')?.click(); closeGlobalSearch();">
+=======
+        <div class="search-list-item" onclick="document.querySelector('#contestsList li[data-cid=\'${c.id}\']')?.click(); closeGlobalSearch();">
+>>>>>>> 2c5885955d9fc5ac63d67067fefe9d33ea6e41db
           <strong style="color: #4f3827;">🏆 競賽：${escapeHtml(c.name)}</strong>
           <span style="font-size:12px; color:#8a735e; margin-left:8px;">(${escapeHtml(c.date)})</span>
           <p style="margin: 4px 0 0; font-size: 13px; color: #666;">${escapeHtml(c.info)}</p>
@@ -573,5 +634,7 @@
 
     globalSearchResults.innerHTML = html || '<div style="padding: 20px; text-align: center; color: #8a735e;">沒有找到符合的結果</div>';
   }
+
+  window.closeGlobalSearch = closeGlobalSearch;
 
 })();
