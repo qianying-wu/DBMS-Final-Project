@@ -21,6 +21,16 @@
   </header>
 
   <main class="layout">
+    <aside class="sidebar left">
+      <button id="openCreate" class="btn primary block">發起招募</button>
+
+      <div class="section section-contests">
+        <h4>比賽</h4>
+        <!-- 比賽類別會由 team.js 依照標籤動態產生，點擊類別後展開對應比賽。 -->
+        <ul id="contestsList" class="simple-list"></ul>
+      </div>
+    </aside>
+
     <section class="content">
       <!-- 廣告輪播 -->
       <div id="adCarousel" class="carousel">
@@ -65,6 +75,9 @@
         <h4>關注的比賽 / 訊息</h4>
         <div id="followed" class="list box">無</div>
       </section>
+
+      <!-- 個人化推薦區：固定放在右側欄位最下方。 -->
+      <section id="recommendedContests" class="recommended-contests"></section>
     </aside>
   </main>
 
@@ -113,6 +126,7 @@
   </div>
   <script src="/notifications.js"></script>
   <script src="/account-menu.js"></script>
+  <script src="/preferences.js"></script>
   <script src="/team.js"></script>
 </body>
 
