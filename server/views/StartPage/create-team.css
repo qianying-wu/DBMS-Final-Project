@@ -4,6 +4,7 @@ body{font-family:Arial,'Noto Sans TC',sans-serif;margin:0;background:#faf7f2;col
 .topbar{height:64px;background:#fff;border-bottom:1px solid #e6ddd3;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:10}
 .logo{font-weight:700;color:#6b4f3a}
 .logo-link{text-decoration:none}
+.logo-img{height:40px;width:auto;display:block;object-fit:contain}
 .actions{display:flex;gap:10px;align-items:center}
 .icon-btn,.avatar-btn{background:transparent;border:1px solid transparent;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:18px}
 .icon-btn:hover,.avatar-btn:hover{background:#f5f0ea}
