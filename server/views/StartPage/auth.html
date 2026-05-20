@@ -23,6 +23,13 @@
       .btn.primary{background:linear-gradient(90deg,var(--primary),#caa77a);color:#fff;flex:1}
       .btn.outline{background:transparent;border:1px solid #ddd;color:var(--accent);flex:1}
       .out{background:#f9f9f9;padding:8px;border-radius:6px;margin-top:10px;color:#333;max-height:120px;overflow:auto}
+      .preference-panel{border:1px solid #eadfd2;background:#fffaf2;border-radius:10px;padding:12px;margin-top:10px}
+      .preference-panel.hide{display:none}
+      .preference-panel h3{font-size:15px;margin:0 0 5px;color:var(--accent)}
+      .preference-panel p{font-size:13px;line-height:1.45;color:var(--muted);margin:0 0 10px}
+      .preference-tags{display:flex;flex-wrap:wrap;gap:8px}
+      .preference-chip{border:1px solid #dfcfbd;background:#fff;color:#5f4734;border-radius:999px;padding:7px 10px;cursor:pointer;font-size:13px}
+      .preference-chip.active{background:#6b4f3a;color:#fff;border-color:#6b4f3a}
     </style>
   </head>
   <body>
@@ -43,6 +50,13 @@
         <input id="username" class = "tab" placeholder="暱稱 (Username)">
         <input id="userEmail" class = "tab" placeholder="信箱 (Email)">
 
+        <!-- 個人化標籤：註冊時可選，也可以不選，之後到帳號資訊再修改。 -->
+        <section id="preferencePanel" class="preference-panel hide">
+          <h3>個人化標籤</h3>
+          <p>選擇你有興趣的競賽方向，之後首頁會優先推薦相關比賽。也可以先跳過。</p>
+          <div id="preferenceTags" class="preference-tags"></div>
+        </section>
+
         <div class="row">
           <button id="submit" class="btn primary">送出</button>
           <button id="back" class="btn outline">回首頁</button>
@@ -50,6 +64,7 @@
         <pre id="out" class="out"></pre>
       </div>
     </div>
+    <script src="/preferences.js"></script>
     <script src="/auth.js"></script>
   </body>
 </html>

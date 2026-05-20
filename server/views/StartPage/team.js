@@ -2,6 +2,7 @@
   const $ = id => document.getElementById(id);
   const teamsGrid = $('teamsGrid');
   const contestsGrid = $('contestsGrid');
+  const recommendedContests = $('recommendedContests');
   const myJoinedTeams = $('myJoinedTeams');
   const myOwnedTeams = $('myOwnedTeams');
   const followed = $('followed');
@@ -12,11 +13,12 @@
   const modalCancel = $('modalCancel');
   const newTeamName = $('newTeamName');
   const newTeamDesc = $('newTeamDesc');
-  const teamSearch = $('teamSearch');
   // mock current user
   const ME = { id: 9999, name: '你自己' };
   const params = new URLSearchParams(location.search);
   const currentUserId = params.get('userId') && params.get('userId') !== 'unknown' ? params.get('userId') : String(ME.id);
+  let currentPreferences = window.AppPreferences?.getFallbackPreferences(currentUserId) || [];
+  let expandedContestCategory = localStorage.getItem('expandedContestCategory') || '';
 
   function loadTeams() {
     const raw = localStorage.getItem('teams');
@@ -33,16 +35,19 @@
   function loadContests() {
     const raw = localStorage.getItem('contests');
     const seed = [
-      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽' },
-      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽' },
-      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰' },
-      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽' },
-      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽' },
-      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽' }
+      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽', preferenceKeys: ['data', 'ai'] },
+      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽', preferenceKeys: ['robotics', 'ai'] },
+      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰', preferenceKeys: ['web', 'app', 'startup', 'presentation'] },
+      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽', preferenceKeys: ['medical', 'ai', 'data'] },
+      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽', preferenceKeys: ['sustainability', 'startup', 'presentation'] },
+      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽', preferenceKeys: ['fintech', 'data', 'security'] }
     ];
     if (raw) {
       const existing = JSON.parse(raw);
-      const merged = [...existing];
+      const merged = existing.map(contest => {
+        const defaults = seed.find(item => Number(item.id) === Number(contest.id));
+        return defaults ? { ...defaults, ...contest, preferenceKeys: contest.preferenceKeys || defaults.preferenceKeys } : contest;
+      });
       seed.forEach(contest => {
         if (!merged.some(item => Number(item.id) === Number(contest.id))) merged.push(contest);
       });
@@ -79,6 +84,7 @@
     teamsGrid.innerHTML = '';
     const selectedContest = getSelectedContestId();
     const contests = loadContests();
+    renderRecommendations(contests);
     renderContestOverview(contests, teams, selectedContest, contestFavs);
     teams.forEach(t => {
       // if a contest is selected, only show teams that belong to it
@@ -130,8 +136,8 @@
     } else {
       myOwnedTeams.textContent = '尚未建立隊伍';
     }
-    // render contests list in left sidebar
-    document.getElementById('contestsList').innerHTML = contests.map(c => `<li data-cid="${c.id}" class="contest-item" style="${selectedContest === c.id ? 'background:#f6efe6' : ''}"><strong>${escapeHtml(c.name)}</strong><div style="font-size:12px;color:#666">${escapeHtml(c.date)}</div></li>`).join('');
+    // 左側比賽欄改為「類別標籤」展開清單，不直接攤開全部比賽。
+    renderContestCategoryList(contests, selectedContest);
 
     // render contest info in content area (if selected)
     const contestInfoWrapId = 'contestInfoWrap';
@@ -143,17 +149,102 @@
     renderFollowedContests(contests, contestFavs);
   }
 
+  // 將比賽依照個人化標籤分組，點擊類別才展開底下的比賽。
+  function renderContestCategoryList(contests, selectedContest) {
+    const list = document.getElementById('contestsList');
+    if (!list || !window.AppPreferences) return;
+
+    const categories = window.AppPreferences.DEFAULT_TAGS
+      .map(tag => ({
+        ...tag,
+        contests: contests.filter(contest => window.AppPreferences.inferContestTags(contest).includes(tag.key))
+      }))
+      .filter(category => category.contests.length);
+
+    if (!expandedContestCategory && categories.length) expandedContestCategory = categories[0].key;
+
+    list.innerHTML = categories.map(category => {
+      const isOpen = category.key === expandedContestCategory;
+      return `
+        <li class="contest-category ${isOpen ? 'open' : ''}">
+          <button class="contest-category-toggle" type="button" data-contest-category="${category.key}" aria-expanded="${isOpen}">
+            <span>${escapeHtml(category.label)}</span>
+            <span class="contest-category-count">${category.contests.length} 個</span>
+          </button>
+          <div class="contest-category-panel">
+            ${category.contests.map(contest => `
+              <button class="contest-child ${Number(selectedContest) === Number(contest.id) ? 'active' : ''}" type="button" data-cid="${contest.id}">
+                <strong>${escapeHtml(contest.name)}</strong>
+                <span>${escapeHtml(contest.date || '日期未定')}</span>
+              </button>
+            `).join('')}
+          </div>
+        </li>
+      `;
+    }).join('');
+  }
+
+  // 依照使用者偏好標籤渲染推薦比賽區塊。
+  function renderRecommendations(contests) {
+    if (!recommendedContests || !window.AppPreferences) return;
+
+    if (!currentPreferences.length) {
+      recommendedContests.innerHTML = `
+        <div class="recommend-empty">
+          <strong>想看到更適合你的比賽嗎？</strong>
+          <p>到帳號資訊設定個人化標籤後，這裡會依照你的興趣推薦比賽。</p>
+          <a class="btn outline" href="${withUserParam('/account-info.html')}">設定偏好</a>
+        </div>
+      `;
+      return;
+    }
+
+    const scored = contests
+      .map(contest => ({ contest, ...window.AppPreferences.scoreContest(contest, currentPreferences) }))
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    if (!scored.length) {
+      recommendedContests.innerHTML = '';
+      return;
+    }
+
+    recommendedContests.innerHTML = `
+      <div class="recommend-panel">
+        <div class="recommend-head">
+          <div>
+            <h3>為你推薦的比賽</h3>
+            <p>根據你的標籤：${currentPreferences.map(key => escapeHtml(window.AppPreferences.labelFor(key))).join('、')}</p>
+          </div>
+          <a class="btn outline" href="${withUserParam('/account-info.html')}">修改偏好</a>
+        </div>
+        <div class="recommend-list">
+          ${scored.map(item => `
+            <article class="recommend-card" data-cid="${item.contest.id}">
+              <h4>${escapeHtml(item.contest.name)}</h4>
+              <div class="recommend-reason">符合 ${item.score} 個偏好：${item.matches.map(key => escapeHtml(window.AppPreferences.labelFor(key))).join('、')}</div>
+              <div class="tag-row">${item.matches.map(key => `<span class="match-tag">${escapeHtml(window.AppPreferences.labelFor(key))}</span>`).join('')}</div>
+            </article>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
   function renderContestOverview(contests, teams, selectedContest, contestFavs = loadContestFavorites()) {
     if (!contestsGrid) return;
     contestsGrid.innerHTML = contests.map(contest => {
       const contestTeams = teams.filter(team => Number(team.contestId) === Number(contest.id));
       const isContestFav = contestFavs.includes(Number(contest.id));
+      const contestTags = window.AppPreferences ? window.AppPreferences.inferContestTags(contest).slice(0, 3) : [];
       return `
         <article class="contest-card ${Number(selectedContest) === Number(contest.id) ? 'active' : ''}" data-cid="${contest.id}">
           <button class="contest-fav-btn ${isContestFav ? 'active' : ''}" data-contest-fav="${contest.id}" type="button" aria-pressed="${isContestFav}">${isContestFav ? '♥' : '♡'}</button>
           <h3>${escapeHtml(contest.name)}</h3>
           <div class="contest-date">${escapeHtml(contest.date || '日期未定')}</div>
           <p>${escapeHtml(contest.info || '尚未填寫比賽資訊')}</p>
+          <div class="tag-row">${contestTags.map(key => `<span class="match-tag">${escapeHtml(window.AppPreferences.labelFor(key))}</span>`).join('')}</div>
           <div class="contest-stats">
             <span>${contestTeams.length} 隊</span>
           </div>
@@ -332,18 +423,6 @@
   // Esc to close
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (!modal.classList.contains('hidden')) closeModal(); } });
 
-  teamSearch.addEventListener('input', () => {
-    const q = teamSearch.value.trim().toLowerCase();
-    const teams = loadTeams();
-    const filtered = teams.filter(t => t.name.toLowerCase().includes(q) || (t.desc || '').toLowerCase().includes(q));
-    teamsGrid.innerHTML = '';
-    filtered.forEach(t => {
-      const card = document.createElement('div'); card.className = 'team-card';
-      card.innerHTML = `<h4>${t.name}</h4><div class="team-meta">${t.desc}</div><div>成員 ${t.members} / ${t.slots}</div><div style="margin-top:8px"><button class="btn" data-id="${t.id}">查看 / 加入</button></div>`;
-      teamsGrid.appendChild(card);
-    });
-  });
-
   // notify / avatar handlers
   const notifyBtn = document.getElementById('notifyBtn');
   const homeLink = document.getElementById('homeLink');
@@ -351,8 +430,19 @@
 
   // contest selection handler (delegated)
   document.addEventListener('click', (e) => {
-    const li = e.target.closest('#contestsList li'); if (!li) return;
-    const cid = Number(li.dataset.cid);
+    const categoryButton = e.target.closest('[data-contest-category]');
+    if (categoryButton) {
+      const key = categoryButton.dataset.contestCategory;
+      expandedContestCategory = expandedContestCategory === key ? '' : key;
+      if (expandedContestCategory) localStorage.setItem('expandedContestCategory', expandedContestCategory);
+      else localStorage.removeItem('expandedContestCategory');
+      render();
+      return;
+    }
+
+    const contestButton = e.target.closest('#contestsList [data-cid]');
+    if (!contestButton) return;
+    const cid = Number(contestButton.dataset.cid);
     setSelectedContestId(cid);
     location.href = withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
   });
@@ -371,6 +461,14 @@
     location.href = withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
   });
 
+  recommendedContests && recommendedContests.addEventListener('click', e => {
+    const card = e.target.closest('[data-cid]');
+    if (!card) return;
+    const cid = Number(card.dataset.cid);
+    setSelectedContestId(cid);
+    location.href = withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
+  });
+
   document.querySelectorAll('[data-my-team-tab]').forEach(button => {
     button.addEventListener('click', () => {
       const tab = button.dataset.myTeamTab;
@@ -381,6 +479,11 @@
   });
 
   render();
+  // 初次渲染後再向 API 讀取最新偏好，成功後重新計算推薦。
+  window.AppPreferences?.loadUserPreferences(currentUserId).then(preferences => {
+    currentPreferences = preferences;
+    render();
+  });
   const manageTeamId = params.get('manageTeamId');
   if (manageTeamId) setTimeout(() => openRequestsForTeam(Number(manageTeamId)), 0);
 
@@ -445,7 +548,7 @@
     if (currentGlobalTab === 'comp') {
       const res = contests.filter(c => c.name.toLowerCase().includes(q) || (c.info && c.info.toLowerCase().includes(q)));
       html = res.map(c => `
-        <div class="search-list-item" onclick="document.querySelector('#contestsList li[data-cid=\\'${c.id}\\']')?.click(); closeGlobalSearch();">
+        <div class="search-list-item" onclick="document.querySelector('#contestsList [data-cid=\\'${c.id}\\']')?.click(); closeGlobalSearch();">
           <strong style="color: #4f3827;">🏆 競賽：${escapeHtml(c.name)}</strong>
           <span style="font-size:12px; color:#8a735e; margin-left:8px;">(${escapeHtml(c.date)})</span>
           <p style="margin: 4px 0 0; font-size: 13px; color: #666;">${escapeHtml(c.info)}</p>

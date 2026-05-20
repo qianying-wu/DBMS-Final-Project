@@ -23,13 +23,10 @@
   <main class="layout">
     <aside class="sidebar left">
       <button id="openCreate" class="btn primary block">發起招募</button>
-      <div class="section section-filter">
-        <h4>搜尋/篩選</h4>
-        <input id="teamSearch" placeholder="搜尋隊名、主題或技能" />
-      </div>
 
       <div class="section section-contests">
         <h4>比賽</h4>
+        <!-- 比賽類別會由 team.js 依照標籤動態產生，點擊類別後展開對應比賽。 -->
         <ul id="contestsList" class="simple-list"></ul>
       </div>
     </aside>
@@ -44,6 +41,9 @@
           <button id="createBtn" class="btn primary">創建自己的隊伍 +</button>
         </div>
       </div>
+
+      <!-- 個人化推薦區：根據使用者偏好標籤排序出最適合的比賽。 -->
+      <section id="recommendedContests" class="recommended-contests"></section>
 
       <div id="contestsGrid" class="contests-grid"></div>
       <div id="teamsGrid" class="teams-grid"></div>
@@ -117,6 +117,7 @@
   </div>
   <script src="/notifications.js"></script>
   <script src="/account-menu.js"></script>
+  <script src="/preferences.js"></script>
   <script src="/team.js"></script>
 </body>
 
