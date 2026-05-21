@@ -4,6 +4,14 @@ import { fileURLToPath } from 'url';
 import * as authController from './controllers/authController.js';
 import * as reviewController from './controllers/reviewController.js';
 
+import dotenv from 'dotenv';
+dotenv.config();
+
+import passport from "passport";
+import passportConfig from "./config/passport.js";
+
+
+
 // 手動定義 __filename 和 __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,6 +30,11 @@ app.use(express.static(path.join(__dirname, 'views/StartPage')));
 app.get('/test', (req, res) => {
     res.json({ message: "後端伺服器已連線！" });
 });
+
+
+app.use(passport.initialize());
+passportConfig(passport);
+
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(startPageDir, 'team.html')); 
