@@ -9,6 +9,7 @@
       body{font-family:'Noto Sans TC', Arial, sans-serif;margin:0;background:#faf7f2;color:#333}
       .topbar{height:64px;background:#fff;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
       .logo{font-weight:700;color:#6b4f3a}
+      .logo-img{height:40px;width:auto;display:block;object-fit:contain}
       .actions{display:flex;gap:10px;align-items:center}
       .icon-btn,.avatar-btn{background:transparent;border:1px solid transparent;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:18px;text-decoration:none;line-height:1}
       .icon-btn:hover,.avatar-btn:hover{background:#f5f0ea}
@@ -35,15 +36,16 @@
     </style>
   </head>
   <body>
+    <!-- 頁首：首頁連結、通知與帳號選單。 -->
     <header class="topbar">
-      <a id="homeLink" href="team.html"><div class="logo">競賽組隊</div></a>
+      <a id="homeLink" href="team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
       <div class="actions">
         <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
-        <a id="teamBtn" class="icon-btn" aria-label="組隊" href="/team.html">🤝</a>
         <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
       </div>
     </header>
 
+    <!-- 使用者首頁：提供履歷與組隊兩個主要入口。 -->
     <main class="layout">
       <section class="welcome">
         <h1>使用者首頁</h1>
@@ -71,6 +73,7 @@
     <script src="/notifications.js"></script>
     <script src="/account-menu.js"></script>
     <script>
+      // 讀取目前使用者 ID，並把它帶到各個頁面的連結中。
       const qs = new URLSearchParams(location.search);
       const id = qs.get('userId') || 'unknown';
       document.getElementById('info').textContent = 'userId: ' + id;
@@ -78,6 +81,8 @@
       document.getElementById('profileLink').href = '/profile.html?userId=' + encodeURIComponent(id);
       document.getElementById('teamLink').href = '/team.html?userId=' + encodeURIComponent(id);
       document.getElementById('teamBtn').href = '/team.html?userId=' + encodeURIComponent(id);
+
+      // 登出後回到組隊頁，仍保留目前測試用 userId。
       document.getElementById('logout').addEventListener('click', () => {
         location.href = '/team.html?userId=' + encodeURIComponent(id);
       });

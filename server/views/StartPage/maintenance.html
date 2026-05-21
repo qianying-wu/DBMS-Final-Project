@@ -9,6 +9,7 @@
       body{font-family:'Noto Sans TC', Arial, sans-serif;margin:0;background:#f5f7fa;color:#263238}
       .topbar{height:64px;background:#fff;border-bottom:1px solid #e8edf2;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
       .logo{font-weight:700;color:#38506b}
+      .logo-img{height:40px;width:auto;display:block;object-fit:contain}
       .actions{display:flex;gap:10px;align-items:center}
       .icon-btn,.avatar-btn{background:transparent;border:1px solid transparent;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:18px;text-decoration:none;line-height:1}
       .icon-btn:hover,.avatar-btn:hover{background:#f1f5f7}
@@ -36,7 +37,7 @@
   </head>
   <body>
     <header class="topbar">
-      <a id="homeLink" href="/user.html"><div class="logo">競賽組隊｜管理員</div></a>
+      <a id="homeLink" href="/user.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
       <div class="actions">
         <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
         <a id="teamBtn" class="icon-btn" aria-label="組隊" href="/team.html">🤝</a>

@@ -1,13 +1,16 @@
 (function(){
+  // 將目前網址上的 userId 附加到導頁連結。
   function withUser(path){
     const userId = new URLSearchParams(location.search).get('userId');
     return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
   }
 
+  // 關閉已存在的帳號選單。
   function closeMenu(){
     document.getElementById('accountMenu')?.remove();
   }
 
+  // 在頭像按鈕下方建立帳號選單。
   function openMenu(button){
     closeMenu();
     const menu = document.createElement('div');
@@ -24,6 +27,7 @@
     menu.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
   }
 
+  // 動態注入帳號選單樣式，避免每個頁面重複寫 CSS。
   function injectStyle(){
     if (document.getElementById('accountMenuStyle')) return;
     const style = document.createElement('style');
@@ -36,6 +40,7 @@
     document.head.appendChild(style);
   }
 
+  // 綁定頭像按鈕、組隊按鈕與選單關閉事件。
   function bind(){
     injectStyle();
     const teamBtn = document.getElementById('teamBtn');
@@ -54,6 +59,7 @@
     window.addEventListener('resize', closeMenu);
   }
 
+  // DOM 完成後再綁定，確保頁面元素已存在。
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
   else bind();
 })();

@@ -5,16 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>帳號資訊</title>
     <link rel="stylesheet" href="/profile.css">
+    <style>
+      .preference-editor{margin-top:16px}
+      .preference-editor h3{margin:0 0 8px;color:#4f3827}
+      .preference-editor p{margin:0 0 12px;color:#7b6a59;line-height:1.5}
+      .preference-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+      .preference-chip{border:1px solid #dfcfbd;background:#fff;color:#5f4734;border-radius:999px;padding:8px 11px;cursor:pointer;font-size:14px}
+      .preference-chip.active{background:#6b4f3a;color:#fff;border-color:#6b4f3a}
+      .preference-status{font-size:13px;color:#7b6a59;margin-top:8px}
+    </style>
   </head>
   <body>
+    <!-- 頁首：提供通知、組隊與帳號選單入口。 -->
     <header class="topbar">
-      <a class="logo-link" href="/team.html"><div class="logo">競賽組隊</div></a>
+      <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
       <div class="actions">
         <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
-        <a id="teamBtn" class="icon-btn" aria-label="組隊" href="/team.html">🤝</a>
         <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
       </div>
     </header>
+
+    <!-- 帳號資訊內容：顯示目前測試使用者與履歷數量。 -->
     <main class="layout" style="grid-template-columns:1fr;max-width:780px;margin:0 auto">
       <section class="content">
         <h2 class="page-title">帳號資訊</h2>
@@ -23,16 +34,67 @@
           <div class="sync-item"><strong>帳號狀態</strong><span>本機測試帳號</span></div>
           <div class="sync-item"><strong>履歷數量</strong><span id="resumeCount"></span></div>
         </div>
+
+        <!-- 個人化標籤：使用者可在這裡補填或修改推薦偏好。 -->
+        <div class="card preference-editor">
+          <h3>個人化標籤</h3>
+          <p>這些標籤會影響首頁的比賽推薦，也可以讓你之後更快找到有興趣的競賽。</p>
+          <div id="preferenceTags" class="preference-tags"></div>
+          <button id="savePreferences" class="btn primary" type="button">儲存偏好</button>
+          <div id="preferenceStatus" class="preference-status"></div>
+        </div>
       </section>
     </main>
     <script src="/notifications.js"></script>
     <script src="/account-menu.js"></script>
+    <script src="/preferences.js"></script>
     <script>
+      // 讀取目前使用者 ID，並更新頁面顯示與返回連結。
       const qs = new URLSearchParams(location.search);
       const id = qs.get('userId') || 'unknown';
       document.querySelector('.logo-link').href = '/user.html?userId=' + encodeURIComponent(id);
       document.getElementById('accountUserId').textContent = id;
+
+      // 履歷數量直接從 localStorage 的 profiles 清單計算。
       document.getElementById('resumeCount').textContent = JSON.parse(localStorage.getItem('profiles') || '[]').length + ' 份';
+
+      const preferenceTags = document.getElementById('preferenceTags');
+      const preferenceStatus = document.getElementById('preferenceStatus');
+      let selectedPreferences = [];
+
+      // 依照目前選擇狀態渲染所有標籤。
+      async function renderPreferences(){
+        const tags = await window.AppPreferences.loadTags();
+        preferenceTags.innerHTML = tags.map(tag => `
+          <button class="preference-chip ${selectedPreferences.includes(tag.key) ? 'active' : ''}" type="button" data-preference="${tag.key}">
+            ${tag.label}
+          </button>
+        `).join('');
+      }
+
+      // 初始化時先讀取使用者目前存在資料庫或 localStorage 的偏好。
+      async function initPreferences(){
+        selectedPreferences = await window.AppPreferences.loadUserPreferences(id);
+        await renderPreferences();
+      }
+
+      preferenceTags.addEventListener('click', event => {
+        const chip = event.target.closest('[data-preference]');
+        if (!chip) return;
+        const key = chip.dataset.preference;
+        selectedPreferences = selectedPreferences.includes(key)
+          ? selectedPreferences.filter(item => item !== key)
+          : [...selectedPreferences, key];
+        renderPreferences();
+      });
+
+      document.getElementById('savePreferences').addEventListener('click', async () => {
+        preferenceStatus.textContent = '儲存中...';
+        const result = await window.AppPreferences.saveUserPreferences(id, selectedPreferences);
+        preferenceStatus.textContent = result.localOnly ? '已先儲存在本機；登入正式帳號後會寫入資料庫' : (result.ok ? '已儲存偏好' : (result.error || '儲存失敗'));
+      });
+
+      initPreferences();
     </script>
   </body>
 </html>

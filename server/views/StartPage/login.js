@@ -1,16 +1,16 @@
 /*
-Node.js version of the original Java Swing LoginDialog.
-This module exposes a LoginDialog class with the same basic API:
+原本 Java Swing LoginDialog 的 Node.js 版本。
+這個模組提供 LoginDialog class，保留相近的基本 API：
 
-The module does NOT connect to the database on import. A connection is
-established only when authenticate() is called.
+匯入模組時不會連線資料庫，只有呼叫 authenticate() 時才建立連線。
 */
 
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 
+// 登入對話框邏輯：封裝資料庫驗證狀態與使用者 ID。
 class LoginDialog {
-	// allow passing a dbConfig to make testing easier; otherwise read env vars
+	// 可傳入 dbConfig 方便測試；未傳入時改讀環境變數。
 	constructor(dbConfig) {
 		this.authenticated = false;
 		this.userId = -1;
@@ -25,8 +25,7 @@ class LoginDialog {
 		this.dbConfig = dbConfig || envDb;
 	}
 
-	// Attempt to authenticate against the MySQL database.
-	// Returns true on success, false otherwise. Errors are caught and logged.
+	// 透過 MySQL 驗證帳密；成功回傳 true，失敗或錯誤時回傳 false。
 	async authenticate(username, password) {
 		try {
 			const conn = await mysql.createConnection(this.dbConfig);
@@ -38,13 +37,13 @@ class LoginDialog {
 
 			if (rows && rows.length > 0) {
 				this.authenticated = true;
-				// assume the table has an `id` column like the Java version expected
+				// 依照原 Java 版本預期，user 表中應有 id 欄位。
 				this.userId = rows[0].id || -1;
 				return true;
 			}
 			return false;
 		} catch (err) {
-			// keep errors visible but don't throw to make usage simpler
+			// 顯示錯誤但不丟出，讓呼叫端只需判斷 true/false。
 			console.error('LoginDialog.authenticate error:', err.message || err);
 			return false;
 		}
@@ -61,7 +60,7 @@ class LoginDialog {
 
 module.exports = LoginDialog;
 
-// If the file is executed directly, provide a tiny CLI for manual testing.
+// 直接執行此檔時，提供一個簡易 CLI 方便手動測試登入。
 if (require.main === module) {
 	const readline = require('readline');
 	const rl = readline.createInterface({ input: process.stdin, output: process.stdout });

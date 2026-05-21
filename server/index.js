@@ -53,6 +53,11 @@ app.post('/register', authController.register);
 
 app.post('/login', authController.login);
 
+// 個人化推薦標籤 API：提供前端讀取標籤、讀取使用者偏好與更新偏好。
+app.get('/preference-tags', authController.getPreferenceTags);
+app.get('/users/:userId/preferences', authController.getUserPreferences);
+app.put('/users/:userId/preferences', authController.updateUserPreferences);
+
 // 4. 啟動伺服器
 app.listen(port, () => {
     console.log(`伺服器啟動成功：http://localhost:${port}`);
