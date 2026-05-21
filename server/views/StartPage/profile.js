@@ -1,4 +1,5 @@
 (function(){
+  // 初始化履歷頁面，集中取得 DOM 元素並綁定互動事件。
   function init(){
   const $ = id => document.getElementById(id);
   const saveBtn = $('saveBtn');
@@ -20,9 +21,11 @@
   const resetPhoto = $('resetPhoto');
   const myTeamsBox = $('myTeams');
   const followedBox = $('followed');
+
+  // 照片狀態會保留圖片來源、縮放比例與拖曳偏移量。
   let photoState = { src: null, scale: 1, x: 0, y: 0 };
 
-  // profiles stored in localStorage.profiles as { id, name, data }
+  // 履歷資料儲存在 localStorage.profiles，格式為 { id, name, data }。
   function loadProfiles(){
     return JSON.parse(localStorage.getItem('profiles')||'[]');
   }
@@ -33,6 +36,7 @@
 
   function getActiveProfileId(){ return localStorage.getItem('activeProfileId') || null; }
 
+  // 將專長標籤渲染成可移除的 tag。
   function renderTags(tags){
     tagsWrap.innerHTML = '';
     tags.forEach((t,i)=>{
@@ -42,6 +46,7 @@
     });
   }
 
+  // 根據目前照片狀態更新預覽區。
   function renderPhoto(){
     if (!photoState.src) {
       photoPreview.classList.remove('has-photo');
@@ -57,6 +62,7 @@
     photoScale.value = String(photoState.scale);
   }
 
+  // 從履歷資料還原照片與照片調整設定。
   function setPhotoFromData(data){
     photoState = {
       src: data.photo || null,
@@ -67,16 +73,19 @@
     renderPhoto();
   }
 
+  // 將使用者輸入轉成安全文字，避免插入 HTML 時破壞畫面。
   function escapeHtml(value){
     return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
+  // 將 ISO 時間字串轉成台灣常用的日期時間格式。
   function formatDateTime(value){
     const date = value ? new Date(value) : new Date();
     if (Number.isNaN(date.getTime())) return '時間未記錄';
     return date.toLocaleString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
   }
 
+  // 補齊舊履歷缺少的欄位，讓後續渲染可以使用一致格式。
   function normalizeProfiles(){
     const ps = loadProfiles().map((profile, index) => ({
       ...profile,
@@ -90,6 +99,7 @@
     return ps;
   }
 
+  // 以下通知功能是備援：若共用 notifications.js 未載入，仍可顯示基本通知。
   function loadNotifications(){
     return JSON.parse(localStorage.getItem('notifications')||'[]');
   }
@@ -143,6 +153,7 @@
     return userId ? `${teamPath}?userId=${encodeURIComponent(userId)}` : teamPath;
   }
 
+  // 讀取隊伍資料，並移除展示用預設隊伍。
   function loadTeams(){
     const defaultNames = ['AI 聯合隊', '機器人挑戰隊', '資料探勘小隊'];
     const teams = JSON.parse(localStorage.getItem('teams')||'[]').filter(team => !defaultNames.includes(team.name));
@@ -150,15 +161,8 @@
     return teams;
   }
 
+  // 讀取比賽資料，並補上預設比賽清單。
   function loadContests(){
-    const seed = [
-      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽' },
-      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽' },
-      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰' },
-      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽' },
-      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽' },
-      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽' }
-    ];
     const existing = JSON.parse(localStorage.getItem('contests')||'[]');
     const merged = [...existing];
     seed.forEach(contest => {
@@ -168,6 +172,7 @@
     return merged;
   }
 
+  // 讓履歷首頁側欄同步顯示已加入隊伍與收藏隊伍。
   function renderSyncedSidebar(){
     if (!myTeamsBox || !followedBox) return;
     const allTeams = loadTeams();
@@ -202,6 +207,7 @@
     }).join('') : '無';
   }
 
+  // 依照目前使用者與履歷 ID 組成履歷查看頁連結。
   function getResumeViewHref(id){
     const userId = new URLSearchParams(window.location.search).get('userId');
     const params = new URLSearchParams();
@@ -210,6 +216,7 @@
     return `/resume-view.html?${params.toString()}`;
   }
 
+  // 渲染履歷卡片列表，以及新增履歷卡片。
   function renderResumeGallery(){
     const ps = normalizeProfiles();
     resumeGallery.innerHTML = '';
@@ -256,12 +263,14 @@
     resumeGallery.appendChild(addCard);
   }
 
+  // 載入指定履歷並切換到編輯畫面。
   function loadProfile(id){
     setActiveProfileId(id);
     loadEditorData();
     showEditor();
   }
 
+  // 將目前選取履歷的資料填入表單。
   function loadEditorData(){
     const activeId = getActiveProfileId();
     const ps = loadProfiles();
@@ -279,6 +288,7 @@
     setPhotoFromData(data);
   }
 
+  // 顯示履歷列表首頁。
   function showGallery(){
     resumeHome.hidden = false;
     resumeEditor.hidden = true;
@@ -286,12 +296,14 @@
     renderSyncedSidebar();
   }
 
+  // 顯示履歷編輯器。
   function showEditor(){
     resumeHome.hidden = true;
     resumeEditor.hidden = false;
     renderResumeGallery();
   }
 
+  // 頁面初次載入時先讀資料，再顯示列表。
   function load(){
     loadEditorData();
     showGallery();
@@ -355,7 +367,7 @@
     const a = document.createElement('a'); a.href=url; a.download='profile.json'; a.click(); URL.revokeObjectURL(url);
   });
 
-  // live-sync: when the main name input changes, update active profile's name in list
+  // 即時同步姓名欄位：主姓名輸入變更時，同步更新目前履歷資料。
   $('name').addEventListener('input', (e)=>{
     const v = e.target.value;
     const activeId = getActiveProfileId();
@@ -372,7 +384,7 @@
       photo: photoState.src,
       photoTransform: { scale: photoState.scale, x: photoState.x, y: photoState.y }
     };
-    // save into active profile
+    // 將表單資料儲存到目前履歷；若尚未有履歷，則建立一份新的。
     let ps = loadProfiles(); let activeId = getActiveProfileId();
     if (!activeId) { // create one
       const id = Date.now(); const now = new Date().toISOString(); ps.unshift({ id, name: data.name || '履歷', createdAt: now, updatedAt: now, data }); setActiveProfileId(id);
@@ -405,6 +417,7 @@
     renderPhoto();
   });
 
+  // 拖曳照片預覽區時，更新照片在框內的位置。
   photoPreview.addEventListener('pointerdown', e=>{
     if (!photoState.src) return;
     photoPreview.setPointerCapture(e.pointerId);
@@ -428,7 +441,7 @@
     photoPreview.addEventListener('pointercancel', onPointerUp);
   });
 
-  // top-right buttons (defensive binding)
+  // 右上角按鈕的防禦性綁定，避免缺少共用模組時整頁失效。
   try {
     console.log('profile.js loaded - binding top-right buttons');
     const notifyBtn = document.getElementById('notifyBtn');
@@ -446,7 +459,7 @@
     }
   } catch (err) {
     console.error('Error binding top-right buttons:', err);
-    // ensure team button still navigates as fallback
+    // 若綁定失敗，至少保留組隊按鈕的基本導頁能力。
     const teamBtn = document.getElementById('teamBtn');
     if (teamBtn) teamBtn.setAttribute('href', 'team.html');
   }
@@ -460,7 +473,7 @@
     if (!window.AppNotifications) updateNotificationBadge();
   }
 
-  // ensure init runs after DOM is ready; log startup errors
+  // 確保 DOM 完成後才初始化，並記錄啟動錯誤方便除錯。
   try {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init);
@@ -471,3 +484,12 @@
     console.error('profile.js initialization failed:', err);
   }
 })();
+
+/*const seed = [
+      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽' },
+      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽' },
+      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰' },
+      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽' },
+      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽' },
+      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽' }
+    ];*/

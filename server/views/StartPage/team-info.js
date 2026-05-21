@@ -9,14 +9,6 @@
   // 沿用共用的讀取資料邏輯
   function loadContests(){
     const raw = localStorage.getItem('contests');
-    const seed = [
-      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽', officialUrl: 'https://www.kaggle.com/competitions' },
-      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽', officialUrl: 'https://www.robocup.org/' },
-      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰', officialUrl: 'https://devpost.com/hackathons' },
-      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽', officialUrl: 'https://www.drivendata.org/competitions/' },
-      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽', officialUrl: 'https://www.hultprize.org/' },
-      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽', officialUrl: 'https://www.fintechfestival.sg/' }
-    ];
     if (!raw) {
       localStorage.setItem('contests', JSON.stringify(seed));
       return seed;
@@ -39,7 +31,6 @@
       localStorage.setItem('teams', '[]');
       return [];
     }
-    const defaultNames = ['AI 聯合隊', '機器人挑戰隊', '資料探勘小隊'];
     const teams = JSON.parse(raw).filter(team => !defaultNames.includes(team.name));
     if (teams.length !== JSON.parse(raw).length) localStorage.setItem('teams', JSON.stringify(teams));
     return teams;
@@ -231,3 +222,12 @@
   setupEventListeners();
 
 })();
+
+/*const seed = [
+      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽', officialUrl: 'https://www.kaggle.com/competitions' },
+      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽', officialUrl: 'https://www.robocup.org/' },
+      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰', officialUrl: 'https://devpost.com/hackathons' },
+      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽', officialUrl: 'https://www.drivendata.org/competitions/' },
+      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽', officialUrl: 'https://www.hultprize.org/' },
+      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽', officialUrl: 'https://www.fintechfestival.sg/' }
+    ];*/
