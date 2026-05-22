@@ -17,10 +17,15 @@
     }
   
     // 登出功能 (給組員參考：只要清空 localStorage 就是登出)
-    window.logout = function() {
-      localStorage.removeItem('userId');
-      window.location.href = '/team.html';
-    };
+    document.addEventListener('DOMContentLoaded', () => {
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('userId');
+                window.location.href = '/index.html';
+            });
+        }
+    });
   
     document.addEventListener('DOMContentLoaded', syncAuthUI);
   })();

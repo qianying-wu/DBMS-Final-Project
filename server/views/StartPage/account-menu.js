@@ -20,6 +20,7 @@
       <a href="${withUser('/profile.html')}">我的履歷</a>
       <a href="${withUser('/account-info.html')}">帳號資訊</a>
       <a href="${withUser('/history.html')}">歷史紀錄</a>
+      <button id="logoutBtn" class="logout-btn">登出</button>
     `;
     document.body.appendChild(menu);
     const rect = button.getBoundingClientRect();
@@ -34,8 +35,9 @@
     style.id = 'accountMenuStyle';
     style.textContent = `
       .account-menu{position:fixed;z-index:1000;background:#fff;border:1px solid #eadfd2;border-radius:8px;box-shadow:0 16px 40px rgba(70,52,36,.16);min-width:150px;padding:6px}
-      .account-menu a{display:block;padding:10px 12px;border-radius:6px;color:#4f3827;text-decoration:none;font-weight:700}
-      .account-menu a:hover{background:#fff7ec}
+      .account-menu a, .account-menu button{display:block;padding:10px 12px;border-radius:6px;color:#4f3827;text-decoration:none;font-weight:700;font-size:14px}
+      .account-menu button{width:100%;text-align:left;background:none;border:none;cursor:pointer}
+      .account-menu a:hover, .account-menu button:hover{background:#fff7ec}
     `;
     document.head.appendChild(style);
   }
