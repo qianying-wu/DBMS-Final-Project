@@ -62,7 +62,7 @@
   // 切換登入/註冊模式與返回首頁。
   toLogin.addEventListener('click', () => { mode='login'; render(); });
   toRegister.addEventListener('click', () => { mode='register'; render(); });
-  back.addEventListener('click', () => { window.location.href = '/startPage.html'; });
+  back.addEventListener('click', () => { window.location.href = '/team.html'; });
 
   // 送出登入或註冊請求，依模式呼叫不同 API。
   submit.addEventListener('click', async () => {
@@ -79,7 +79,7 @@
         if (mode === 'login') {
           // 登入成功後帶著 userId 進入使用者首頁。
           const id = json.userId || json.userId === 0 ? json.userId : '';
-          const target = `/user.html?userId=${id}`;
+          const target = `/team.html?userId=${id}`;
           setTimeout(()=> location.href = target, 500);
         } else {
           // 註冊成功後切回登入模式，讓使用者以新帳號登入。

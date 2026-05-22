@@ -20,7 +20,7 @@
       <a href="${withUser('/profile.html')}">我的履歷</a>
       <a href="${withUser('/account-info.html')}">帳號資訊</a>
       <a href="${withUser('/history.html')}">歷史紀錄</a>
-      <button id="logoutBtn" class="logout-btn">登出</button>
+      <button onclick="logout()" class="logout-btn">登出</button>
     `;
     document.body.appendChild(menu);
     const rect = button.getBoundingClientRect();
