@@ -86,6 +86,7 @@
     }
   }
 
+
   // 舊頁面仍會呼叫這個方法；實際同步新比賽已改由 GET /notifications 負責。
   async function ensureContestNotifications(){
     await updateBadge();
