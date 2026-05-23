@@ -8,7 +8,6 @@ const contestsGrid = $('contestsGrid');
 const recommendedContests = $('recommendedContests');
 const myJoinedTeams = $('myJoinedTeams');
 const myOwnedTeams = $('myOwnedTeams');
-const createBtn = $('createBtn');
 const openCreate = $('openCreate');
 const modal = $('modal');
 const modalCreate = $('modalCreate');
@@ -100,7 +99,7 @@ async function render() {
   const selectedContest = Data.getSelectedContestId();
 
   // 通知系統連動
-  window.AppNotifications?.ensureContestNotifications(contests);
+  // window.AppNotifications?.ensureContestNotifications(contests);
   
   // 主畫面目前只保留比賽總覽；若頁面有隊伍容器才渲染隊伍卡片。
   if (teamsGrid) teamsGrid.innerHTML = '';
@@ -313,10 +312,12 @@ teamsGrid && teamsGrid.addEventListener('click', event => {
 });
 
 // 監聽側邊欄「我管理的隊伍」區塊的管理按鈕點擊
-myOwnedTeams.addEventListener('click', event => {
-  const btn = event.target.closest('.manage-btn');
-  if (btn) openRequestsForTeam(Number(btn.dataset.team));
-});
+if (myOwnedTeams) {
+  myOwnedTeams.addEventListener('click', event => {
+    const btn = event.target.closest('.manage-btn');
+    if (btn) openRequestsForTeam(Number(btn.dataset.team));
+  });
+}
 
 
 // --- 建立隊伍視窗 (Create Team Modal) 邏輯 ---
@@ -334,23 +335,6 @@ const openCreateTeamPage = () => {
   location.href = getCreateTeamHref();
 };
 
-// 綁定建立按鈕與取消按鈕的事件
-
-// createBtn.addEventListener('click', openCreateTeamPage);
-// if (openCreate) openCreate.addEventListener('click', openCreateTeamPage);
-// modalCancel.addEventListener('click', closeModal);
-
-// 綁定建立按鈕與取消按鈕的事件
-createBtn.addEventListener('click', (e) => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    alert('【系統提示】請先登入才能創建隊伍喔！');
-    window.location.href = '/auth.html'; // 💡 送去你們的前端登入頁（確認一下檔名喔）
-    return;
-  }
-  // 有 Token 才放行，跑原本的跳轉
-  openCreateTeamPage();
-});
 // 如果頁面上還有另一個按鈕 openCreate，也順便一起保護起來：
 if (openCreate) {
   openCreate.addEventListener('click', (e) => {
