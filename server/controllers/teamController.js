@@ -1,6 +1,40 @@
 // server/controllers/teamController.js
 import pool from '../models/db.js';
 
+// 建立隊伍
+export const createTeam = async (req, res) => {
+    // 從前端傳過來的 body 裡面解構出資料
+    const {com_id, teamStatus, num_limit, demand, team_name, current_member_count} = req.body;
+
+
+    try {
+        // 2. 修正為 MySQL 語法：移除雙引號、移除 RETURNING
+        const sql = `
+        INSERT INTO Team (com_id, teamStatus, num_limit, demand, team_name, current_member_count)
+        VALUES (?, ?, ?, ?, ?, ?);
+        `;
+
+        const values = [com_id, teamStatus, num_limit, demand, team_name, current_member_count];
+
+        // 3. 執行 MySQL 查詢
+        const [result] = await pool.query(sql, values);
+
+        // 4. 🚀 關鍵：MySQL 取得自動遞增的 ID 是透過 result.insertId
+        const newTeamId = result.insertId; 
+
+        // 5. 回傳成功訊息給前端
+        return res.status(201).json({
+        success: true,
+        message: '隊伍建立成功',
+        teamId: newTeamId
+        });
+
+    } catch (error) {
+        console.error('❌ Controller 建立隊伍失敗:', error);
+        return res.status(500).json({ message: '伺服器錯誤，無法寫入資料庫' });
+    }
+};
+
 // 取得單一隊伍詳細資訊（包含比賽資訊）
 export const getTeamDetail = async (req, res) => {
     const { teamId } = req.params;

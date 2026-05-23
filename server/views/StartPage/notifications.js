@@ -61,15 +61,16 @@
 
   // 依照比賽清單產生比賽通知。
   function ensureContestNotifications(contests){
-    contests.forEach(contest => {
-      add({
-        type: 'contest',
-        userId: 'all',
-        sourceId: contest.id,
-        sourceKey: `contest:${contest.id}`,
-        message: `新比賽：${contest.name}，比賽日期 ${contest.date || '未定'}`
-      });
-    });
+    // 這邊沒有定義，再檢查
+    // contests.forEach(contest => {
+    //   add({
+    //     type: 'contest',
+    //     userId: 'all',
+    //     sourceId: contest.id,
+    //     sourceKey: `contest:${contest.id}`,
+    //     message: `新比賽：${contest.name}，比賽日期 ${contest.date || '未定'}`
+    //   });
+    // });
   }
 
   // 更新右上角通知按鈕上的未讀數字。

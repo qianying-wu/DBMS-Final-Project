@@ -1,11 +1,14 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as authController from './controllers/authController.js';
 import * as reviewController from './controllers/reviewController.js';
+import * as teamController from './controllers/teamController.js';
+import * as contestController from './controllers/contestController.js';
 
-import dotenv from 'dotenv';
-dotenv.config();
 
 import passport from "passport";
 import passportConfig from "./config/passport.js";
@@ -19,6 +22,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = 3000;
 const startPageDir = path.join(__dirname, 'views', 'StartPage');
+
 
 // 1. 解析前端傳來的 JSON 資料 (這行一定要加，否則 API 抓不到資料)
 app.use(express.json());
@@ -70,6 +74,10 @@ app.post('/login', authController.login);
 app.get('/preference-tags', authController.getPreferenceTags);
 app.get('/users/:userId/preferences', authController.getUserPreferences);
 app.put('/users/:userId/preferences', authController.updateUserPreferences);
+
+app.post('/teams', teamController.createTeam);
+
+app.get('/contests', contestController.getAllContests);
 
 // 4. 啟動伺服器
 app.listen(port, () => {
