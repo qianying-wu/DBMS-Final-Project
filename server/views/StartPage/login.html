@@ -25,17 +25,24 @@
         e.preventDefault();
         const data = {
           role: form.role.value,
-          username: form.username.value,
-          password: form.password.value
+          account: form.username.value,
+           userPsw: form.password.value
         };
         try {
-          const resp = await fetch('/login', {
+          const resp = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
           });
+
           const json = await resp.json();
           out.textContent = JSON.stringify({ status: resp.status, body: json }, null, 2);
+
+          if (json.ok && json.token) {
+            localStorage.setItem('token', json.token);
+            alert('登入成功！Token 已存入瀏覽器口袋。');
+          }
+          
         } catch (err) {
           out.textContent = String(err);
         }
