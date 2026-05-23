@@ -65,9 +65,8 @@ export function renderContestCategoryList(contests, selectedContest, expandedCon
     }))
     .filter(category => category.contests.length);
 
-  // 決定預設展開的分類
-  let currentExpanded = expandedContestCategory;
-  if (!currentExpanded && categories.length) currentExpanded = categories[0].key;
+  // 保留使用者目前的展開狀態；空字串代表全部收合，不再自動打開第一個分類。
+  const currentExpanded = expandedContestCategory;
 
   list.innerHTML = categories.map(category => {
     const isOpen = category.key === currentExpanded;
@@ -94,11 +93,12 @@ export function renderContestCategoryList(contests, selectedContest, expandedCon
 // 渲染「為你推薦的比賽」區塊，根據使用者的偏好標籤進行配對與計分
 export function renderRecommendations(contests, currentPreferences) {
   const recommendedContests = document.getElementById('recommendedContests');
-  if (!recommendedContests || !window.AppPreferences) return;
+  const recommendedBody = document.getElementById('recommendedBody') || recommendedContests;
+  if (!recommendedBody || !window.AppPreferences) return;
 
   // 若使用者未設定偏好，顯示引導設定的提示
   if (!currentPreferences.length) {
-    recommendedContests.innerHTML = `
+    recommendedBody.innerHTML = `
       <div class="recommend-empty">
         <strong>想看到更適合你的比賽嗎？</strong>
         <p>到帳號資訊設定個人化標籤後，這裡會依照你的興趣推薦比賽。</p>
@@ -116,7 +116,7 @@ export function renderRecommendations(contests, currentPreferences) {
     .slice(0, 3);
 
   // 生成推薦卡片 HTML
-  recommendedContests.innerHTML = scored.length ? `
+  recommendedBody.innerHTML = scored.length ? `
     <div class="recommend-panel">
       <div class="recommend-head">
         <div>

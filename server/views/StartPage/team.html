@@ -59,28 +59,37 @@
     </section>
 
     <aside class="sidebar right">
-      <section class="side-card side-card-team">
-        <h4>我的隊伍</h4>
-        <div class="team-tabs" role="tablist">
-          <button class="team-tab" data-my-team-tab="joined" type="button">已加入的隊伍</button>
-          <button class="team-tab" data-my-team-tab="owned" type="button">我建立的隊伍</button>
+      <section class="side-card side-card-team" data-collapsible-card="teams">
+        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">我的隊伍</button>
+        <div class="side-card-body">
+          <div class="team-tabs" role="tablist">
+            <button class="team-tab" data-my-team-tab="joined" type="button">已加入的隊伍</button>
+            <button class="team-tab" data-my-team-tab="owned" type="button">我建立的隊伍</button>
+          </div>
+          <div id="myJoinedTeams" class="box my-team-panel" hidden>尚未加入隊伍</div>
+          <div id="myOwnedTeams" class="box my-team-panel" hidden>尚未建立隊伍</div>
         </div>
-        <div id="myJoinedTeams" class="box my-team-panel" hidden>尚未加入隊伍</div>
-        <div id="myOwnedTeams" class="box my-team-panel" hidden>尚未建立隊伍</div>
       </section>
 
-      <section class="side-card side-card-fav">
-        <h4>我的收藏</h4>
-        <div id="myFavs" class="box">尚無收藏</div>
+      <section class="side-card side-card-fav" data-collapsible-card="favorites">
+        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">我的收藏</button>
+        <div class="side-card-body">
+          <div id="myFavs" class="box">尚無收藏</div>
+        </div>
       </section>
 
-      <section class="side-card side-card-follow">
-        <h4>關注的比賽 / 訊息</h4>
-        <div id="followed" class="list box">無</div>
+      <section class="side-card side-card-follow" data-collapsible-card="followed">
+        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">關注的比賽 / 訊息</button>
+        <div class="side-card-body">
+          <div id="followed" class="list box">無</div>
+        </div>
       </section>
 
       <!-- 個人化推薦區：固定放在右側欄位最下方。 -->
-      <section id="recommendedContests" class="recommended-contests"></section>
+      <section id="recommendedContests" class="side-card side-card-recommend recommended-contests" data-collapsible-card="recommendations">
+        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">推薦比賽</button>
+        <div id="recommendedBody" class="side-card-body"></div>
+      </section>
     </aside>
   </main>
 

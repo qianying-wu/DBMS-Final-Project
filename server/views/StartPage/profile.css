@@ -125,3 +125,41 @@ input[type=text], textarea{padding:10px;border-radius:8px;border:1px solid #eee}
   .resume-gallery{grid-template-columns:1fr}
   .modal-card{min-width:0;width:calc(100vw - 28px);padding:18px}
 }
+
+/* ── 經驗履歷入口（profile.html） ─────────────────────────────────────── */
+.exp-entry-section{background:#fff;border:1px solid #eee;border-radius:10px;padding:18px 20px;margin-bottom:20px;box-shadow:0 6px 16px rgba(0,0,0,.04)}
+.exp-entry-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.exp-entry-title{margin:3px 0 4px;color:#4f3827;font-size:17px}
+.exp-entry-desc{margin:0;color:#7b6a59;font-size:13px}
+.exp-entry-btns{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px}
+.exp-preview{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.exp-preview-chip{display:flex;align-items:center;gap:6px;background:#faf5ed;border:1px solid #eadfd2;border-radius:8px;padding:6px 10px}
+.exp-preview-name{font-size:13px;color:#4f3827;font-weight:600}
+.exp-more{font-size:13px;color:#a17851;font-weight:600}
+
+/* ── 經驗類型 badge ───────────────────────────────────────────────────── */
+.exp-type-badge{background:#e8f4f8;color:#2a7a8c;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+
+/* ── 經驗列表（experience.html） ────────────────────────────────────── */
+.exp-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:4px}
+.exp-empty{padding:24px 0;color:#8a735e;font-size:14px}
+.exp-card{padding:16px 18px}
+.exp-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.exp-card-actions{display:flex;gap:4px}
+.exp-title{margin:0 0 6px;color:#3f342c;font-size:16px;font-weight:700}
+.exp-meta{color:#888;font-size:13px;margin-bottom:8px}
+.exp-desc{margin:0;color:#55483d;font-size:14px;line-height:1.65;white-space:pre-line}
+
+/* ── 經驗 Modal ──────────────────────────────────────────────────────── */
+.exp-modal-card{max-width:540px;width:calc(100vw - 28px)}
+.exp-modal-card h3{margin:0 0 16px;color:#4f3827}
+.exp-modal-card .row{margin-bottom:10px}
+.exp-modal-card label{font-size:14px;display:flex;flex-direction:column;gap:4px}
+.exp-modal-card input[type=text],
+.exp-modal-card input[type=date],
+.exp-modal-card textarea{padding:10px;border-radius:8px;border:1px solid #eee;font-family:inherit;font-size:14px}
+[hidden] {
+  display: none !important;
+}
+
+@media(max-width:520px){.exp-entry-heading{flex-direction:column}.exp-entry-btns{width:100%}}

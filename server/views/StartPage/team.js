@@ -15,11 +15,13 @@ const modalCreate = $('modalCreate');
 const modalCancel = $('modalCancel');
 const newTeamName = $('newTeamName');
 const newTeamDesc = $('newTeamDesc');
+const rightSidebar = document.querySelector('.sidebar.right');
 
 // 初始化狀態變數
 let currentPreferences = window.AppPreferences?.getFallbackPreferences(Data.currentUserId) || [];
 let expandedContestCategory = localStorage.getItem('expandedContestCategory') || '';
 let currentAd = 0;
+const collapsedSideCards = new Set(JSON.parse(localStorage.getItem('collapsedSideCards') || '[]'));
 
 // 設定廣告橫幅的自動輪播（每 4 秒切換一次）
 setInterval(() => {
@@ -116,6 +118,21 @@ function openTeamDetail(id) {
   location.href = teamInfoHref(id);
 }
 window.openTeamDetail = openTeamDetail; // 暴露給全域搜尋的點擊事件使用
+
+// 將右側卡片的收合狀態寫回畫面，讓重新整理後仍保留使用者習慣
+function applySideCardCollapseState() {
+  document.querySelectorAll('[data-collapsible-card]').forEach(card => {
+    const key = card.dataset.collapsibleCard;
+    const isCollapsed = collapsedSideCards.has(key);
+    card.classList.toggle('collapsed', isCollapsed);
+    card.querySelector('[data-card-toggle]')?.setAttribute('aria-expanded', String(!isCollapsed));
+  });
+}
+
+// 儲存右側卡片的收合狀態
+function saveSideCardCollapseState() {
+  localStorage.setItem('collapsedSideCards', JSON.stringify([...collapsedSideCards]));
+}
 
 
 // --- 請求管理模態視窗邏輯區塊 ---
@@ -295,10 +312,33 @@ recommendedContests && recommendedContests.addEventListener('click', event => {
   location.href = Data.withUserParam(`/contest.html?id=${encodeURIComponent(card.dataset.cid)}`);
 });
 
+// 處理右側資訊卡片的展開 / 收合，點同一個標題就可以復原成收合狀態
+rightSidebar && rightSidebar.addEventListener('click', event => {
+  const toggle = event.target.closest('[data-card-toggle]');
+  if (!toggle) return;
+  const card = toggle.closest('[data-collapsible-card]');
+  if (!card) return;
+
+  const key = card.dataset.collapsibleCard;
+  card.classList.toggle('collapsed');
+  const isCollapsed = card.classList.contains('collapsed');
+  toggle.setAttribute('aria-expanded', String(!isCollapsed));
+  if (isCollapsed) collapsedSideCards.add(key);
+  else collapsedSideCards.delete(key);
+  saveSideCardCollapseState();
+});
+
 // 處理側邊欄「我加入的隊伍 / 我建立的隊伍」頁籤切換
 document.querySelectorAll('[data-my-team-tab]').forEach(button => {
   button.addEventListener('click', () => {
     const tab = button.dataset.myTeamTab;
+    const targetPanel = tab === 'joined' ? myJoinedTeams : myOwnedTeams;
+    const isAlreadyOpen = button.classList.contains('active') && targetPanel && !targetPanel.hidden;
+    if (isAlreadyOpen) {
+      button.classList.remove('active');
+      targetPanel.hidden = true;
+      return;
+    }
     document.querySelectorAll('[data-my-team-tab]').forEach(item => item.classList.toggle('active', item === button));
     myJoinedTeams.hidden = tab !== 'joined';
     myOwnedTeams.hidden = tab !== 'owned';
@@ -309,10 +349,12 @@ document.querySelectorAll('[data-my-team-tab]').forEach(button => {
 // --- 初始啟動流程 ---
 // 1. 執行第一次畫面渲染
 render();
+applySideCardCollapseState();
 // 2. 非同步載入使用者偏好，完成後再次渲染推薦區塊
 window.AppPreferences?.loadUserPreferences(Data.currentUserId).then(preferences => {
   currentPreferences = preferences;
   render();
+  applySideCardCollapseState();
 });
 // 3. 檢查網址參數是否要求一進來就打開特定的管理視窗
 const manageTeamId = new URLSearchParams(location.search).get('manageTeamId');
