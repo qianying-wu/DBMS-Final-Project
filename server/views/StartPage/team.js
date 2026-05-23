@@ -8,7 +8,6 @@ const contestsGrid = $('contestsGrid');
 const recommendedContests = $('recommendedContests');
 const myJoinedTeams = $('myJoinedTeams');
 const myOwnedTeams = $('myOwnedTeams');
-const createBtn = $('createBtn');
 const openCreate = $('openCreate');
 const modal = $('modal');
 const modalCreate = $('modalCreate');
@@ -45,6 +44,7 @@ function getCreateTeamHref() {
 }
 
 // 只以網址上的 userId 判斷本頁是否登入，避免誤讀舊 localStorage 造成未登入也顯示個人資料。
+// 這是誰的神奇方法？不過目前看起來是可行的，至少不會誤讀到別人的登入狀態了。
 function isLoggedIn() {
   const userId = new URLSearchParams(location.search).get('userId');
   return Boolean(userId && userId !== 'unknown');
@@ -89,16 +89,18 @@ function requireLogin(message = '這個功能需要登入後才能使用。') {
 }
 
 // 核心渲染函式：負責讀取資料並驅動 UI 層去更新畫面
-function render() {
-  const teams = Data.loadTeams();
-  const favs = isLoggedIn() ? Data.loadFavorites() : [];
-  const contestFavs = isLoggedIn() ? Data.loadContestFavorites() : [];
-  const reqs = isLoggedIn() ? JSON.parse(localStorage.getItem('joinRequests') || '[]') : [];
-  const selectedContest = isLoggedIn() ? Data.getSelectedContestId() : null;
-  const contests = Data.loadContests();
+async function render() {
+  const response = await fetch('/api/teams/all'); 
+    if (!response.ok) throw new Error('無法取得後端隊伍資料');
+  const { contests, teams } = await response.json();
+
+  const favs = Data.loadFavorites();
+  const contestFavs = Data.loadContestFavorites();
+  const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
+  const selectedContest = Data.getSelectedContestId();
 
   // 通知系統連動
-  window.AppNotifications?.ensureContestNotifications(contests);
+  // window.AppNotifications?.ensureContestNotifications(contests);
   
   // 主畫面目前只保留比賽總覽；若頁面有隊伍容器才渲染隊伍卡片。
   if (teamsGrid) teamsGrid.innerHTML = '';
@@ -146,7 +148,12 @@ function render() {
 
 // 點擊事件：切換某個隊伍的收藏狀態
 function toggleFavorite(id) {
-  if (!requireLogin('收藏隊伍需要先登入，登入後就能把喜歡的隊伍存起來。')) return;
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('【系統提示】請先登入才能收藏比賽喔！');
+    window.location.href = '/auth.html';
+    return;
+  }
   const favorites = Data.loadFavorites();
   const index = favorites.indexOf(id);
   if (index >= 0) favorites.splice(index, 1);
@@ -157,7 +164,12 @@ function toggleFavorite(id) {
 
 // 點擊事件：切換某個比賽的收藏狀態
 function toggleContestFavorite(id) {
-  if (!requireLogin('收藏比賽需要先登入，登入後才能同步你的收藏資料。')) return;
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('【系統提示】請先登入才能收藏隊伍喔！');
+    window.location.href = '/auth.html'; // 踢去登入頁面
+    return;
+  }
   const favs = Data.loadContestFavorites();
   const index = favs.indexOf(Number(id));
   if (index >= 0) favs.splice(index, 1);
@@ -301,10 +313,12 @@ teamsGrid && teamsGrid.addEventListener('click', event => {
 });
 
 // 監聽側邊欄「我管理的隊伍」區塊的管理按鈕點擊
-myOwnedTeams.addEventListener('click', event => {
-  const btn = event.target.closest('.manage-btn');
-  if (btn) openRequestsForTeam(Number(btn.dataset.team));
-});
+if (myOwnedTeams) {
+  myOwnedTeams.addEventListener('click', event => {
+    const btn = event.target.closest('.manage-btn');
+    if (btn) openRequestsForTeam(Number(btn.dataset.team));
+  });
+}
 
 
 // --- 建立隊伍視窗 (Create Team Modal) 邏輯 ---
@@ -322,28 +336,8 @@ const openCreateTeamPage = () => {
   location.href = getCreateTeamHref();
 };
 
-// 綁定建立按鈕與取消按鈕的事件
-
-// createBtn.addEventListener('click', openCreateTeamPage);
-// if (openCreate) openCreate.addEventListener('click', openCreateTeamPage);
-// modalCancel.addEventListener('click', closeModal);
-
-// 綁定建立按鈕與取消按鈕的事件
-createBtn.addEventListener('click', (e) => {
-  // 🎯 1. 攔截點擊，先去口袋拿 Token
-  const token = localStorage.getItem('token');
-
-  // 🎯 2. 沒 Token 代表沒登入，直接彈窗擋人
-  if (!token) {
-    alert('【系統提示】請先登入才能創建隊伍喔！');
-    window.location.href = '/auth.html'; // 💡 送去你們的前端登入頁（確認一下檔名喔）
-    return;
-  }
-  // 🎯 3. 有 Token 才放行，跑你們原本的跳轉或開啟彈窗邏輯
-  openCreateTeamPage();
-});
 // 如果頁面上還有另一個按鈕 openCreate，也順便一起保護起來：
-if (openCreate) {
+if (openCreate) { // 乾這裡的邏輯是反的
   openCreate.addEventListener('click', (e) => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -354,6 +348,9 @@ if (openCreate) {
     openCreateTeamPage();
   });
 }
+
+
+
 // 保留取消按鈕
 if (modalCancel) {
   modalCancel.addEventListener('click', closeModal);

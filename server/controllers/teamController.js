@@ -6,22 +6,18 @@ export const createTeam = async (req, res) => {
     // 從前端傳過來的 body 裡面解構出資料
     const {com_id, teamStatus, num_limit, demand, team_name, current_member_count} = req.body;
 
-
     try {
         // 2. 修正為 MySQL 語法：移除雙引號、移除 RETURNING
         const sql = `
         INSERT INTO Team (com_id, teamStatus, num_limit, demand, team_name, current_member_count)
         VALUES (?, ?, ?, ?, ?, ?);
         `;
-
         const values = [com_id, teamStatus, num_limit, demand, team_name, current_member_count];
 
         // 3. 執行 MySQL 查詢
         const [result] = await pool.query(sql, values);
-
         // 4. 🚀 關鍵：MySQL 取得自動遞增的 ID 是透過 result.insertId
         const newTeamId = result.insertId; 
-
         // 5. 回傳成功訊息給前端
         return res.status(201).json({
         success: true,
@@ -42,16 +38,16 @@ export const getTeamDetail = async (req, res) => {
         // 使用 JOIN 一次抓出隊伍和比賽資料
         const [rows] = await pool.query(`
             SELECT 
-                t.*,                                 -- 取得隊伍所有欄位 (id, name, desc, members, slots 等)
+                t.*,                                 -- 取得隊伍所有欄位 (id, name, desc, members, slots 等) 啊這邊為什麼不改成跟前端對應的欄位名稱？因為前端的 teamDetail 只會用到 team_name、demand、current_member_count、num_limit，其他欄位都不會用到，所以就不特別改了。
                 c.com_name AS contestName,           -- 資料庫 com_name -> 前端 contestName
                 c.com_date AS contestDate,           -- 資料庫 com_date -> 前端 contestDate
                 c.com_intro AS contestInfo,          -- 資料庫 com_intro -> 前端 contestInfo (對應 displayContestInfo)
                 c.com_link AS officialUrl,           -- 資料庫 com_link -> 前端 officialUrl
                 c.com_location AS location,          -- 若詳情頁有地點需求
                 c.com_reward AS reward               -- 若詳情頁有獎勵需求
-            FROM teams t 
-            LEFT JOIN contests c ON t.contestId = c.com_id 
-            WHERE t.id = ?`, [teamId]);
+            FROM Team t 
+            LEFT JOIN Competition c ON t.com_id = c.com_id 
+            WHERE t.team_id = ?`, [teamId]);
 
         if (rows.length === 0) return res.status(404).json({ message: "找不到該隊伍" });
         res.json(rows[0]);
@@ -71,7 +67,7 @@ export const getAllData = async (req, res) => {
                 com_name AS name, 
                 com_date AS date, 
                 com_intro AS info 
-            FROM contests
+            FROM Competition
         `);
 
         // 2. 取得隊伍列表 (用於中間卡片)
@@ -79,8 +75,8 @@ export const getAllData = async (req, res) => {
             SELECT 
                 t.*, 
                 c.com_name AS contestName 
-            FROM teams t 
-            LEFT JOIN contests c ON t.contestId = c.com_id
+            FROM Team t 
+            LEFT JOIN Competition c ON t.com_id = c.com_id
         `);
         res.json({ contests, teams });
     } catch (error) {
