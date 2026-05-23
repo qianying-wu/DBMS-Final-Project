@@ -323,9 +323,42 @@ const openCreateTeamPage = () => {
 };
 
 // 綁定建立按鈕與取消按鈕的事件
-if (createBtn) createBtn.addEventListener('click', openCreateTeamPage);
-if (openCreate) openCreate.addEventListener('click', openCreateTeamPage);
-modalCancel.addEventListener('click', closeModal);
+
+// createBtn.addEventListener('click', openCreateTeamPage);
+// if (openCreate) openCreate.addEventListener('click', openCreateTeamPage);
+// modalCancel.addEventListener('click', closeModal);
+
+// 綁定建立按鈕與取消按鈕的事件
+createBtn.addEventListener('click', (e) => {
+  // 🎯 1. 攔截點擊，先去口袋拿 Token
+  const token = localStorage.getItem('token');
+
+  // 🎯 2. 沒 Token 代表沒登入，直接彈窗擋人
+  if (!token) {
+    alert('【系統提示】請先登入才能創建隊伍喔！');
+    window.location.href = '/auth.html'; // 💡 送去你們的前端登入頁（確認一下檔名喔）
+    return;
+  }
+  // 🎯 3. 有 Token 才放行，跑你們原本的跳轉或開啟彈窗邏輯
+  openCreateTeamPage();
+});
+// 如果頁面上還有另一個按鈕 openCreate，也順便一起保護起來：
+if (openCreate) {
+  openCreate.addEventListener('click', (e) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('【系統提示】請先登入才能創建隊伍喔！');
+      window.location.href = '/auth.html';
+      return;
+    }
+    openCreateTeamPage();
+  });
+}
+// 保留取消按鈕
+if (modalCancel) {
+  modalCancel.addEventListener('click', closeModal);
+}
+
 
 // 處理 Modal 內的建立送出邏輯，驗證欄位並存入 localStorage 後重新 render()
 modalCreate.addEventListener('click', () => {

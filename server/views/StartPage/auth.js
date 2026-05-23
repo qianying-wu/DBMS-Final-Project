@@ -82,14 +82,23 @@
   submit.addEventListener('click', async () => {
     const a = account.value; const p = password.value; const u = username.value; const e = userEmail.value;
     try {
-      const path = mode === 'login' ? '/login' : '/register';      
+      // const path = mode === 'login' ? '/login' : '/register';      
+      const path = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
 
       const payload = { account: a, userName: u, userPsw: p, userEmail: e };
       if (mode === 'register') payload.preferences = selectedPreferences;
       const resp = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
       const json = await resp.json().catch(()=>({}));
-      if (resp.ok) {
+
+
+      if (resp.ok || json.ok) {
         out.textContent = JSON.stringify(json, null, 2);
+
+        if (json.token) {
+            localStorage.setItem('token', json.token);
+            console.log('Token 已成功存入 localStorage！');
+          }
+          
         if (mode === 'login') {
           // 登入成功後帶著 userId 進入使用者首頁。
           const id = json.userId || json.userId === 0 ? json.userId : '';
