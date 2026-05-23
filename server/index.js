@@ -1,20 +1,14 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import * as authController from './controllers/authController.js';
-import * as reviewController from './controllers/reviewController.js';
-import * as teamController from './controllers/teamController.js';
-import * as contestController from './controllers/contestController.js';
-
-
 import authRouter from './routes/auth-route.js';
 import reviewRouter from './routes/review-route.js';
 import teamRouter from './routes/team-route.js';
+import comRouter from './routes/com-route.js';
 import pool from './models/db.js';
 
+import dotenv from 'dotenv';
+dotenv.config();
 
 import passport from "passport";
 import passportConfig from "./config/passport.js";
@@ -28,7 +22,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = 3000;
 const startPageDir = path.join(__dirname, 'views', 'StartPage');
-
 
 // 1. 解析前端傳來的 JSON 資料 (這行一定要加，否則 API 抓不到資料)
 app.use(express.json());
@@ -61,6 +54,25 @@ app.get('/contest', (req, res) => {
 app.get('/create-team', (req, res) => {
     res.sendFile(path.join(startPageDir, 'create-team.html'));
 });
+
+// app.get('/competitions', async (req, res) => {
+//     try {
+//         const [rows] = await pool.execute(`
+//             SELECT
+//                 com_id AS id,
+//                 com_name AS name,
+//                 DATE_FORMAT(com_date, '%Y-%m-%d') AS date,
+//                 com_intro AS info,
+//                 com_link AS officialUrl
+//             FROM Competition
+//             ORDER BY com_date IS NULL, com_date ASC, com_id ASC
+//         `);
+//         res.json({ ok: true, competitions: rows });
+//     } catch (err) {
+//         console.error('Database Error (Competitions):', err.message);
+//         res.status(500).json({ ok: false, error: '無法取得比賽資料' });
+//     }
+// });
 
 // 通知 API：所有有通知鈴鐺的頁面都會透過這組 API 和資料庫同步通知。
 app.get('/notifications', async (req, res) => {
@@ -179,24 +191,11 @@ app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
     res.status(204).end();
 });
 
-
-// app.post('/submit-review', reviewController.submitReview);
-// app.post('/register', authController.register);
-// app.post('/login', authController.login);
-
-// // 個人化推薦標籤 API：提供前端讀取標籤、讀取使用者偏好與更新偏好。
-// app.get('/preference-tags', authController.getPreferenceTags);
-// app.get('/users/:userId/preferences', authController.getUserPreferences);
-// app.put('/users/:userId/preferences', authController.updateUserPreferences);
-
 // --- API routes ---
 app.use('/api/auth', authRouter);
 app.use('/api/review', reviewRouter);
-app.use('/api/teams', teamRouter); // 需要登入才能存取隊伍相關 API
-
-app.post('/teams', teamController.createTeam);
-
-app.get('/contests', contestController.getAllContests);
+app.use('/api/teams', teamRouter); 
+app.use('/api/contests', comRouter);
 
 // 4. 啟動伺服器
 app.listen(port, () => {

@@ -44,6 +44,7 @@ function getCreateTeamHref() {
 }
 
 // 只以網址上的 userId 判斷本頁是否登入，避免誤讀舊 localStorage 造成未登入也顯示個人資料。
+// 這是誰的神奇方法？不過目前看起來是可行的，至少不會誤讀到別人的登入狀態了。
 function isLoggedIn() {
   const userId = new URLSearchParams(location.search).get('userId');
   return Boolean(userId && userId !== 'unknown');
@@ -336,7 +337,7 @@ const openCreateTeamPage = () => {
 };
 
 // 如果頁面上還有另一個按鈕 openCreate，也順便一起保護起來：
-if (openCreate) {
+if (openCreate) { // 乾這裡的邏輯是反的
   openCreate.addEventListener('click', (e) => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -347,6 +348,9 @@ if (openCreate) {
     openCreateTeamPage();
   });
 }
+
+
+
 // 保留取消按鈕
 if (modalCancel) {
   modalCancel.addEventListener('click', closeModal);
