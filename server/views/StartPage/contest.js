@@ -129,18 +129,18 @@
       `;
     }).join('') : '<div class="box">目前還沒有隊伍，先創建自己的隊伍吧。</div>';
 
-    // 渲染側邊欄：「我加入的隊伍」(僅限該比賽)
+    // 若頁面有側邊欄才渲染個人區塊；目前 contest.html 已改成單欄版面。
     const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${currentUserId}`)||'[]');
     const my = loadTeams().filter(team => joinedIds.some(id => Number(id) === Number(team.id)) && Number(team.contestId) === Number(contest.id));
-    $('myTeams').textContent = my.length ? my.map(team => team.name).join('\n') : '尚未加入隊伍';
+    if ($('myTeams')) $('myTeams').textContent = my.length ? my.map(team => team.name).join('\n') : '尚未加入隊伍';
 
     // 渲染側邊欄：「我收藏的隊伍」
     const favoriteTeams = loadTeams().filter(team => favs.includes(team.id));
-    $('myFavs').textContent = favoriteTeams.length ? favoriteTeams.map(team => team.name).join('\n') : '尚無收藏';
+    if ($('myFavs')) $('myFavs').textContent = favoriteTeams.length ? favoriteTeams.map(team => team.name).join('\n') : '尚無收藏';
 
     // 渲染側邊欄：「我關注的比賽」
     const favoriteContests = loadContestFavorites().map(id => loadContests().find(item => Number(item.id) === Number(id))).filter(Boolean);
-    $('followed').textContent = favoriteContests.length ? favoriteContests.map(item => `${item.name}\n${item.date}`).join('\n\n') : '尚無關注';
+    if ($('followed')) $('followed').textContent = favoriteContests.length ? favoriteContests.map(item => `${item.name}\n${item.date}`).join('\n\n') : '尚無關注';
   }
 
   // --- 互動與事件監聽區塊 ---

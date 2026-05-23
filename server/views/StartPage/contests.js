@@ -1,39 +1,101 @@
 // 取得 DOM 元素的簡寫工具函式，方便後續快速抓取 ID
 const $ = id => document.getElementById(id);
 
-// 模擬的競賽資料陣列（假資料），包含比賽的基本資訊與標籤
-const mockContests = [
-  { id: 10, name: '全國資料科學競賽', category: 'AI', date: '2026-07-20', shortDesc: '針對資料科學專題的校內外競賽。', tag: '熱門' },
-  { id: 11, name: '全國機器人盃', category: 'Design', date: '2026-09-10', shortDesc: '實作機器人並進行對抗賽。', tag: '推薦' },
-  { id: 12, name: '創業創新黑客松', category: 'Business', date: '2026-10-05', shortDesc: '48小時內提出商業解決方案。', tag: '新賽事' }
-];
+let contests = [];
 
-// 核心渲染函式：負責將傳入的資料陣列 (data) 轉換成 HTML 卡片結構並呈現在畫面上
-function renderContests(data) {
-  const grid = $('contestsGrid');
-  // 使用 map 產生每個比賽的 HTML 字串，並用 join('') 合併後塞入網格容器中
-  grid.innerHTML = data.map(c => `
-    <div class="contest-card" onclick="location.href='contests-detail.html?id=${c.id}'">
-      <div class="card-tag">${c.tag}</div>
-      <h3>${c.name}</h3>
-      <p class="category">分類：${c.category}</p>
-      <p class="desc">${c.shortDesc}</p>
-      <div class="card-footer">
-        <span>📅 ${c.date}</span>
-        <span class="more-link">查看更多 →</span>
-      </div>
-    </div>
-  `).join('');
+// 將字串轉成安全 HTML，避免資料庫文字影響頁面結構。
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[char]));
 }
 
-// 簡易搜尋過濾功能：監聽搜尋框的輸入事件
-$('contestSearch').addEventListener('input', (e) => {
-  const q = e.target.value.toLowerCase(); // 取得使用者輸入的值並轉為小寫
-  // 比對比賽名稱，若包含輸入的關鍵字則保留
-  const filtered = mockContests.filter(c => c.name.toLowerCase().includes(q));
-  // 重新渲染過濾後的結果
+// 導頁時保留目前登入使用者的 userId。
+function withUserParam(path) {
+  const userId = new URLSearchParams(location.search).get('userId') || localStorage.getItem('userId');
+  return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
+}
+
+// 從後端讀取資料庫 Competition 表的全部比賽。
+async function loadContests() {
+  try {
+    const res = await fetch('/competitions');
+    if (!res.ok) throw new Error('無法取得比賽資料');
+    const data = await res.json();
+    contests = data.competitions || [];
+  } catch (err) {
+    console.error(err);
+    contests = [];
+  }
+}
+
+// 依照比賽名稱與說明做簡單分類，維持原本頁面上的分類篩選體驗。
+function inferCategory(contest) {
+  const text = `${contest.name || ''} ${contest.info || ''}`.toLowerCase();
+  if (text.includes('ai') || text.includes('資料') || text.includes('機器') || text.includes('智慧')) return 'AI';
+  if (text.includes('設計') || text.includes('創意') || text.includes('黑客松')) return 'Design';
+  if (text.includes('商業') || text.includes('創業') || text.includes('金融')) return 'Business';
+  return 'Other';
+}
+
+function categoryLabel(category) {
+  return {
+    AI: '人工智慧',
+    Design: '設計與創意',
+    Business: '商業競賽',
+    Other: '其他'
+  }[category] || category;
+}
+
+// 核心渲染函式：負責將資料庫比賽轉換成 HTML 卡片並呈現在畫面上。
+function renderContests(data) {
+  const grid = $('contestsGrid');
+  if (!grid) return;
+
+  grid.innerHTML = data.length ? data.map(contest => {
+    const category = inferCategory(contest);
+    return `
+      <article class="contest-card" data-id="${contest.id}">
+        <div class="card-tag">${categoryLabel(category)}</div>
+        <h3>${escapeHtml(contest.name)}</h3>
+        <p class="category">分類：${categoryLabel(category)}</p>
+        <p class="desc">${escapeHtml(contest.info || '尚未填寫比賽說明')}</p>
+        <div class="card-footer">
+          <span>${escapeHtml(contest.date || '日期未定')}</span>
+          <span class="more-link">查看更多 →</span>
+        </div>
+      </article>
+    `;
+  }).join('') : '<div class="empty-note">目前資料庫沒有可瀏覽的比賽。</div>';
+}
+
+// 依照搜尋關鍵字與分類篩選重新顯示比賽。
+function applyFilters() {
+  const q = $('contestSearch')?.value.trim().toLowerCase() || '';
+  const category = $('categoryFilter')?.value || 'all';
+  const filtered = contests.filter(contest => {
+    const matchedText = `${contest.name || ''} ${contest.info || ''}`.toLowerCase().includes(q);
+    const matchedCategory = category === 'all' || inferCategory(contest) === category;
+    return matchedText && matchedCategory;
+  });
   renderContests(filtered);
+}
+
+$('contestSearch')?.addEventListener('input', applyFilters);
+$('categoryFilter')?.addEventListener('change', applyFilters);
+
+$('contestsGrid')?.addEventListener('click', event => {
+  const card = event.target.closest('[data-id]');
+  if (!card) return;
+  location.href = withUserParam(`/contest.html?id=${encodeURIComponent(card.dataset.id)}`);
 });
 
-// 頁面初始載入時，執行第一次渲染，顯示所有比賽
-renderContests(mockContests);
+const homeLink = $('homeLink');
+if (homeLink) homeLink.href = withUserParam('/team.html');
+
+// 頁面初始載入時，先讀取資料庫，再顯示所有比賽。
+loadContests().then(applyFilters);

@@ -5,6 +5,18 @@
     return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
   }
 
+  // 只用網址上的 userId 判斷是否登入，避免讀到舊 localStorage 後誤開個人資料。
+  function isLoggedIn(){
+    const userId = new URLSearchParams(location.search).get('userId');
+    return Boolean(userId && userId !== 'unknown');
+  }
+
+  function askLogin(){
+    if (confirm('這個功能需要先登入，是否前往登入頁？')) {
+      location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+    }
+  }
+
   // 關閉已存在的帳號選單。
   function closeMenu(){
     document.getElementById('accountMenu')?.remove();
@@ -53,6 +65,11 @@
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
+        if (!isLoggedIn()) {
+          closeMenu();
+          askLogin();
+          return;
+        }
         if (document.getElementById('accountMenu')) closeMenu(); else openMenu(avatar);
         return;
       }
