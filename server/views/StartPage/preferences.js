@@ -62,7 +62,7 @@
   async function loadUserPreferences(userId = getCurrentUserId()){
     try {
       if (!userId || userId === 'unknown') return getFallbackPreferences(userId);
-      const resp = await fetch(`/users/${encodeURIComponent(userId)}/preferences`);
+      const resp = await fetch(`/api/auth/users/${encodeURIComponent(userId)}/preferences`);
       const json = await resp.json();
       if (resp.ok && Array.isArray(json.preferences)) {
         setFallbackPreferences(json.preferences, userId);
