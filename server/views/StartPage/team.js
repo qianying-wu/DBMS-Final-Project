@@ -16,9 +16,14 @@ const modalCancel = $('modalCancel');
 const newTeamName = $('newTeamName');
 const newTeamDesc = $('newTeamDesc');
 const rightSidebar = document.querySelector('.sidebar.right');
+const loginPromptModal = $('loginPromptModal');
+const loginPromptMessage = $('loginPromptMessage');
+const loginPromptLogin = $('loginPromptLogin');
+const loginPromptCancel = $('loginPromptCancel');
+const authAction = $('authAction');
 
 // 初始化狀態變數
-let currentPreferences = window.AppPreferences?.getFallbackPreferences(Data.currentUserId) || [];
+let currentPreferences = isLoggedIn() ? (window.AppPreferences?.getFallbackPreferences(Data.currentUserId) || []) : [];
 let expandedContestCategory = localStorage.getItem('expandedContestCategory') || '';
 let currentAd = 0;
 const collapsedSideCards = new Set(JSON.parse(localStorage.getItem('collapsedSideCards') || '[]'));
@@ -39,6 +44,50 @@ function getCreateTeamHref() {
   return Data.withUserParam('/create-team.html');
 }
 
+// 只以網址上的 userId 判斷本頁是否登入，避免誤讀舊 localStorage 造成未登入也顯示個人資料。
+function isLoggedIn() {
+  const userId = new URLSearchParams(location.search).get('userId');
+  return Boolean(userId && userId !== 'unknown');
+}
+
+function authHref() {
+  return `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+}
+
+// 右上角依登入狀態切換成「登入 / 登出」，避免登入後仍停在登入入口。
+function renderAuthAction() {
+  const link = authAction?.querySelector('a');
+  if (!link) return;
+
+  if (isLoggedIn()) {
+    link.textContent = '登出';
+    link.href = '/team.html';
+    link.addEventListener('click', event => {
+      event.preventDefault();
+      localStorage.removeItem('userId');
+      location.href = '/team.html';
+    }, { once: true });
+    return;
+  }
+
+  link.textContent = '登入';
+  link.href = authHref();
+}
+
+// 首頁允許瀏覽；一旦要查看詳情、收藏、建立隊伍等互動，就用這個彈窗提醒登入。
+function requireLogin(message = '這個功能需要登入後才能使用。') {
+  if (isLoggedIn()) return true;
+  if (!loginPromptModal) {
+    alert(message);
+    location.href = authHref();
+    return false;
+  }
+  if (loginPromptMessage) loginPromptMessage.textContent = message;
+  loginPromptModal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+  return false;
+}
+
 // 核心渲染函式：負責讀取資料並驅動 UI 層去更新畫面
 async function render() {
   const response = await fetch('/api/teams/all'); 
@@ -53,11 +102,12 @@ async function render() {
   // 通知系統連動
   window.AppNotifications?.ensureContestNotifications(contests);
   
-  // 清空隊伍列表，準備重新渲染
-  teamsGrid.innerHTML = '';
+  // 主畫面目前只保留比賽總覽；若頁面有隊伍容器才渲染隊伍卡片。
+  if (teamsGrid) teamsGrid.innerHTML = '';
 
   // 呼叫 UI 模組渲染各個區塊
-  UI.renderRecommendations(contests, currentPreferences);
+  if (isLoggedIn()) UI.renderRecommendations(contests, currentPreferences);
+  else UI.renderGuestSidebar();
   UI.renderContestOverview(contests, teams, selectedContest, contestFavs);
   expandedContestCategory = UI.renderContestCategoryList(contests, selectedContest, expandedContestCategory);
 
@@ -85,14 +135,15 @@ async function render() {
         ${isOwner ? `<button class="btn outline manage-btn" data-team="${team.id}">管理</button>` : ''}
       </div>
     `;
-    teamsGrid.appendChild(card);
+    if (teamsGrid) teamsGrid.appendChild(card);
   });
 
   // 收尾處理與其他側邊欄區塊渲染
-  Data.cleanupLegacyMyTeams(teams);
-  UI.renderSidebarTeams(teams);
-  UI.renderContestInfo(contests, selectedContest);
-  UI.renderFollowedContests(contests, contestFavs);
+  if (isLoggedIn()) Data.cleanupLegacyMyTeams(teams);
+  if (isLoggedIn()) {
+    UI.renderSidebarTeams(teams);
+    UI.renderFollowedContests(contests, contestFavs);
+  }
 }
 
 // 點擊事件：切換某個隊伍的收藏狀態
@@ -129,6 +180,7 @@ function toggleContestFavorite(id) {
 
 // 跳轉到單一隊伍的詳細資訊頁面
 function openTeamDetail(id) {
+  if (!requireLogin('查看隊伍完整資訊與申請加入需要先登入。')) return;
   location.href = teamInfoHref(id);
 }
 window.openTeamDetail = openTeamDetail; // 暴露給全域搜尋的點擊事件使用
@@ -156,6 +208,7 @@ const closeReq = $('closeReq');
 
 // 開啟某隊伍的「管理申請」視窗，驗證權限並載入申請資料
 function openRequestsForTeam(teamId) {
+  if (!requireLogin('管理隊伍申請需要先登入。')) return;
   const teams = Data.loadTeams();
   const team = teams.find(item => item.id === teamId);
   if (!team) return alert('找不到隊伍');
@@ -171,7 +224,7 @@ function openRequestsForTeam(teamId) {
 window.AppReview = { openTeamRequests: openRequestsForTeam };
 
 // 委派監聽：處理管理視窗內的「批准 (approve)」與「拒絕 (deny)」按鈕點擊邏輯
-requestsList && requestsList.addEventListener('click', event => {
+requestsList && requestsList.addEventListener('click', async event => {
   const btn = event.target.closest('button');
   if (!btn) return;
   const act = btn.dataset.act;
@@ -198,6 +251,14 @@ requestsList && requestsList.addEventListener('click', event => {
         localStorage.setItem(`myTeams:${reqs[idx].user.id}`, JSON.stringify(joined));
       }
       localStorage.setItem('joinRequests', JSON.stringify(reqs));
+      await window.AppNotifications?.add({
+        type: 'application-approved',
+        userId: reqs[idx].user.id,
+        sourceId: `${reqs[idx].teamId}:${reqs[idx].user.id}`,
+        sourceKey: `join-approved:${reqs[idx].teamId}:${reqs[idx].user.id}`,
+        message: `你的隊伍申請已通過：「${reqs[idx].teamName}」`,
+        action: { type: 'application-approved', teamId: reqs[idx].teamId }
+      });
       alert('已批准');
       render();
     }
@@ -221,11 +282,27 @@ closeReq && closeReq.addEventListener('click', () => {
   document.body.classList.remove('modal-open');
 });
 
+loginPromptLogin && loginPromptLogin.addEventListener('click', () => {
+  location.href = authHref();
+});
+
+loginPromptCancel && loginPromptCancel.addEventListener('click', () => {
+  loginPromptModal.classList.add('hidden');
+  document.body.classList.remove('modal-open');
+});
+
+loginPromptModal && loginPromptModal.addEventListener('click', event => {
+  if (event.target === loginPromptModal) {
+    loginPromptModal.classList.add('hidden');
+    document.body.classList.remove('modal-open');
+  }
+});
+
 
 // --- 頁面全域事件委派 (Event Delegation) 區塊 ---
 
 // 監聽隊伍列表的點擊，透過判斷點到的按鈕 className 決定要收藏、管理或是進入詳情
-teamsGrid.addEventListener('click', event => {
+teamsGrid && teamsGrid.addEventListener('click', event => {
   const btn = event.target.closest('button');
   if (!btn) return;
   const teamId = btn.dataset.id || btn.dataset.team;
@@ -252,9 +329,13 @@ function closeModal() {
   document.body.classList.remove('modal-open');
   hideModal();
 }
-const openCreateTeamPage = () => location.href = getCreateTeamHref();
+const openCreateTeamPage = () => {
+  if (!requireLogin('發起招募需要先登入，登入後才能建立並管理自己的隊伍。')) return;
+  location.href = getCreateTeamHref();
+};
 
 // 綁定建立按鈕與取消按鈕的事件
+
 // createBtn.addEventListener('click', openCreateTeamPage);
 // if (openCreate) openCreate.addEventListener('click', openCreateTeamPage);
 // modalCancel.addEventListener('click', closeModal);
@@ -282,9 +363,15 @@ if (openCreate) {
     openCreateTeamPage();
   });
 }
+// 保留取消按鈕
+if (modalCancel) {
+  modalCancel.addEventListener('click', closeModal);
+}
+
 
 // 處理 Modal 內的建立送出邏輯，驗證欄位並存入 localStorage 後重新 render()
 modalCreate.addEventListener('click', () => {
+  if (!requireLogin('建立隊伍需要先登入。')) return;
   const name = newTeamName.value.trim();
   if (!name) return alert('請輸入隊名');
   const desc = newTeamDesc.value.trim();
@@ -299,6 +386,12 @@ modalCreate.addEventListener('click', () => {
 // 點擊遮罩外圍或按 ESC 鍵關閉 Modal
 modal.addEventListener('click', event => { if (event.target === modal) closeModal(); });
 document.addEventListener('keydown', event => { if (event.key === 'Escape' && !modal.classList.contains('hidden')) closeModal(); });
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && loginPromptModal && !loginPromptModal.classList.contains('hidden')) {
+    loginPromptModal.classList.add('hidden');
+    document.body.classList.remove('modal-open');
+  }
+});
 
 
 const homeLink = $('homeLink');
@@ -319,6 +412,7 @@ document.addEventListener('click', event => {
   }
   const contestButton = event.target.closest('#contestsList [data-cid]');
   if (!contestButton) return;
+  if (!requireLogin('查看比賽完整資訊需要先登入。')) return;
   const cid = Number(contestButton.dataset.cid);
   Data.setSelectedContestId(cid);
   location.href = Data.withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
@@ -333,19 +427,27 @@ contestsGrid && contestsGrid.addEventListener('click', event => {
     return;
   }
   if (event.target.closest('.and-more')) {
+    if (!requireLogin('瀏覽完整比賽資料庫需要先登入。')) return;
     location.href = Data.withUserParam('/contests.html');
     return;
   }
   const card = event.target.closest('[data-cid]');
   if (!card) return;
+  if (!requireLogin('查看比賽完整資訊需要先登入。')) return;
   const cid = Number(card.dataset.cid);
   Data.setSelectedContestId(cid);
   location.href = Data.withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
 });
 
 recommendedContests && recommendedContests.addEventListener('click', event => {
+  const preferenceLink = event.target.closest('a');
+  if (preferenceLink && !requireLogin('設定個人化標籤需要先登入。')) {
+    event.preventDefault();
+    return;
+  }
   const card = event.target.closest('[data-cid]');
   if (!card) return;
+  if (!requireLogin('查看推薦比賽詳情需要先登入。')) return;
   Data.setSelectedContestId(Number(card.dataset.cid));
   location.href = Data.withUserParam(`/contest.html?id=${encodeURIComponent(card.dataset.cid)}`);
 });
@@ -385,15 +487,18 @@ document.querySelectorAll('[data-my-team-tab]').forEach(button => {
 
 
 // --- 初始啟動流程 ---
+renderAuthAction();
 // 1. 執行第一次畫面渲染
 render();
 applySideCardCollapseState();
 // 2. 非同步載入使用者偏好，完成後再次渲染推薦區塊
-window.AppPreferences?.loadUserPreferences(Data.currentUserId).then(preferences => {
-  currentPreferences = preferences;
-  render();
-  applySideCardCollapseState();
-});
+if (isLoggedIn()) {
+  window.AppPreferences?.loadUserPreferences(Data.currentUserId).then(preferences => {
+    currentPreferences = preferences;
+    render();
+    applySideCardCollapseState();
+  });
+}
 // 3. 檢查網址參數是否要求一進來就打開特定的管理視窗
 const manageTeamId = new URLSearchParams(location.search).get('manageTeamId');
 if (manageTeamId) setTimeout(() => openRequestsForTeam(Number(manageTeamId)), 0);
