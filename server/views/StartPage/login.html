@@ -1,13 +1,13 @@
-<!doctype html>
+<!-- <!doctype html>
 <html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login Test</title>
   </head>
-  <body>
+  <body> -->
     <!-- 測試用登入表單：送出後會呼叫 /login API。 -->
-    <h1>Login Test</h1>
+    <!-- <h1>Login Test</h1>
     <form id="loginForm">
       <label>Role: <input name="role" value="user"></label><br>
       <label>Username: <input name="username"></label><br>
@@ -18,35 +18,35 @@
     <script>
       // 取得表單與輸出區塊。
       const form = document.getElementById('loginForm');
-      const out = document.getElementById('out');
+      const out = document.getElementById('out'); -->
 
       // 攔截表單送出，改用 fetch 呼叫後端登入 API。
-      form.addEventListener('submit', async e => {
-        e.preventDefault();
-        const data = {
-          role: form.role.value,
-          account: form.username.value,
-           userPsw: form.password.value
-        };
-        try {
-          const resp = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-          });
+//       form.addEventListener('submit', async e => {
+//         e.preventDefault();
+//         const data = {
+//           role: form.role.value,
+//           account: form.username.value,
+//            userPsw: form.password.value
+//         };
+//         try {
+//           const resp = await fetch('/api/auth/login', {
+//             method: 'POST',
+//             headers: { 'Content-Type': 'application/json' },
+//             body: JSON.stringify(data)
+//           });
 
-          const json = await resp.json();
-          out.textContent = JSON.stringify({ status: resp.status, body: json }, null, 2);
+//           const json = await resp.json();
+//           out.textContent = JSON.stringify({ status: resp.status, body: json }, null, 2);
 
-          if (json.ok && json.token) {
-            localStorage.setItem('token', json.token);
-            alert('登入成功！Token 已存入瀏覽器口袋。');
-          }
+//           if (json.ok && json.token) {
+//             localStorage.setItem('token', json.token);
+//             alert('登入成功！Token 已存入瀏覽器口袋。');
+//           }
           
-        } catch (err) {
-          out.textContent = String(err);
-        }
-      });
-    </script>
-  </body>
-</html>
+//         } catch (err) {
+//           out.textContent = String(err);
+//         }
+//       });
+<!-- //     </script>
+//   </body>
+// </html> -->
