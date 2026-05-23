@@ -40,13 +40,15 @@ function getCreateTeamHref() {
 }
 
 // 核心渲染函式：負責讀取資料並驅動 UI 層去更新畫面
-function render() {
-  const teams = Data.loadTeams();
+async function render() {
+  const response = await fetch('/api/teams/all'); 
+    if (!response.ok) throw new Error('無法取得後端隊伍資料');
+  const { contests, teams } = await response.json();
+
   const favs = Data.loadFavorites();
   const contestFavs = Data.loadContestFavorites();
   const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
   const selectedContest = Data.getSelectedContestId();
-  const contests = Data.loadContests();
 
   // 通知系統連動
   window.AppNotifications?.ensureContestNotifications(contests);
@@ -95,6 +97,12 @@ function render() {
 
 // 點擊事件：切換某個隊伍的收藏狀態
 function toggleFavorite(id) {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('【系統提示】請先登入才能收藏比賽喔！');
+    window.location.href = '/auth.html';
+    return;
+  }
   const favorites = Data.loadFavorites();
   const index = favorites.indexOf(id);
   if (index >= 0) favorites.splice(index, 1);
@@ -105,6 +113,12 @@ function toggleFavorite(id) {
 
 // 點擊事件：切換某個比賽的收藏狀態
 function toggleContestFavorite(id) {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('【系統提示】請先登入才能收藏隊伍喔！');
+    window.location.href = '/auth.html'; // 踢去登入頁面
+    return;
+  }
   const favs = Data.loadContestFavorites();
   const index = favs.indexOf(Number(id));
   if (index >= 0) favs.splice(index, 1);
@@ -247,16 +261,13 @@ const openCreateTeamPage = () => location.href = getCreateTeamHref();
 
 // 綁定建立按鈕與取消按鈕的事件
 createBtn.addEventListener('click', (e) => {
-  // 🎯 1. 攔截點擊，先去口袋拿 Token
   const token = localStorage.getItem('token');
-
-  // 🎯 2. 沒 Token 代表沒登入，直接彈窗擋人
   if (!token) {
     alert('【系統提示】請先登入才能創建隊伍喔！');
     window.location.href = '/auth.html'; // 💡 送去你們的前端登入頁（確認一下檔名喔）
     return;
   }
-  // 🎯 3. 有 Token 才放行，跑你們原本的跳轉或開啟彈窗邏輯
+  // 有 Token 才放行，跑原本的跳轉
   openCreateTeamPage();
 });
 // 如果頁面上還有另一個按鈕 openCreate，也順便一起保護起來：

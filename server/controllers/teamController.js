@@ -15,9 +15,9 @@ export const getTeamDetail = async (req, res) => {
                 c.com_link AS officialUrl,           -- 資料庫 com_link -> 前端 officialUrl
                 c.com_location AS location,          -- 若詳情頁有地點需求
                 c.com_reward AS reward               -- 若詳情頁有獎勵需求
-            FROM teams t 
-            LEFT JOIN contests c ON t.contestId = c.com_id 
-            WHERE t.id = ?`, [teamId]);
+            FROM Team t 
+            LEFT JOIN Competition c ON t.com_id = c.com_id 
+            WHERE t.team_id = ?`, [teamId]);
 
         if (rows.length === 0) return res.status(404).json({ message: "找不到該隊伍" });
         res.json(rows[0]);
@@ -37,7 +37,7 @@ export const getAllData = async (req, res) => {
                 com_name AS name, 
                 com_date AS date, 
                 com_intro AS info 
-            FROM contests
+            FROM Competition
         `);
 
         // 2. 取得隊伍列表 (用於中間卡片)
@@ -45,8 +45,8 @@ export const getAllData = async (req, res) => {
             SELECT 
                 t.*, 
                 c.com_name AS contestName 
-            FROM teams t 
-            LEFT JOIN contests c ON t.contestId = c.com_id
+            FROM Team t 
+            LEFT JOIN Competition c ON t.com_id = c.com_id
         `);
         res.json({ contests, teams });
     } catch (error) {

@@ -5,6 +5,7 @@ import * as authController from './controllers/authController.js';
 import * as reviewController from './controllers/reviewController.js';
 import authRouter from './routes/auth-route.js';
 import reviewRouter from './routes/review-route.js';
+import teamRouter from './routes/team-route.js';
 import pool from './models/db.js';
 
 import dotenv from 'dotenv';
@@ -38,7 +39,7 @@ app.get('/test', (req, res) => {
 app.use(passport.initialize());
 passportConfig(passport);
 
-// --- HTML 頁面 routes  ---
+// --- HTML 頁面 routes  --- 看網址後面加什麼就帶去哪
 app.get('/', (req, res) => {
     res.sendFile(path.join(startPageDir, 'team.html')); 
 });
@@ -80,9 +81,7 @@ app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
 
 
 // app.post('/submit-review', reviewController.submitReview);
-
 // app.post('/register', authController.register);
-
 // app.post('/login', authController.login);
 
 // // 個人化推薦標籤 API：提供前端讀取標籤、讀取使用者偏好與更新偏好。
@@ -93,6 +92,7 @@ app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
 // --- API routes ---
 app.use('/api/auth', authRouter);
 app.use('/api/review', reviewRouter);
+app.use('/api/teams', teamRouter); // 需要登入才能存取隊伍相關 API
 
 // 4. 啟動伺服器
 app.listen(port, () => {
