@@ -76,6 +76,119 @@ app.get('/competitions', async (req, res) => {
     }
 });
 
+// 通知 API：所有有通知鈴鐺的頁面都會透過這組 API 和資料庫同步通知。
+app.get('/notifications', async (req, res) => {
+    const userId = Number(req.query.userId);
+    if (!Number.isFinite(userId)) {
+        return res.status(400).json({ ok: false, error: '缺少有效的 userId' });
+    }
+
+    try {
+        // 已讀通知保留五天，超過後自動刪除，避免通知列表越堆越長。
+        await pool.execute(
+            `DELETE FROM Notification
+             WHERE user_id = ? AND read_at IS NOT NULL AND read_at < DATE_SUB(NOW(), INTERVAL 5 DAY)`,
+            [userId]
+        );
+
+        // 將 Competition 表裡的比賽同步成通知；同一使用者同一比賽只會建立一次。
+        await pool.execute(`
+            INSERT IGNORE INTO Notification (user_id, type, message, source_id, source_key, action_json, created_at)
+            SELECT
+                ?,
+                'contest',
+                CONCAT('新比賽：', com_name, '，比賽日期 ', COALESCE(DATE_FORMAT(com_date, '%Y-%m-%d'), '未定')),
+                CAST(com_id AS CHAR),
+                CONCAT('contest:', com_id),
+                JSON_OBJECT('type', 'contest-detail', 'contestId', com_id),
+                NOW()
+            FROM Competition
+        `, [userId]);
+
+        const [rows] = await pool.execute(`
+            SELECT
+                notification_id AS id,
+                type,
+                user_id AS userId,
+                message,
+                source_id AS sourceId,
+                source_key AS sourceKey,
+                action_json AS action,
+                DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s') AS createdAt,
+                read_at IS NOT NULL AS \`read\`
+            FROM Notification
+            WHERE user_id = ?
+            ORDER BY created_at DESC, notification_id DESC
+        `, [userId]);
+
+        const notifications = rows.map(row => ({
+            ...row,
+            read: Boolean(row.read),
+            action: typeof row.action === 'string' ? JSON.parse(row.action) : row.action
+        }));
+        res.json({ ok: true, notifications });
+    } catch (err) {
+        console.error('Database Error (Notifications):', err.message);
+        res.status(500).json({ ok: false, error: '無法取得通知資料' });
+    }
+});
+
+app.post('/notifications', async (req, res) => {
+    const userId = Number(req.body.userId);
+    const type = req.body.type || 'notice';
+    const message = req.body.message;
+    const sourceId = req.body.sourceId ? String(req.body.sourceId) : null;
+    const sourceKey = req.body.sourceKey || `${type}:${sourceId || message}`;
+    const action = req.body.action || null;
+
+    if (!Number.isFinite(userId) || !message) {
+        return res.status(400).json({ ok: false, error: '缺少通知接收者或通知內容' });
+    }
+
+    try {
+        await pool.execute(`
+            INSERT INTO Notification (user_id, type, message, source_id, source_key, action_json)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                message = VALUES(message),
+                action_json = VALUES(action_json),
+                created_at = CURRENT_TIMESTAMP,
+                read_at = NULL
+        `, [userId, type, message, sourceId, sourceKey, JSON.stringify(action)]);
+        res.json({ ok: true });
+    } catch (err) {
+        console.error('Database Error (Create Notification):', err.message);
+        res.status(500).json({ ok: false, error: '無法新增通知' });
+    }
+});
+
+app.patch('/notifications/read', async (req, res) => {
+    const userId = Number(req.body.userId);
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.map(Number).filter(Number.isFinite) : [];
+    if (!Number.isFinite(userId)) {
+        return res.status(400).json({ ok: false, error: '缺少有效的 userId' });
+    }
+
+    try {
+        if (ids.length) {
+            await pool.execute(
+                `UPDATE Notification SET read_at = COALESCE(read_at, NOW())
+                 WHERE user_id = ? AND notification_id IN (${ids.map(() => '?').join(',')})`,
+                [userId, ...ids]
+            );
+        } else {
+            await pool.execute(
+                'UPDATE Notification SET read_at = COALESCE(read_at, NOW()) WHERE user_id = ?',
+                [userId]
+            );
+        }
+        res.json({ ok: true });
+    } catch (err) {
+        console.error('Database Error (Read Notifications):', err.message);
+        res.status(500).json({ ok: false, error: '無法更新通知已讀狀態' });
+    }
+});
+
 app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
     res.status(204).end();
 });

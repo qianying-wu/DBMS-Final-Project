@@ -64,6 +64,20 @@
   toRegister.addEventListener('click', () => { mode='register'; render(); });
   back.addEventListener('click', () => { window.location.href = '/team.html'; });
 
+  // 登入成功後若有 redirect，回到原本想去的頁面，並補上 userId。
+  function buildLoginTarget(userId) {
+    const redirect = qs.get('redirect') || '/team.html';
+    let url;
+    try {
+      url = new URL(redirect, location.origin);
+      if (url.origin !== location.origin) throw new Error('invalid redirect');
+    } catch (err) {
+      url = new URL('/team.html', location.origin);
+    }
+    url.searchParams.set('userId', userId);
+    return `${url.pathname}${url.search}${url.hash}`;
+  }
+
   // 送出登入或註冊請求，依模式呼叫不同 API。
   submit.addEventListener('click', async () => {
     const a = account.value; const p = password.value; const u = username.value; const e = userEmail.value;
@@ -79,7 +93,8 @@
         if (mode === 'login') {
           // 登入成功後帶著 userId 進入使用者首頁。
           const id = json.userId || json.userId === 0 ? json.userId : '';
-          const target = `/team.html?userId=${id}`;
+          localStorage.setItem('userId', id);
+          const target = buildLoginTarget(id);
           setTimeout(()=> location.href = target, 500);
         } else {
           // 註冊成功後切回登入模式，讓使用者以新帳號登入。
