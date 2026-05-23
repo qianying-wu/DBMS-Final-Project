@@ -49,7 +49,7 @@
   // 從 API 讀標籤；失敗時回傳預設標籤。
   async function loadTags(){
     try {
-      const resp = await fetch('/preference-tags');
+      const resp = await fetch('/api/auth/preference-tags');
       const json = await resp.json();
       if (resp.ok && Array.isArray(json.tags)) return json.tags;
     } catch (err) {
@@ -62,7 +62,7 @@
   async function loadUserPreferences(userId = getCurrentUserId()){
     try {
       if (!userId || userId === 'unknown') return getFallbackPreferences(userId);
-      const resp = await fetch(`/users/${encodeURIComponent(userId)}/preferences`);
+      const resp = await fetch(`/api/auth/users/${encodeURIComponent(userId)}/preferences`);
       const json = await resp.json();
       if (resp.ok && Array.isArray(json.preferences)) {
         setFallbackPreferences(json.preferences, userId);

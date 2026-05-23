@@ -1,5 +1,6 @@
 import pool from '../models/db.js';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 //dotenv.config();
 const saltRounds = 10;
@@ -161,10 +162,18 @@ export const login = async (req, res) => {
         
         console.log(`使用者 ${user.account} (ID: ${user.user_id}) 登入成功`);
 
+        const payload = { 
+            user_id: user.user_id 
+        };
+        
+        // 簽發 Token，暗號記得是用你們的 PASSPORT_SECRET 喔
+        const token = jwt.sign(payload, process.env.PASSPORT_SECRET, { expiresIn: '1d' });
+
         res.json({ 
             ok: true, 
             message: '登入成功',
             userId: user.user_id,
+            token: "JWT " + token, // 前端登入成功後會拿到這個 token，之後每次 API 請求都要帶在 Header 裡面
         });
 
     } catch (err) {

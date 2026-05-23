@@ -35,6 +35,29 @@ export function renderSidebarTeams(teams) {
   }).join('')}</ul>`;
 }
 
+// 未登入時右側個人區塊只顯示提示，不讀取 localStorage 的個人隊伍與收藏資料。
+export function renderGuestSidebar() {
+  const myJoinedTeams = document.getElementById('myJoinedTeams');
+  const myOwnedTeams = document.getElementById('myOwnedTeams');
+  const myFavsEl = document.getElementById('myFavs');
+  const followed = document.getElementById('followed');
+  const recommendedBody = document.getElementById('recommendedBody');
+
+  if (myJoinedTeams) myJoinedTeams.textContent = '登入後查看加入的隊伍';
+  if (myOwnedTeams) myOwnedTeams.textContent = '登入後查看建立的隊伍';
+  if (myFavsEl) myFavsEl.textContent = '登入後查看收藏';
+  if (followed) followed.textContent = '登入後查看關注內容';
+  if (recommendedBody) {
+    recommendedBody.innerHTML = `
+      <div class="recommend-empty">
+        <strong>登入後開啟推薦</strong>
+        <p>登入並設定個人化標籤後，這裡會依照你的興趣推薦比賽。</p>
+        <a class="btn outline" href="/auth.html">前往登入</a>
+      </div>
+    `;
+  }
+}
+
 // 渲染主畫面中，目前所選比賽的詳細資訊標題區塊
 export function renderContestInfo(contests, selectedContest) {
   const contestInfoWrapId = 'contestInfoWrap';
@@ -65,9 +88,8 @@ export function renderContestCategoryList(contests, selectedContest, expandedCon
     }))
     .filter(category => category.contests.length);
 
-  // 決定預設展開的分類
-  let currentExpanded = expandedContestCategory;
-  if (!currentExpanded && categories.length) currentExpanded = categories[0].key;
+  // 保留使用者目前的展開狀態；空字串代表全部收合，不再自動打開第一個分類。
+  const currentExpanded = expandedContestCategory;
 
   list.innerHTML = categories.map(category => {
     const isOpen = category.key === currentExpanded;
@@ -94,11 +116,12 @@ export function renderContestCategoryList(contests, selectedContest, expandedCon
 // 渲染「為你推薦的比賽」區塊，根據使用者的偏好標籤進行配對與計分
 export function renderRecommendations(contests, currentPreferences) {
   const recommendedContests = document.getElementById('recommendedContests');
-  if (!recommendedContests || !window.AppPreferences) return;
+  const recommendedBody = document.getElementById('recommendedBody') || recommendedContests;
+  if (!recommendedBody || !window.AppPreferences) return;
 
   // 若使用者未設定偏好，顯示引導設定的提示
   if (!currentPreferences.length) {
-    recommendedContests.innerHTML = `
+    recommendedBody.innerHTML = `
       <div class="recommend-empty">
         <strong>想看到更適合你的比賽嗎？</strong>
         <p>到帳號資訊設定個人化標籤後，這裡會依照你的興趣推薦比賽。</p>
@@ -116,7 +139,7 @@ export function renderRecommendations(contests, currentPreferences) {
     .slice(0, 3);
 
   // 生成推薦卡片 HTML
-  recommendedContests.innerHTML = scored.length ? `
+  recommendedBody.innerHTML = scored.length ? `
     <div class="recommend-panel">
       <div class="recommend-head">
         <div>

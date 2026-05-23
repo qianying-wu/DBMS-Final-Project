@@ -7,7 +7,6 @@
   const params = new URLSearchParams(location.search);
   const currentUserId = params.get('userId') && params.get('userId') !== 'unknown' ? params.get('userId') : String(ME.id);
   const initialContestId = Number(params.get('contestId')) || Number(params.get('id')) || null;
-  let selectedContestId = initialContestId || null;
 
   // 預設給申請人的問題。
   const questions = ['請簡單介紹你的背景和想加入的原因'];
@@ -45,9 +44,14 @@
   function loadFavorites(){ return JSON.parse(localStorage.getItem('favorites')||'[]'); }
   function loadContestFavorites(){ return JSON.parse(localStorage.getItem('favoriteContests')||'[]').map(Number); }
 
+  // 將使用者輸入轉成安全文字，避免插入 HTML 時破壞畫面。
+  function escapeHtml(value){
+    return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+  }
+
   // 將資料放進 HTML attribute 前先轉義。
   function escapeAttr(value){
-    return String(value).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(value ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   // 🚀 簡化後的版本：單純記錄使用者切換下拉選單時選擇的比賽 com_id
@@ -66,6 +70,15 @@
   }
 
   // 將 userId 保留在跨頁連結中。這個感覺可以整合
+
+  function loadTeams(){
+    return JSON.parse(localStorage.getItem('teams') || '[]');
+  }
+
+  function saveTeams(teams){
+    localStorage.setItem('teams', JSON.stringify(teams));
+  }
+
   function withUserParam(path){
     const userId = params.get('userId');
     return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
@@ -156,8 +169,8 @@
     return {
       id: Number(selectedComId)
     };
-  }
 
+  }
   // 渲染「給申請人的提問」列表。
   function renderQuestions(){
     $('questionsList').innerHTML = questions.map((question, index) => `
@@ -168,40 +181,46 @@
     `).join('');
   }
 
-  // 新增一個申請問題。
+  $('contestSearch').addEventListener('input', () => {
+    selectedContestId = null;
+    renderContestResults();
+  });
+
+  $('contestResults').addEventListener('click', event => {
+    const option = event.target.closest('[data-contest]');
+    if (!option) return;
+    selectContest(option.dataset.contest);
+  });
+
   $('addQuestion').addEventListener('click', () => {
     questions.push('');
     renderQuestions();
-    const inputs = document.querySelectorAll('.question-input');
-    inputs[inputs.length - 1].focus();
+    document.querySelectorAll('.question-input').item(questions.length - 1)?.focus();
   });
 
-  // 使用者編輯問題文字時，同步回 questions 陣列。
   $('questionsList').addEventListener('input', event => {
     const input = event.target.closest('.question-input');
     if (!input) return;
     questions[Number(input.dataset.index)] = input.value;
   });
 
-  // 刪除問題；至少保留一個空白問題欄位。
   $('questionsList').addEventListener('click', event => {
     const button = event.target.closest('[data-remove]');
     if (!button) return;
-    if (questions.length === 1) {
-      questions[0] = '';
-    } else {
-      questions.splice(Number(button.dataset.remove), 1);
-    }
+    if (questions.length === 1) questions[0] = '';
+    else questions.splice(Number(button.dataset.remove), 1);
     renderQuestions();
   });
 
   // 表單送出：建立隊伍並導回對應比賽頁。
   $('createForm').addEventListener('submit', async event => { // 💡 注意：這裡加上了 async
+
     event.preventDefault();
+    const contest = getSelectedContest();
     const name = $('teamName').value.trim();
+    if (!contest) return alert('請先搜尋並選擇一個比賽');
     if (!name) return alert('請輸入隊伍名稱');
     
-    let contest;
     try {
       contest = resolveContestForSubmit();
     } catch (error) {
@@ -247,13 +266,12 @@
       console.error('網路錯誤:', error);
       alert('無法連接到伺服器，請稍後再試');
     }
+
   });
 
-  // 導頁按鈕與表單初始化。
   $('cancelBtn').addEventListener('click', () => { location.href = withUserParam('/team.html'); });
   $('backBtn').addEventListener('click', () => { location.href = withUserParam('/team.html'); });
   document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/team.html'));
-  $('contestSelect').addEventListener('change', toggleNewContestFields);
 
   // 🚀 2. 負責網頁載入啟動的監聽器，回呼函式要加上 async
   document.addEventListener('DOMContentLoaded', async () => {

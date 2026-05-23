@@ -14,11 +14,7 @@
       <img src="/logo.png" alt="競賽組隊 Logo" class="logo-img">
     </a>
     <input type="text" id="globalSearch" class="global-search-input" placeholder="搜尋比賽、隊伍或用戶...">
-    <div class="actions">
-      <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
-      <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
-    </div>
-    <div class="loginBtn">
+    <div id="authAction" class="loginBtn">
       <a href="/auth.html">登入</a>
     </div>
   </header>
@@ -47,40 +43,45 @@
       <div class="hero">
         <div class="hero-left">
           <h2>比賽總覽</h2>
-          <p>查看全部比賽、進入比賽頁瀏覽隊伍，或建立自己的招募。</p>
-        </div>
-        <div class="hero-right">
-          <button id="createBtn" class="btn primary">創建自己的隊伍 +</button>
+          <p>查看全部比賽，或進入比賽頁瀏覽正在招募的隊伍。</p>
         </div>
       </div>
 
       <div id="contestsGrid" class="contests-grid"></div>
-      <div id="teamsGrid" class="teams-grid"></div>
     </section>
 
     <aside class="sidebar right">
-      <section class="side-card side-card-team">
-        <h4>我的隊伍</h4>
-        <div class="team-tabs" role="tablist">
-          <button class="team-tab" data-my-team-tab="joined" type="button">已加入的隊伍</button>
-          <button class="team-tab" data-my-team-tab="owned" type="button">我建立的隊伍</button>
+      <section class="side-card side-card-team" data-collapsible-card="teams">
+        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">我的隊伍</button>
+        <div class="side-card-body">
+          <div class="team-tabs" role="tablist">
+            <button class="team-tab" data-my-team-tab="joined" type="button">已加入的隊伍</button>
+            <button class="team-tab" data-my-team-tab="owned" type="button">我建立的隊伍</button>
+          </div>
+          <div id="myJoinedTeams" class="box my-team-panel" hidden>尚未加入隊伍</div>
+          <div id="myOwnedTeams" class="box my-team-panel" hidden>尚未建立隊伍</div>
         </div>
-        <div id="myJoinedTeams" class="box my-team-panel" hidden>尚未加入隊伍</div>
-        <div id="myOwnedTeams" class="box my-team-panel" hidden>尚未建立隊伍</div>
       </section>
 
-      <section class="side-card side-card-fav">
-        <h4>我的收藏</h4>
-        <div id="myFavs" class="box">尚無收藏</div>
+      <section class="side-card side-card-fav" data-collapsible-card="favorites">
+        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">我的收藏</button>
+        <div class="side-card-body">
+          <div id="myFavs" class="box">尚無收藏</div>
+        </div>
       </section>
 
-      <section class="side-card side-card-follow">
-        <h4>關注的比賽 / 訊息</h4>
-        <div id="followed" class="list box">無</div>
+      <section class="side-card side-card-follow" data-collapsible-card="followed">
+        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">關注的比賽 / 訊息</button>
+        <div class="side-card-body">
+          <div id="followed" class="list box">無</div>
+        </div>
       </section>
 
       <!-- 個人化推薦區：固定放在右側欄位最下方。 -->
-      <section id="recommendedContests" class="recommended-contests"></section>
+      <section id="recommendedContests" class="side-card side-card-recommend recommended-contests" data-collapsible-card="recommendations">
+        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">推薦比賽</button>
+        <div id="recommendedBody" class="side-card-body"></div>
+      </section>
     </aside>
   </main>
 
@@ -127,9 +128,18 @@
       </div>
     </div>
   </div>
-  <script src="auth-guard.js"></script>
-  <script src="/notifications.js"></script>
-  <script src="/account-menu.js"></script>
+
+  <!-- 未登入互動提醒：首頁可瀏覽，進一步查看或操作時才要求登入。 -->
+  <div id="loginPromptModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card login-required-card">
+      <h3>需要先登入</h3>
+      <p id="loginPromptMessage">這個功能需要登入後才能使用。</p>
+      <div class="modal-actions">
+        <button id="loginPromptCancel" class="btn outline">先逛逛</button>
+        <button id="loginPromptLogin" class="btn primary">前往登入</button>
+      </div>
+    </div>
+  </div>
   <script src="/preferences.js"></script>
   <script type="module" src="team.js"></script>
 </body>
