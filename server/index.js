@@ -3,6 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import * as authController from './controllers/authController.js';
 import * as reviewController from './controllers/reviewController.js';
+import authRouter from './routes/auth-route.js';
+import reviewRouter from './routes/review-route.js';
 import pool from './models/db.js';
 
 import dotenv from 'dotenv';
@@ -11,7 +13,7 @@ dotenv.config();
 import passport from "passport";
 import passportConfig from "./config/passport.js";
 
-
+import { requireLogin } from './middleware/auth-middleware.js';
 
 // 手動定義 __filename 和 __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -36,23 +38,19 @@ app.get('/test', (req, res) => {
 app.use(passport.initialize());
 passportConfig(passport);
 
-
+// --- HTML 頁面 routes  ---
 app.get('/', (req, res) => {
     res.sendFile(path.join(startPageDir, 'team.html')); 
 });
-
 app.get('/profile', (req, res) => {
     res.sendFile(path.join(startPageDir, 'profile.html'));
 });
-
 app.get('/team', (req, res) => {
     res.sendFile(path.join(startPageDir, 'team.html'));
 });
-
 app.get('/contest', (req, res) => {
     res.sendFile(path.join(startPageDir, 'contest.html'));
 });
-
 app.get('/create-team', (req, res) => {
     res.sendFile(path.join(startPageDir, 'create-team.html'));
 });
@@ -80,16 +78,21 @@ app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
     res.status(204).end();
 });
 
-app.post('/submit-review', reviewController.submitReview);
 
-app.post('/register', authController.register);
+// app.post('/submit-review', reviewController.submitReview);
 
-app.post('/login', authController.login);
+// app.post('/register', authController.register);
 
-// 個人化推薦標籤 API：提供前端讀取標籤、讀取使用者偏好與更新偏好。
-app.get('/preference-tags', authController.getPreferenceTags);
-app.get('/users/:userId/preferences', authController.getUserPreferences);
-app.put('/users/:userId/preferences', authController.updateUserPreferences);
+// app.post('/login', authController.login);
+
+// // 個人化推薦標籤 API：提供前端讀取標籤、讀取使用者偏好與更新偏好。
+// app.get('/preference-tags', authController.getPreferenceTags);
+// app.get('/users/:userId/preferences', authController.getUserPreferences);
+// app.put('/users/:userId/preferences', authController.updateUserPreferences);
+
+// --- API routes ---
+app.use('/api/auth', authRouter);
+app.use('/api/review', reviewRouter);
 
 // 4. 啟動伺服器
 app.listen(port, () => {
