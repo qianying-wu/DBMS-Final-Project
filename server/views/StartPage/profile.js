@@ -228,7 +228,12 @@
       card.innerHTML = `
         <div class="resume-cover"><span class="resume-ribbon">開啟</span></div>
         <div class="resume-body">
-          <h3 class="resume-title" contenteditable="true" spellcheck="false">${escapeHtml(p.name || '未命名履歷')}</h3>
+          <div class="resume-title-row">
+            <h3 class="resume-title" contenteditable="true" spellcheck="false">${escapeHtml(p.name || '未命名履歷')}</h3>
+            <button class="icon-action rename-btn" type="button" aria-label="重新命名" tabindex="-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+          </div>
           <span class="resume-time">${formatDateTime(p.updatedAt || p.createdAt)}</span>
           <div class="resume-card-actions">
             <button class="icon-action view-resume" type="button" aria-label="查看履歷">查看</button>
@@ -238,6 +243,14 @@
       `;
       const title = card.querySelector('.resume-title');
       title.addEventListener('click', event => event.stopPropagation());
+      card.querySelector('.rename-btn').addEventListener('click', event => {
+        event.stopPropagation();
+        title.focus();
+        const range = document.createRange();
+        range.selectNodeContents(title);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+      });
       title.addEventListener('input', () => {
         const next = loadProfiles();
         const idx = next.findIndex(item => String(item.id) === String(p.id));

@@ -161,5 +161,47 @@ input[type=text], textarea{padding:10px;border-radius:8px;border:1px solid #eee}
 [hidden] {
   display: none !important;
 }
+.resume-title-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rename-btn {
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.resume-card:hover .rename-btn {
+  opacity: 1;
+}
+
+/* 其他按鈕也補上 transition */
+.btn,
+.icon-btn,
+.icon-action,
+.avatar-btn {
+  transition: background 0.2s ease, border-color 0.2s ease,
+              color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn.primary:hover { background: linear-gradient(90deg, #c9a56f, #b8904f); }
+.btn.outline:hover { background: #f5f0ea; border-color: #bbb; }
+.icon-action:hover { background: #f5f0ea; color: #4f3827; }
+
+.icon-btn svg, .avatar-btn svg {
+  display: block;
+  color: #7b6a59;
+}
+
+.icon-btn:hover svg, .avatar-btn:hover svg {
+  color: #4f3827;
+}
+
+.icon-btn:hover, .avatar-btn:hover {
+  background: #f5f0ea;
+}
 
 @media(max-width:520px){.exp-entry-heading{flex-direction:column}.exp-entry-btns{width:100%}}

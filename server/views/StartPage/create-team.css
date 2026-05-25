@@ -74,3 +74,50 @@ body{font-family:Arial,'Noto Sans TC',sans-serif;margin:0;background:#faf7f2;col
   .question-row{grid-template-columns:1fr}
   .remove-question{width:100%}
 }
+.btn.primary:hover {
+  background: #c9a06a;   /* 比原本的 #d7b67f 深一點 */
+}
+
+.btn.outline:hover {
+  background: #f5f0ea;
+  border-color: #bbb;
+}
+
+.add-question-btn:hover {
+  background: #c9a06a;
+  border-color: #c9a06a;
+}
+
+.remove-question:hover {
+  background: #fff0f0;
+  border-color: #e0a0a0;
+  color: #c0392b;
+}
+
+.icon-btn:hover,
+.avatar-btn:hover {
+  background: #ede4d8;   /* 比原本 #f5f0ea 再深一點 */
+}
+/* 在 create-team.css 中加入這段 */
+.btn,
+.icon-btn,
+.avatar-btn,
+.add-question-btn,
+.remove-question,
+.contest-option {
+  transition: background 0.6s ease, border-color 0.6s ease,
+              color 0.6s ease, box-shadow 0.6s ease;
+}
+
+.icon-btn svg, .avatar-btn svg {
+  display: block;
+  color: #7b6a59;
+}
+
+.icon-btn:hover svg, .avatar-btn:hover svg {
+  color: #4f3827;
+}
+
+.icon-btn:hover, .avatar-btn:hover {
+  background: #f5f0ea;
+}

@@ -244,3 +244,95 @@ a{
   transform: translateY(1px);
   box-shadow: 0 2px 6px rgba(184, 147, 98, 0.3);
 }
+/* ===== Hover 狀態 ===== */
+.btn.primary:hover {
+  background: linear-gradient(90deg, #c9a56f, #b8904f);
+  box-shadow: 0 4px 12px rgba(184, 147, 98, 0.35);
+}
+
+.btn.outline:hover {
+  background: #f5f0ea;
+  border-color: #bbb;
+}
+
+.icon-btn:hover {
+  background: #ede4d8;
+}
+
+.fav-btn:hover {
+  background: #fff0f5;
+  border-color: #e0a0c0;
+}
+
+.contest-fav-btn:hover {
+  background: #fff0f5;
+  border-color: #e0a0c0;
+}
+
+.contest-category-toggle:hover {
+  background: #f0f7ff;
+}
+
+.contest-child:hover {
+  background: #f0f7ff;
+  border-color: #9bb8cf;
+}
+
+.simple-list li:hover {
+  background: #f5f0ea;
+  border-color: #d4b283;
+}
+
+.search-list-item:hover {
+  border-color: #d4b283;
+  background: #fffdf9;
+}
+
+/* ===== Transition ===== */
+.btn,
+.icon-btn,
+.avatar-btn,
+.fav-btn,
+.contest-fav-btn,
+.contest-category-toggle,
+.contest-child,
+.simple-list li,
+.search-list-item,
+.side-card-toggle,
+.team-tab,
+.s-tab {
+  transition: background 0.2s ease, border-color 0.2s ease,
+              color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* ===== Hover 狀態 ===== */
+.side-card-toggle:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.team-tab:hover {
+  border-color: #9bb8cf;
+  background: #fff;
+}
+
+.team-tab.active {
+  border-color: #7ba66a;
+  background: #fff;
+}
+
+/* ===== Transition ===== */
+.side-card-toggle,
+.team-tab,
+.btn,
+.icon-btn,
+.avatar-btn,
+.contest-category-toggle,
+.contest-child,
+.simple-list li,
+.search-list-item,
+.s-tab,
+.fav-btn,
+.contest-fav-btn {
+  transition: background 0.2s ease, border-color 0.2s ease,
+              color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}

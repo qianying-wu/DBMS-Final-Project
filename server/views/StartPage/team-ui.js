@@ -1,5 +1,13 @@
 import { escapeHtml, withUserParam, currentUserId, ME, loadFavorites } from './team-data.js';
 
+// 將日期字串格式化為台灣慣用格式
+function formatDate(value) {
+  if (!value) return '日期未定';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+
 // 渲染側邊欄區塊：包含「我加入的隊伍」、「我收藏的隊伍」以及「我管理的隊伍」
 export function renderSidebarTeams(teams) {
   const myJoinedTeams = document.getElementById('myJoinedTeams');
@@ -71,7 +79,7 @@ export function renderContestInfo(contests, selectedContest) {
   }
   const selected = contests.find(item => Number(item.id) === Number(selectedContest));
   contestInfoWrap.innerHTML = selected
-    ? `<h3>${escapeHtml(selected.name)}</h3><div>${escapeHtml(selected.date)}</div><p>${escapeHtml(selected.info)}</p>`
+? `<h3>${escapeHtml(selected.name)}</h3><div>${formatDate(selected.date)}</div><p>${escapeHtml(selected.info)}</p>`
     : '<h3>全部隊伍</h3><div>顯示所有跨比賽隊伍</div>';
 }
 
@@ -194,7 +202,13 @@ export function renderFollowedContests(contests, contestFavs) {
   const followed = document.getElementById('followed');
   if (!followed) return;
   const followedContests = contestFavs.map(id => contests.find(contest => Number(contest.id) === Number(id))).filter(Boolean);
-  followed.textContent = followedContests.length ? followedContests.map(contest => `${contest.name}\n${contest.date}`).join('\n\n') : '尚無關注';
+function formatDate(value) {
+  if (!value) return '日期未定';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+followed.textContent = followedContests.length ? followedContests.map(contest => `${contest.name}\n${formatDate(contest.date)}`).join('\n\n') : '尚無關注';
 }
 
 // 根據傳入的加入申請 (requests)，產生待審核名單的 HTML 結構，包含履歷資訊等
