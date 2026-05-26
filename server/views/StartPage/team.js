@@ -19,7 +19,13 @@ const loginPromptModal = $('loginPromptModal');
 const loginPromptMessage = $('loginPromptMessage');
 const loginPromptLogin = $('loginPromptLogin');
 const loginPromptCancel = $('loginPromptCancel');
-const authAction = $('authAction');
+
+// jwt
+// 之後需要登入才能操作的請求，帶上 token
+// localStorage.setItem("token", token);
+//localStorage.setItem("current_user_id", response.userId); // 把當前登入者的 ID 存起來 
+const token = localStorage.getItem("token");
+const currentUserId = localStorage.getItem("userId");
 
 // 初始化狀態變數
 let currentPreferences = isLoggedIn() ? (window.AppPreferences?.getFallbackPreferences(Data.currentUserId) || []) : [];
@@ -46,8 +52,10 @@ function getCreateTeamHref() {
 // 只以網址上的 userId 判斷本頁是否登入，避免誤讀舊 localStorage 造成未登入也顯示個人資料。
 // 這是誰的神奇方法？不過目前看起來是可行的，至少不會誤讀到別人的登入狀態了。
 function isLoggedIn() {
-  const userId = new URLSearchParams(location.search).get('userId');
-  return Boolean(userId && userId !== 'unknown');
+  const token = localStorage.getItem("token");
+  return Boolean(token && token.trim() !== "");
+  // const userId = new URLSearchParams(location.search).get('userId');
+  // return Boolean(userId && userId !== 'unknown');
 }
 
 function authHref() {
@@ -64,6 +72,7 @@ function renderAuthAction() {
     link.href = '/team.html';
     link.addEventListener('click', event => {
       event.preventDefault();
+      localStorage.removeItem('token'); 
       localStorage.removeItem('userId');
       location.href = '/team.html';
     }, { once: true });
@@ -90,7 +99,8 @@ function requireLogin(message = '這個功能需要登入後才能使用。') {
 
 // 核心渲染函式：負責讀取資料並驅動 UI 層去更新畫面
 async function render() {
-  const response = await fetch('/api/teams/all'); 
+  const response = await fetch('/api/teams/all');
+
     if (!response.ok) throw new Error('無法取得後端隊伍資料');
   const { contests, teams } = await response.json();
 
@@ -146,14 +156,23 @@ async function render() {
   }
 }
 
+
+// {
+//     method: "POST",
+//     headers: {
+//       "Content-Type": "application/json",
+//       "Authorization": `JWT ${token}`,   // ← 這行是重點
+//     },
+//     body: JSON.stringify({ emp_no: "E002", name: "王小明" }),
+// }
+
+
 // 點擊事件：切換某個隊伍的收藏狀態
 function toggleFavorite(id) {
   const token = localStorage.getItem('token');
-  if (!token) {
-    alert('【系統提示】請先登入才能收藏比賽喔！');
-    window.location.href = '/auth.html';
-    return;
-  }
+ 
+  if (!requireLogin('收藏隊伍需要先登入喔！')) return;
+
   const favorites = Data.loadFavorites();
   const index = favorites.indexOf(id);
   if (index >= 0) favorites.splice(index, 1);
@@ -165,11 +184,14 @@ function toggleFavorite(id) {
 // 點擊事件：切換某個比賽的收藏狀態
 function toggleContestFavorite(id) {
   const token = localStorage.getItem('token');
-  if (!token) {
-    alert('【系統提示】請先登入才能收藏隊伍喔！');
-    window.location.href = '/auth.html'; // 踢去登入頁面
-    return;
-  }
+  // if (!token) {
+  //   alert('【系統提示】請先登入才能收藏隊伍喔！');
+  //   window.location.href = '/auth.html'; // 踢去登入頁面
+  //   return;
+  // }
+
+  if (!requireLogin('收藏競賽需要先登入喔！')) return;
+
   const favs = Data.loadContestFavorites();
   const index = favs.indexOf(Number(id));
   if (index >= 0) favs.splice(index, 1);
@@ -336,30 +358,20 @@ const openCreateTeamPage = () => {
   location.href = getCreateTeamHref();
 };
 
-// 如果頁面上還有另一個按鈕 openCreate，也順便一起保護起來：
+//如果頁面上還有另一個按鈕 openCreate，也順便一起保護起來：
 if (openCreate) { // 乾這裡的邏輯是反的
   openCreate.addEventListener('click', (e) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert('【系統提示】請先登入才能創建隊伍喔！');
-      window.location.href = '/auth.html';
-      return;
-    }
-    openCreateTeamPage();
+    openCreateTeamPage()
   });
 }
-
-
 
 // 保留取消按鈕
 if (modalCancel) {
   modalCancel.addEventListener('click', closeModal);
 }
-
-
 // 處理 Modal 內的建立送出邏輯，驗證欄位並存入 localStorage 後重新 render()
 modalCreate.addEventListener('click', () => {
-  if (!requireLogin('建立隊伍需要先登入。')) return;
+ 
   const name = newTeamName.value.trim();
   if (!name) return alert('請輸入隊名');
   const desc = newTeamDesc.value.trim();
