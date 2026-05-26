@@ -136,7 +136,7 @@
 
     // 渲染側邊欄：「我收藏的隊伍」
     const favoriteTeams = loadTeams().filter(team => favs.includes(team.id));
-    if ($('myFavs')) $('myFavs').textContent = favoriteTeams.length ? favoriteTeams.map(team => team.name).join('\n') : '尚無收藏';
+    if ($('myFavs')) $('myFavs').textContent = favoriteTeams.length ? favoriteTeams.map(team => team.name).join('\n') : '尚無收藏隊伍';
 
     // 渲染側邊欄：「我關注的比賽」
     const favoriteContests = loadContestFavorites().map(id => loadContests().find(item => Number(item.id) === Number(id))).filter(Boolean);
