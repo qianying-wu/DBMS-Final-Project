@@ -146,7 +146,18 @@ export function renderRecommendations(contests, currentPreferences) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 
-  // 生成推薦卡片 HTML
+  // helper: map tag keys to semantic CSS class names so colors are centrally controlled in CSS
+  function tagClassFor(key){
+    if (!key) return 'tag-default';
+    const k = String(key).toLowerCase();
+    if (k.includes('ai') || k.includes('machine') || k.includes('ml')) return 'tag-ai';
+    if (k.includes('data') || k.includes('分析') || k.includes('analytics')) return 'tag-data';
+    if (k.includes('robot') || k.includes('robotics') || k.includes('機器')) return 'tag-robot';
+    if (k.includes('web') || k.includes('前端') || k.includes('後端')) return 'tag-web';
+    return 'tag-default';
+  }
+
+  // 生成推薦卡片 HTML（包含一個顯眼的 badge 與有色標籤）
   recommendedBody.innerHTML = scored.length ? `
     <div class="recommend-panel">
       <div class="recommend-head">
@@ -157,13 +168,22 @@ export function renderRecommendations(contests, currentPreferences) {
         <a class="btn outline" href="${withUserParam('/account-info.html')}">修改偏好</a>
       </div>
       <div class="recommend-list">
-        ${scored.map(item => `
+        ${scored.map(item => {
+          const tagHtml = item.matches.map(key => {
+            const label = escapeHtml(window.AppPreferences.labelFor(key));
+            const cls = tagClassFor(key);
+            return `<span class="match-tag ${cls}">${label}</span>`;
+          }).join('');
+          return `
           <article class="recommend-card" data-cid="${item.contest.id}">
             <h4>${escapeHtml(item.contest.name)}</h4>
-            <div class="recommend-reason">符合 ${item.score} 個偏好：${item.matches.map(key => escapeHtml(window.AppPreferences.labelFor(key))).join('、')}</div>
-            <div class="tag-row">${item.matches.map(key => `<span class="match-tag">${escapeHtml(window.AppPreferences.labelFor(key))}</span>`).join('')}</div>
+            <div class="recommend-meta">
+              <span class="match-badge">符合 ${item.score} 個偏好</span>
+              <div class="recommend-reason">${item.matches.map(key => escapeHtml(window.AppPreferences.labelFor(key))).join('、')}</div>
+            </div>
+            <div class="tag-row">${tagHtml}</div>
           </article>
-        `).join('')}
+        `}).join('')}
       </div>
     </div>
   ` : '';
