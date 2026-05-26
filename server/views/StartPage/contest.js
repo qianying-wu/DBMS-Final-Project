@@ -177,7 +177,7 @@
 
   // 導覽列與返回按鈕的跳轉設定
   $('backBtn').addEventListener('click', ()=>{ location.href = withUserParam('/team.html'); });
-  document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/user.html'));
+  document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/team.html'));
 
   // 頁面載入後執行初始渲染
   render();
