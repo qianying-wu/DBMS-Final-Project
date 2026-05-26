@@ -130,7 +130,7 @@
     const favs = loadFavorites();
     const followed = teams.filter(team => favs.includes(team.team_id));
 
-    $('myFavs').textContent = followed.length ? followed.map(team => team.team_name).join('\n') : '尚無收藏';
+    $('myFavs').textContent = followed.length ? followed.map(team => team.team_name).join('\n') : '尚無收藏隊伍';
     const favoriteContests = loadContestFavorites().map(id => loadContests().find(item => Number(item.team_id) === Number(id))).filter(Boolean);
 
     // 檢查這邊item是什麼
