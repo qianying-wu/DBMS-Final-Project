@@ -1,17 +1,19 @@
 import express from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import authRouter from './routes/auth-route.js';
-import reviewRouter from './routes/review-route.js';
-import teamRouter from './routes/team-route.js';
-import comRouter from './routes/com-route.js';
-import pool from './models/db.js';
 
 import dotenv from 'dotenv';
 dotenv.config();
 
 import passport from "passport";
 import passportConfig from "./config/passport.js";
+
+
+import { fileURLToPath } from 'url';
+import authRouter from './routes/auth-route.js';
+import reviewRouter from './routes/review-route.js';
+import teamRouter from './routes/team-route.js';
+import comRouter from './routes/com-route.js';
+import pool from './models/db.js';
 
 import { requireLogin } from './middleware/auth-middleware.js';
 

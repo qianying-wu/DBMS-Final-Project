@@ -5,8 +5,14 @@
   // 本機測試用預設使用者，網址沒有 userId 時使用。
   const ME = { id: 9999, name: '你自己' };
   const params = new URLSearchParams(location.search);
-  const currentUserId = params.get('userId') && params.get('userId') !== 'unknown' ? params.get('userId') : String(ME.id);
-  const initialContestId = Number(params.get('contestId')) || Number(params.get('id')) || null;
+  //const currentUserId = params.get('userId') && params.get('userId') !== 'unknown' ? params.get('userId') : String(ME.id);
+  //const initialContestId = Number(params.get('contestId')) || Number(params.get('id')) || null;
+// jwt
+// 之後需要登入才能操作的請求，帶上 token
+// localStorage.setItem("token", token);
+//localStorage.setItem("current_user_id", response.userId); // 把當前登入者的 ID 存起來 
+const currentUserId = localStorage.getItem("userId");
+
 
   // 預設給申請人的問題。
   const questions = ['請簡單介紹你的背景和想加入的原因'];
@@ -305,7 +311,7 @@ function getSelectedContest() {
       const response = await fetch(path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 
-                   'Authorization': ` ${token}` // 🚀 關鍵核心：手動把 JWT Token 傳給後端驗證
+                   'Authorization': `${token}` // 🚀 關鍵核心：手動把 JWT Token 傳給後端驗證
         },
         body: JSON.stringify(teamData) // 把資料變成字串送過去
       });
