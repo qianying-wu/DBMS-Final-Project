@@ -105,7 +105,6 @@
     const openings = teams.reduce((sum,team) => sum + Math.max((team.num_limit || 0) - (team.members || 0), 0), 0);
     document.title = '發起招募';
 
-
   }
 
   // 渲染比賽下拉選單
