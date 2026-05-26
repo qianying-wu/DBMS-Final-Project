@@ -55,24 +55,6 @@ app.get('/create-team', (req, res) => {
     res.sendFile(path.join(startPageDir, 'create-team.html'));
 });
 
-// app.get('/competitions', async (req, res) => {
-//     try {
-//         const [rows] = await pool.execute(`
-//             SELECT
-//                 com_id AS id,
-//                 com_name AS name,
-//                 DATE_FORMAT(com_date, '%Y-%m-%d') AS date,
-//                 com_intro AS info,
-//                 com_link AS officialUrl
-//             FROM Competition
-//             ORDER BY com_date IS NULL, com_date ASC, com_id ASC
-//         `);
-//         res.json({ ok: true, competitions: rows });
-//     } catch (err) {
-//         console.error('Database Error (Competitions):', err.message);
-//         res.status(500).json({ ok: false, error: '無法取得比賽資料' });
-//     }
-// });
 
 // 通知 API：所有有通知鈴鐺的頁面都會透過這組 API 和資料庫同步通知。
 app.get('/notifications', async (req, res) => {

@@ -94,11 +94,11 @@
 
   // 更新右上角通知按鈕上的未讀數字。
   async function updateBadge(){
-    const notifyBtn = document.getElementById('notifyBtn');
-    if (!notifyBtn) return;
-    const notifications = await load();
-    const unread = notifications.filter(item => !isRead(item)).length;
-    notifyBtn.textContent = unread ? `🔔 ${unread}` : '🔔';
+    // const notifyBtn = document.getElementById('notifyBtn');
+    // if (!notifyBtn) return;
+    // const notifications = await load();
+    // const unread = notifications.filter(item => !isRead(item)).length;
+    // notifyBtn.textContent = unread ? `🔔 ${unread}` : '🔔';
   }
 
   // 動態加入通知彈窗所需的樣式。

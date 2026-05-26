@@ -384,6 +384,9 @@ document.addEventListener('keydown', event => {
 
 const homeLink = $('homeLink');
 if (homeLink) homeLink.href = Data.withUserParam('/team.html');
+const notifyBtn = $('notifyBtn');
+const avatarBtn = $('avatarBtn');
+
 
 // --- 導覽列與左側選單的互動監聽 ---
 
