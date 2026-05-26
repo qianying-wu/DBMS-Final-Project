@@ -1,12 +1,66 @@
 import pool from '../models/db.js';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 //dotenv.config();
 const saltRounds = 10;
 
+// 系統提供的個人化標籤清單，前後端會用同一組 key 來比對推薦。
+const preferenceTags = [
+    { key: 'ai', label: 'AI / 機器學習' },
+    { key: 'data', label: '資料分析' },
+    { key: 'web', label: '網頁開發' },
+    { key: 'app', label: 'App 開發' },
+    { key: 'robotics', label: '機器人' },
+    { key: 'security', label: '資安' },
+    { key: 'medical', label: '醫療科技' },
+    { key: 'fintech', label: '金融科技' },
+    { key: 'sustainability', label: '永續議題' },
+    { key: 'startup', label: '創業提案' },
+    { key: 'design', label: 'UI/UX' },
+    { key: 'presentation', label: '簡報企劃' }
+];
+
+const allowedPreferenceKeys = new Set(preferenceTags.map(tag => tag.key));
+
+// 過濾前端傳來的標籤，只保留系統允許的 key，避免寫入奇怪資料。
+const normalizePreferenceKeys = (preferences = []) => {
+    if (!Array.isArray(preferences)) return [];
+    return [...new Set(preferences.map(String).filter(key => allowedPreferenceKeys.has(key)))];
+};
+
+// 將使用者偏好寫入雲端資料庫；先清掉舊資料，再寫入目前選擇。
+const saveUserPreferences = async (userId, preferences = []) => {
+    const normalized = normalizePreferenceKeys(preferences);
+    await pool.execute('DELETE FROM UserPreference WHERE user_id = ?', [userId]);
+
+    for (const key of normalized) {
+        await pool.execute(
+            `INSERT INTO UserPreference (user_id, preference_id)
+             SELECT ?, preference_id FROM PreferenceTag WHERE preference_key = ?`,
+            [userId, key]
+        );
+    }
+
+    return normalized;
+};
+
+// 從雲端資料庫讀取使用者目前的偏好 key。
+const loadUserPreferences = async (userId) => {
+    const [rows] = await pool.execute(
+        `SELECT pt.preference_key
+         FROM UserPreference up
+         JOIN PreferenceTag pt ON pt.preference_id = up.preference_id
+         WHERE up.user_id = ?
+         ORDER BY pt.preference_id`,
+        [userId]
+    );
+    return rows.map(row => row.preference_key);
+};
+
 // --- 註冊邏輯 ---
 export const register = async (req, res) => {
-    const { account,userName,userPsw,userEmail} = req.body || {};
+    const { account,userName,userPsw,userEmail,preferences = []} = req.body || {};
     
     if (!account || !userPsw || !userName || !userEmail) {  
         return res.status(400).json({ ok: false, error: '資料填寫不完整' });
@@ -42,9 +96,10 @@ export const register = async (req, res) => {
             'INSERT INTO user (account,userName,userPsw,userEmail) VALUES (?, ?, ?, ?)',
             [account, userName, hashedPassword, userEmail]
         );
+        const savedPreferences = await saveUserPreferences(result.insertId, preferences);
 
         // 成功的話
-        res.json({ ok: true, userId: result.insertId, message: '註冊成功' });
+        res.json({ ok: true, userId: result.insertId, preferences: savedPreferences, message: '註冊成功' });
 
 
     } catch (err) {
@@ -107,14 +162,67 @@ export const login = async (req, res) => {
         
         console.log(`使用者 ${user.account} (ID: ${user.user_id}) 登入成功`);
 
+        const payload = { 
+            user_id: user.user_id 
+        };
+        
+        // 簽發 Token，暗號記得是用你們的 PASSPORT_SECRET 喔
+        const token = jwt.sign(payload, process.env.PASSPORT_SECRET, { expiresIn: '1d' });
+
         res.json({ 
             ok: true, 
             message: '登入成功',
             userId: user.user_id,
+            token: "JWT " + token, // 前端登入成功後會拿到這個 token，之後每次 API 請求都要帶在 Header 裡面
         });
 
     } catch (err) {
         console.error('Database Error (Login):', err.message);
         res.status(500).json({ ok: false, error: '伺服器內部錯誤' });
+    }
+};
+
+// --- 取得系統可選的偏好標籤 ---
+export const getPreferenceTags = async (req, res) => {
+    try {
+        const [rows] = await pool.execute(
+            'SELECT preference_key AS `key`, preference_name AS label FROM PreferenceTag ORDER BY preference_id'
+        );
+        res.json({ ok: true, tags: rows.length ? rows : preferenceTags });
+    } catch (err) {
+        console.error('Database Error (Preference Tags):', err.message);
+        res.status(500).json({ ok: false, error: '無法取得偏好標籤' });
+    }
+};
+
+// --- 取得使用者偏好 ---
+export const getUserPreferences = async (req, res) => {
+    const userId = Number(req.params.userId || req.query.userId);
+    if (!Number.isFinite(userId)) {
+        return res.status(400).json({ ok: false, error: '缺少有效的 userId' });
+    }
+
+    try {
+        const preferences = await loadUserPreferences(userId);
+        res.json({ ok: true, userId, preferences });
+    } catch (err) {
+        console.error('Database Error (Get Preferences):', err.message);
+        res.status(500).json({ ok: false, error: '無法取得使用者偏好' });
+    }
+};
+
+// --- 更新使用者偏好 ---
+export const updateUserPreferences = async (req, res) => {
+    const userId = Number(req.params.userId || req.body?.userId);
+    if (!Number.isFinite(userId)) {
+        return res.status(400).json({ ok: false, error: '缺少有效的 userId' });
+    }
+
+    try {
+        const preferences = await saveUserPreferences(userId, req.body?.preferences || []);
+        res.json({ ok: true, userId, preferences, message: '偏好已更新' });
+    } catch (err) {
+        console.error('Database Error (Update Preferences):', err.message);
+        res.status(500).json({ ok: false, error: '無法更新使用者偏好' });
     }
 };

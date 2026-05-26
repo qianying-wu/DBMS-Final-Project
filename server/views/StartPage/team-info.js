@@ -2,21 +2,22 @@
   const $ = id => document.getElementById(id);
   // 從網址列取得要查看的隊伍 ID (例如：team-info.html?teamId=1)
   const params = new URLSearchParams(location.search);
-  const currentTeamId = Number(params.get('teamId')) || 1; // 預設抓 ID 為 1 的隊伍測試
+  const currentTeamId = Number(params.get('teamId') || params.get('id'));
   const userIdParam = params.get('userId');
   const ME = { id: userIdParam && userIdParam !== 'unknown' ? userIdParam : '9999', name: '你自己' };
+  const defaultNames = ['AI 聯合隊', '機器人挑戰隊', '資料探勘小隊'];
+  const seed = [
+    { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽', officialUrl: 'https://www.kaggle.com/competitions' },
+    { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽', officialUrl: 'https://www.robocup.org/' },
+    { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰', officialUrl: 'https://devpost.com/hackathons' },
+    { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽', officialUrl: 'https://www.drivendata.org/competitions/' },
+    { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽', officialUrl: 'https://www.hultprize.org/' },
+    { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽', officialUrl: 'https://www.fintechfestival.sg/' }
+  ];
 
   // 沿用共用的讀取資料邏輯
   function loadContests(){
     const raw = localStorage.getItem('contests');
-    const seed = [
-      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽', officialUrl: 'https://www.kaggle.com/competitions' },
-      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽', officialUrl: 'https://www.robocup.org/' },
-      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰', officialUrl: 'https://devpost.com/hackathons' },
-      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽', officialUrl: 'https://www.drivendata.org/competitions/' },
-      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽', officialUrl: 'https://www.hultprize.org/' },
-      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽', officialUrl: 'https://www.fintechfestival.sg/' }
-    ];
     if (!raw) {
       localStorage.setItem('contests', JSON.stringify(seed));
       return seed;
@@ -39,7 +40,6 @@
       localStorage.setItem('teams', '[]');
       return [];
     }
-    const defaultNames = ['AI 聯合隊', '機器人挑戰隊', '資料探勘小隊'];
     const teams = JSON.parse(raw).filter(team => !defaultNames.includes(team.name));
     if (teams.length !== JSON.parse(raw).length) localStorage.setItem('teams', JSON.stringify(teams));
     return teams;
@@ -67,7 +67,7 @@
     const team = teams.find(t => Number(t.id) === currentTeamId);
     if (!team) {
       alert('找不到該隊伍資訊');
-      location.href = '/team.html';
+      location.href = withUserParam('/team.html');
       return;
     }
 
@@ -81,7 +81,8 @@
     $('displayContestName').textContent = contest.name;
     $('displayContestDate').textContent = contest.date || '日期未定';
     $('displayContestInfo').textContent = contest.info || '尚未填寫比賽資訊。';
-    $('officialContestLink').href = contest.officialUrl || '#';
+    const officialContestLink = $('officialContestLink');
+    if (officialContestLink) officialContestLink.href = contest.officialUrl || '#';
     $('officialContestButton').href = contest.officialUrl || '#';
     $('displayMemberCount').textContent = team.members;
     $('displayMaxSlots').textContent = team.slots;
@@ -128,29 +129,6 @@
       $('applicationQuestions').innerHTML = '<p>隊長沒有設定特別的提問，請直接送出申請即可。</p>';
     }
 
-    // 渲染左側：本比賽的其他隊伍
-    const otherTeams = teams.filter(t => Number(t.contestId) === Number(contest.id) && Number(t.id) !== currentTeamId);
-    $('otherTeams').innerHTML = otherTeams.length ? otherTeams.map(t => `
-      <li>
-        <a href="${withUserParam(`/team-info.html?teamId=${encodeURIComponent(t.id)}`)}" style="text-decoration:none; color:inherit;">
-          <strong>${t.name}</strong>
-          <div>${t.members} / ${t.slots} 人</div>
-        </a>
-      </li>
-    `).join('') : '<li>無其他隊伍</li>';
-
-    // 渲染右側：我的隊伍與關注 (沿用舊邏輯)
-    const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${ME.id}`)||'[]');
-    const my = teams.filter(t => joinedIds.some(id => Number(id) === Number(t.id)) && Number(t.contestId) === Number(contest.id));
-    $('myTeams').textContent = my.length ? my.map(t => t.name).join('\n') : '尚未加入隊伍';
-
-    const favs = JSON.parse(localStorage.getItem('favorites')||'[]');
-    const followed = teams.filter(t => favs.includes(t.id));
-    $('myFavs').textContent = followed.length ? followed.map(t => t.name).join('\n') : '尚無收藏';
-    const favoriteContestIds = JSON.parse(localStorage.getItem('favoriteContests')||'[]').map(Number);
-    const favoriteContests = favoriteContestIds.map(id => contests.find(item => Number(item.id) === Number(id))).filter(Boolean);
-    $('followed').textContent = favoriteContests.length ? favoriteContests.map(item => `${item.name}\n${item.date}`).join('\n\n') : '尚無關注';
-    
     const userTeamIds = JSON.parse(localStorage.getItem(`myTeams:${ME.id}`) || '[]');
     const alreadyJoined = userTeamIds.some(id => Number(id) === Number(team.id));
     const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').some(req => Number(req.teamId) === Number(team.id) && String(req.user?.id) === String(ME.id) && req.status === 'pending');
@@ -175,7 +153,7 @@
     });
 
     // 送出申請表單
-    $('applyForm').addEventListener('submit', (e) => {
+    $('applyForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const teams = loadTeams();
       const team = teams.find(t => Number(t.id) === currentTeamId);
@@ -203,7 +181,7 @@
         }
         reqs.push({ id: Date.now(), teamId: team.id, teamName: team.name, user: ME, status: 'pending', application });
         localStorage.setItem('joinRequests', JSON.stringify(reqs));
-        window.AppNotifications?.add({
+        await window.AppNotifications?.add({
           type: 'join-request',
           userId: team.owner,
           sourceId: `${team.id}:${ME.id}`,
@@ -231,3 +209,12 @@
   setupEventListeners();
 
 })();
+
+/*const seed = [
+      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽', officialUrl: 'https://www.kaggle.com/competitions' },
+      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽', officialUrl: 'https://www.robocup.org/' },
+      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰', officialUrl: 'https://devpost.com/hackathons' },
+      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽', officialUrl: 'https://www.drivendata.org/competitions/' },
+      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽', officialUrl: 'https://www.hultprize.org/' },
+      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽', officialUrl: 'https://www.fintechfestival.sg/' }
+    ];*/

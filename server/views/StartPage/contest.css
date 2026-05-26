@@ -4,11 +4,12 @@ body{font-family:Arial,'Noto Sans TC',sans-serif;margin:0;background:#faf7f2;col
 .topbar{height:64px;background:#fff;border-bottom:1px solid #e6ddd3;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:10}
 .logo{font-weight:700;color:#6b4f3a}
 .logo-link{text-decoration:none}
+.logo-img{height:40px;width:auto;display:block;object-fit:contain}
 .actions{display:flex;gap:10px;align-items:center}
 .icon-btn,.avatar-btn{background:transparent;border:1px solid transparent;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:18px}
 .icon-btn:hover,.avatar-btn:hover{background:#f5f0ea}
 .avatar-btn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}
-.contest-layout{display:grid;grid-template-columns:240px minmax(0,1fr) 260px;gap:18px;height:calc(100dvh - 64px);padding:20px;overflow:hidden}
+.contest-layout{display:grid;grid-template-columns:minmax(0,980px);justify-content:center;height:calc(100dvh - 64px);padding:20px;overflow:hidden}
 .panel,.main-panel{background:#fff;border:1px solid #e6ddd3;border-radius:8px}
 .panel{padding:14px}
 .left-panel,.right-panel{align-self:stretch}
@@ -62,9 +63,6 @@ body.modal-open{overflow:hidden}
   body{overflow:auto}
   .contest-layout{grid-template-columns:1fr;height:auto;min-height:calc(100dvh - 64px);padding:14px;overflow:visible}
   .panel,.main-panel{overflow:visible}
-  .main-panel{order:1}
-  .left-panel{order:2}
-  .right-panel{order:3}
   .summary-grid{grid-template-columns:1fr}
 }
 

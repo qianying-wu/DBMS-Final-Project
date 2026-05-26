@@ -10,7 +10,7 @@
   <body>
     <header class="topbar">
       <button id="backBtn" class="icon-btn" aria-label="回上一頁">←</button>
-      <a class="logo-link" href="/team.html"><div class="logo">競賽組隊</div></a>
+      <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
       <div class="actions">
         <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
         <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
@@ -21,22 +21,6 @@
     </header>
 
     <main class="create-layout">
-      <aside class="panel left-panel">
-        <section class="panel-section first">
-          <h4>隊伍導覽</h4>
-          <div class="step-list">
-            <div class="active">隊伍詳細資訊</div>
-            <a id="officialContestLink" class="step-link" href="#" target="_blank" rel="noopener">比賽官方頁面</a>
-          </div>
-        </section>
-
-        <section class="panel-section">
-          <h4>本比賽其他隊伍</h4>
-          <ul id="otherTeams" class="team-list">
-            </ul>
-        </section>
-      </aside>
-
       <section class="main-panel">
         <section class="info-section">
           <div class="section-heading">
@@ -126,23 +110,6 @@
 
         </section>
       </section>
-
-      <aside class="panel right-panel">
-        <section class="panel-section first">
-          <h4>我的隊伍</h4>
-          <div id="myTeams" class="box">尚未加入隊伍</div>
-        </section>
-
-        <section class="panel-section">
-          <h4>我的收藏</h4>
-          <div id="myFavs" class="box">尚無收藏</div>
-        </section>
-
-        <section class="panel-section">
-          <h4>關注的比賽 / 隊伍</h4>
-          <div id="followed" class="box">尚無關注</div>
-        </section>
-      </aside>
     </main>
     <script src="/auth-guard.js"></script>
     <script src="/notifications.js"></script>

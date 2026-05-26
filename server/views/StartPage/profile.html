@@ -7,8 +7,9 @@
     <link rel="stylesheet" href="/profile.css">
   </head>
   <body>
+    <!-- 頁首：提供返回組隊頁、通知與帳號選單入口。 -->
     <header class="topbar">
-      <a class="logo-link" href="/team.html"><div class="logo">競賽組隊</div></a>
+      <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
       <div class="actions">
         <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
         <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
@@ -18,8 +19,10 @@
       </div>
     </header>
 
+    <!-- 主要內容：上方是履歷列表，下方 hidden 區塊是履歷編輯器。 -->
     <main class="layout profile-layout">
       <section class="content profile-content">
+        <!-- 履歷列表首頁：由 profile.js 動態產生履歷卡片。 -->
         <div id="resumeHome" class="resume-home">
           <div class="profile-heading">
             <div>
@@ -28,9 +31,25 @@
             </div>
           </div>
 
+          <!-- ★ 經驗履歷入口區塊 ★ -->
+          <div class="exp-entry-section">
+            <div class="exp-entry-heading">
+              <div>
+                <h3 class="exp-entry-title">📋 經驗履歷</h3>
+                <p class="exp-entry-desc">記錄實習、競賽、專案等經歷，申請隊伍時對方可點擊查看。</p>
+              </div>
+              <div class="exp-entry-btns">
+                <button id="goExpEditorBtn" class="btn outline">編輯經驗</button>
+                <button id="goExpViewBtn" class="btn outline">查看</button>
+              </div>
+            </div>
+            <div id="expPreview" class="exp-preview"></div>
+          </div>
+
           <div id="resumeGallery" class="resume-gallery"></div>
         </div>
 
+        <!-- 履歷編輯區：使用者選擇或新增履歷後才顯示。 -->
         <div id="resumeEditor" class="card editor-card" hidden>
           <div class="editor-heading">
             <div>
@@ -44,6 +63,7 @@
           </div>
 
           <form id="profileForm">
+            <!-- 基本資料與照片上傳。 -->
             <div class="row">
               <label>姓名<input id="name" type="text" placeholder="你的名字"></label>
               <label>照片
@@ -64,11 +84,13 @@
               </label>
             </div>
 
+            <!-- 學籍資料。 -->
             <div class="row">
               <label>學校<input id="school" type="text" placeholder="學校"></label>
               <label>年級<input id="grade" type="text" placeholder="年級"></label>
             </div>
 
+            <!-- 專長標籤，可新增與移除。 -->
             <div class="row">
               <label class="full">專長
                 <div class="tags" id="tags"></div>
@@ -79,6 +101,7 @@
               </label>
             </div>
 
+            <!-- 經歷與自我介紹。 -->
             <div class="row">
               <label class="full">個人經歷<textarea id="experience" placeholder="描述你的專案、比賽或經歷" rows="6"></textarea></label>
             </div>
@@ -87,6 +110,7 @@
               <label class="full">自我介紹<textarea id="intro" placeholder="一段短介紹" rows="4"></textarea></label>
             </div>
 
+            <!-- 表單操作按鈕。 -->
             <div class="actions-row">
               <button id="saveBtn" type="button" class="btn primary">儲存</button>
               <button id="exportBtn" type="button" class="btn outline">匯出 JSON</button>
@@ -96,9 +120,51 @@
         </div>
       </section>
     </main>
-    <script src="/auth-guard.js"></script>
+
     <script src="/notifications.js"></script>
     <script src="/account-menu.js"></script>
     <script src="/profile.js"></script>
+    <!-- ★ 經驗履歷入口初始化 ★ -->
+    <script>
+      (function () {
+        const qs = new URLSearchParams(location.search);
+        const userId = qs.get('userId') || 'unknown';
+
+        function getExpHref(view) {
+          const base = location.protocol === 'file:' ? 'experience.html' : '/experience.html';
+          const viewBase = location.protocol === 'file:' ? 'experience-view.html' : '/experience-view.html';
+          const suffix = userId !== 'unknown' ? '?userId=' + encodeURIComponent(userId) : '';
+          return view ? viewBase + suffix : base + suffix;
+        }
+
+        document.getElementById('goExpEditorBtn').addEventListener('click', () => {
+          location.href = getExpHref(false);
+        });
+        document.getElementById('goExpViewBtn').addEventListener('click', () => {
+          location.href = getExpHref(true);
+        });
+
+        // 預覽最近 2 筆經歷
+        function renderExpPreview() {
+          const list = JSON.parse(localStorage.getItem('experiences:' + userId) || '[]');
+          const preview = document.getElementById('expPreview');
+          if (!list.length) {
+            preview.innerHTML = '<span class="empty-note" style="font-size:13px">尚未填寫任何經歷</span>';
+            return;
+          }
+          preview.innerHTML = list.slice(0, 2).map(item => `
+            <div class="exp-preview-chip">
+              <span class="exp-type-badge">${item.exp_type || '未分類'}</span>
+              <span class="exp-preview-name">${item.title || '未命名'}</span>
+            </div>
+          `).join('') + (list.length > 2 ? `<span class="exp-more">＋ ${list.length - 2} 筆更多</span>` : '');
+        }
+
+        renderExpPreview();
+        window.addEventListener('storage', e => {
+          if (e.key === 'experiences:' + userId) renderExpPreview();
+        });
+      })();
+    </script>
   </body>
 </html>

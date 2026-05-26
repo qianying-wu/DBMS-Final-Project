@@ -11,7 +11,7 @@
 <body>
   <header class="topbar">
     <a id="homeLink" href="/team.html">
-      <div class="logo">競賽組隊</div>
+      <img src="/logo.png" alt="競賽組隊 Logo" class="logo-img">
     </a>
     <input type="text" id="globalSearch" class="global-search-input" placeholder="搜尋比賽、隊伍或用戶...">
     <div class="actions">
@@ -26,48 +26,77 @@
   <main class="layout">
     <aside class="sidebar left">
       <button id="openCreate" class="btn primary block">發起招募</button>
-
+      <div class="section section-filter">
+        <h4>搜尋/篩選</h4>
+        <input id="teamSearch" placeholder="搜尋隊名、主題或技能" />
+      </div>
 
       <div class="section section-contests">
-        <h4>比賽類型</h4>
+        <h4>比賽</h4>
         <ul id="contestsList" class="simple-list"></ul>
       </div>
     </aside>
 
     <section class="content">
+      <!-- 廣告輪播 -->
+      <div id="adCarousel" class="carousel">
+        <div id="adCarousel" class="carousel">
+          <div class="carousel-inner">
+            <div class="carousel-item">
+              <img src="/ads.png" alt="廣告 1">
+            </div>
+            <div class="carousel-item">
+              <img src="/ads2.png" alt="廣告 2">
+            </div>
+            <div class="carousel-item">
+              <img src="/ads3.png" alt="廣告 3">
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="hero">
         <div class="hero-left">
           <h2>比賽總覽</h2>
-          <p>查看全部比賽、進入比賽頁瀏覽隊伍，或建立自己的招募。</p>
-        </div>
-        <div class="hero-right">
-          <button id="createBtn" class="btn primary">創建自己的隊伍 +</button>
+          <p>查看全部比賽，或進入比賽頁瀏覽正在招募的隊伍。</p>
         </div>
       </div>
 
       <div id="contestsGrid" class="contests-grid"></div>
-      <div id="teamsGrid" class="teams-grid"></div>
     </section>
 
     <aside class="sidebar right">
-      <section class="side-card side-card-team">
-        <h4>我的隊伍</h4>
-        <div class="team-tabs" role="tablist">
-          <button class="team-tab" data-my-team-tab="joined" type="button">已加入的隊伍</button>
-          <button class="team-tab" data-my-team-tab="owned" type="button">我建立的隊伍</button>
+      <section class="side-card side-card-team" data-collapsible-card="teams">
+        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">我的隊伍</button>
+        <div class="side-card-body">
+          <div class="team-tabs" role="tablist">
+            <button class="team-tab" data-my-team-tab="joined" type="button">已加入的隊伍</button>
+            <button class="team-tab" data-my-team-tab="owned" type="button">我建立的隊伍</button>
+          </div>
+          <div id="myJoinedTeams" class="box my-team-panel" hidden>尚未加入隊伍</div>
+          <div id="myOwnedTeams" class="box my-team-panel" hidden>尚未建立隊伍</div>
         </div>
-        <div id="myJoinedTeams" class="box my-team-panel" hidden>尚未加入隊伍</div>
-        <div id="myOwnedTeams" class="box my-team-panel" hidden>尚未建立隊伍</div>
       </section>
 
-      <section class="side-card side-card-fav">
-        <h4>我的收藏</h4>
-        <div id="myFavs" class="box">尚無收藏</div>
+      <section class="side-card side-card-fav" data-collapsible-card="favorites">
+        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">我的收藏隊伍</button>
+        <div class="side-card-body">
+          <div id="myFavs" class="box">尚無收藏隊伍</div>
+        </div>
       </section>
 
-      <section class="side-card side-card-follow">
-        <h4>關注的比賽 / 訊息</h4>
-        <div id="followed" class="list box">無</div>
+      <section class="side-card side-card-follow" data-collapsible-card="followed">
+        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">關注的比賽 / 訊息</button>
+        <div class="side-card-body">
+          <div id="followed" class="list box">無</div>
+        </div>
+      </section>
+
+      <!-- 個人化推薦區：固定放在右側欄位最下方。 -->
+      <section id="recommendedContests" class="side-card side-card-recommend recommended-contests"
+        data-collapsible-card="recommendations">
+        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">推薦比賽</button>
+        <div id="recommendedBody" class="side-card-body"></div>
       </section>
     </aside>
   </main>
@@ -115,7 +144,6 @@
       </div>
     </div>
   </div>
-  <script src="/auth-guard.js"></script>
   <script src="/notifications.js"></script>
   <script src="/account-menu.js"></script>
   <script src="/team.js"></script>

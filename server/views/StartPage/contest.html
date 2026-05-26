@@ -9,7 +9,7 @@
   <body>
     <header class="topbar">
       <button id="backBtn" class="icon-btn" aria-label="回到組隊">←</button>
-      <a class="logo-link" href="/team.html"><div class="logo">競賽組隊</div></a>
+      <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
       <div class="actions">
         <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
         <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
@@ -20,15 +20,6 @@
     </header>
 
     <main class="contest-layout">
-      <aside class="panel left-panel">
-        <button id="openCreate" class="btn primary block">發起招募</button>
-
-        <section class="panel-section panel-section-teams first">
-          <h4>本比賽隊伍</h4>
-          <ul id="contestTeams" class="team-list"></ul>
-        </section>
-      </aside>
-
       <section class="main-panel">
         <section id="contestSummary" class="contest-summary"></section>
 
@@ -45,23 +36,6 @@
           <div id="teamCards" class="team-cards"></div>
         </section>
       </section>
-
-      <aside class="panel right-panel">
-        <section class="panel-section panel-section-mine first">
-          <h4>我的隊伍</h4>
-          <div id="myTeams" class="box">尚未加入隊伍</div>
-        </section>
-
-        <section class="panel-section">
-          <h4>我的收藏</h4>
-          <div id="myFavs" class="box">尚無收藏</div>
-        </section>
-
-        <section class="panel-section panel-section-follow">
-          <h4>關注的比賽 / 隊伍</h4>
-          <div id="followed" class="box">尚無關注</div>
-        </section>
-      </aside>
     </main>
 
     <div id="modal" class="modal hidden" role="dialog" aria-modal="true">

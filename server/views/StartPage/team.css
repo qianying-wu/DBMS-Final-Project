@@ -19,7 +19,12 @@ body{font-family:Arial, 'Noto Sans TC', sans-serif;margin:0;background:#faf7f2;c
 .btn.outline{background:transparent;border:1px solid #ddd}
 .section,.side-card{margin-bottom:14px;border:1px solid #eadfd2;border-radius:8px;padding:12px;background:#fff}
 .section h4,.side-card h4{margin:0 0 10px;color:#4f3827}
-.section-filter{background:#fffaf2;border-color:#ead2ab}
+.side-card-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;padding:0;border:0;background:transparent;color:#4f3827;font:inherit;font-size:16px;font-weight:700;text-align:left;cursor:pointer}
+.side-card-toggle::after{content:"-";width:24px;height:24px;border:1px solid rgba(96,116,135,0.18);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.72);color:#7b6a59;font-size:16px;line-height:1;flex:0 0 auto}
+.side-card-toggle:hover::after{border-color:#d4b283;background:#fff}
+.side-card.collapsed .side-card-toggle{margin-bottom:0}
+.side-card.collapsed .side-card-toggle::after{content:"+"}
+.side-card.collapsed .side-card-body{display:none}
 .section-contests{background:#f7fbff;border-color:#cfe1ef}
 .side-card{position:relative;overflow:hidden}
 .side-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px}
@@ -31,6 +36,8 @@ body{font-family:Arial, 'Noto Sans TC', sans-serif;margin:0;background:#faf7f2;c
 .side-card-manage::before{background:#8271c7}
 .side-card-follow{background:#fffaf1;border-color:#ecd7ae}
 .side-card-follow::before{background:#d49b3f}
+.side-card-recommend{background:#fff;border-color:#eadfd2}
+.side-card-recommend::before{background:#caa77a}
 .side-card .box{background:rgba(255,255,255,0.72);box-shadow:none}
 .team-tabs{display:grid;grid-template-columns:1fr;gap:8px}
 .team-tab{border:1px solid rgba(96,116,135,0.16);background:rgba(255,255,255,0.72);border-radius:8px;padding:9px 10px;text-align:left;cursor:pointer;color:#4f3827;font-weight:700}
@@ -40,9 +47,31 @@ body{font-family:Arial, 'Noto Sans TC', sans-serif;margin:0;background:#faf7f2;c
 .simple-list{list-style:none;padding:0;margin:0}
 .simple-list li{padding:9px 10px;border-radius:6px;border:1px solid rgba(96,116,135,0.16);margin-bottom:8px;cursor:pointer;background:rgba(255,255,255,0.68)}
 .simple-list li:hover{border-color:#9bb8cf;background:#fff}
+.contest-category{padding:0!important;border:none!important;background:transparent!important;cursor:default!important}
+.contest-category-toggle{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid rgba(96,116,135,0.16);background:rgba(255,255,255,0.76);border-radius:8px;padding:10px;cursor:pointer;color:#4f3827;font-weight:700;text-align:left}
+.contest-category-toggle:hover,.contest-category.open .contest-category-toggle{border-color:#9bb8cf;background:#fff}
+.contest-category-count{font-size:12px;color:#7b6a59;font-weight:400}
+.contest-category-panel{display:none;margin:8px 0 0 10px;padding-left:10px;border-left:2px solid #d8e8f3}
+.contest-category.open .contest-category-panel{display:block}
+.contest-child{display:block;width:100%;border:1px solid rgba(96,116,135,0.14);background:#fff;border-radius:8px;padding:9px 10px;margin-bottom:8px;text-align:left;cursor:pointer;color:#333}
+.contest-child:hover{border-color:#9bb8cf;background:#f8fcff}
+.contest-child.active{background:#fff7ec;border-color:#d4b283}
+.contest-child strong{display:block;line-height:1.35}
+.contest-child span{display:block;font-size:12px;color:#666;margin-top:3px}
 .contest-info{background:#fff;padding:12px;border-radius:10px;border:1px solid #eee;margin-bottom:12px}
 .content .hero{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .card{background:#fff;padding:18px;border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,0.06)}
+.recommended-contests{margin-top:14px;position:sticky;bottom:0;z-index:1}
+.recommend-empty,.recommend-panel{background:#fff;border:1px solid #eadfd2;border-radius:8px;padding:12px}
+.recommend-head{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-bottom:12px}
+.recommend-head h3{margin:0;color:#4f3827;font-size:16px}
+.recommend-head p{margin:4px 0 0;color:#7b6a59;font-size:14px}
+.recommend-list{display:grid;grid-template-columns:1fr;gap:10px}
+.recommend-card{border:1px solid #e4edf2;background:#f8fbff;border-radius:8px;padding:12px;cursor:pointer}
+.recommend-card h4{margin:0 0 6px;color:#4f3827;font-size:15px}
+.recommend-reason{font-size:13px;color:#5b6570;line-height:1.45}
+.tag-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.match-tag{background:#fff7ec;border:1px solid #ead5bb;color:#6b4f3a;border-radius:999px;padding:4px 8px;font-size:12px}
 .contests-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:16px}
 .contest-card{background:#fff;border:1px solid #dbe7ef;border-radius:8px;padding:14px;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}
 .contest-card{position:relative}
@@ -75,9 +104,10 @@ body{font-family:Arial, 'Noto Sans TC', sans-serif;margin:0;background:#faf7f2;c
 .managed-list{list-style:none;padding:0;margin:0}
 .managed-list li{display:flex;justify-content:space-between;align-items:center;padding:6px 4px;border-bottom:1px solid #f6f2ef}
 .pending-count{background:#f7c5b3;color:#6b3b1f;padding:4px 8px;border-radius:999px;font-size:12px}
-.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35)}
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);z-index:1000}
 .modal.hidden{display:none}
-.modal-card{background:#fff;padding:28px;border-radius:14px;min-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.25)}
+.modal-card{background:#fff;padding:28px;border-radius:14px;min-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.25);position:relative;z-index:1001}
+.login-required-card p{margin:8px 0 0;color:#6f6258;line-height:1.6}
 .modal-row{display:flex;gap:12px;align-items:flex-start}
 .modal-label{display:flex;flex-direction:column;flex:1;font-size:16px}
 input#newTeamName, textarea#newTeamDesc{padding:10px;border-radius:6px;border:1px solid #ddd}
@@ -91,8 +121,6 @@ body.modal-open{overflow:hidden}
 .notification-item strong{display:block;color:#3f342c;line-height:1.4}
 .notification-item span{display:block;color:#7b6a59;font-size:13px;margin-top:5px}
 .empty-note{color:#8a735e;font-size:14px}
-#teamSearch{width:100%;padding:8px;border-radius:6px;border:1px solid #eee}
-
 @media (max-width: 980px){
   body{overflow:auto}
   .layout{grid-template-columns:1fr;height:auto;min-height:calc(100dvh - 64px);padding:14px;overflow:visible}
@@ -115,9 +143,6 @@ a{
   text-decoration:none;
 }
 
-/* ==============================
-   全域懸浮搜尋 (純新增)
-   ============================== */
 .global-search-input {
   width: 320px; padding: 8px 16px; border-radius: 20px;
   border: 1px solid #e6ddd3; outline: none; background: #fdfdfc;
@@ -150,3 +175,82 @@ a{
 .search-results-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
 .search-list-item { padding: 12px; background: #fff; border: 1px solid #eee; border-radius: 8px; cursor: pointer; transition: all 0.2s;}
 .search-list-item:hover { border-color: #d4b283; background: #fffdf9; box-shadow: 0 4px 12px rgba(76, 55, 35, 0.05);}
+
+.carousel { width: 100%; height: 200px; overflow: hidden; border-radius: 10px; margin-bottom: 20px; position: relative; border: 1px solid #eadfd2; }
+.carousel-inner { display: flex; width: 100%; height: 100%; transition: transform 0.5s ease-in-out; }
+.carousel-item { min-width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; color: #6b4f3a; }
+.contest-card.and-more { align-items: center; justify-content: center; background: #fffcf8; border: 2px dashed #d4b283; }
+.contest-card.and-more:hover { background: #fff9ef; }
+.contest-card.and-more h3 { color: #d4b283; font-size: 20px; margin: 0; }
+
+/* 新增：限制 Logo 圖片的高度，避免撐開頂欄，並保持比例 */
+.logo-img {
+  height: 40px;      /* 配合頂欄 64px 的高度，40px~45px 左右視覺效果最好 */
+  width: auto;       /* 自動維持原圖片比例 */
+  display: block;    /* 消除 inline 元素的下方微小間隙 */
+  object-fit: contain;
+}
+
+/* 如果要調整圖片跟左邊邊界的距離，可以加在 homeLink 上 */
+#homeLink {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+/* 登入按鈕外層容器（確保居中對齊） */
+.loginBtn {
+  display: flex;
+  align-items: center;
+}
+
+/* 登入按鈕主體 */
+.loginBtn a {
+  display: inline-block;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px; /* 字距微調，質感提升 */
+  color: #fff;
+  
+  /* 柔和的大地色系漸層，呼應你原本的米色調 */
+  background: linear-gradient(135deg, #caa77a 0%, #b89362 100%);
+  
+  /* 尺寸與完美圓角 */
+  padding: 10px 24px;
+  border-radius: 50px;
+  text-decoration: none;
+  text-align: center;
+  
+  /* 關鍵：柔和的環境陰影 (Ambient Shadow) */
+  box-shadow: 0 4px 15px rgba(184, 147, 98, 0.25);
+  
+  /* 讓所有動畫過渡變流暢 */
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  cursor: pointer;
+}
+
+/* 滑鼠懸浮效果 (Hover) */
+.loginBtn a:hover {
+  /* 微微向上飄移，並讓漸層稍微變亮 */
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, #d9b88c 0%, #caa77a 100%);
+  
+  /* 陰影隨之加深放大，營造真實的懸浮感 */
+  box-shadow: 0 8px 20px rgba(184, 147, 98, 0.4);
+}
+
+/* 滑鼠點擊瞬間反饋 (Active) */
+.loginBtn a:active {
+  /* 點擊時下沉，並縮小陰影，模擬實體按鈕被按下去的感覺 */
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(184, 147, 98, 0.3);
+}
+
+/* 讓輪播圖片完美填滿容器 */
+.carousel-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 這樣圖片會填滿整個框框。如果想保留圖片完整比例不被裁切，可以改成 contain */
+  display: block;
+}

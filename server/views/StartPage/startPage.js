@@ -1,8 +1,8 @@
-// Client-side JavaScript; removed Java package/import declarations that are invalid in this file
+// 前端 JavaScript：此檔只負責 StartPage 的登入入口與備援登入彈窗。
 
-// Client-side logic to open modal and call /login
+// 開啟登入流程，並在需要時呼叫 /login API。
 (function(){
-	// Elements are provided by startPage.html
+	// 取得 startPage.html 提供的 DOM 元素。
 	const modal = document.getElementById('modal');
 	const modalTitle = document.getElementById('modalTitle');
 	const username = document.getElementById('username');
@@ -12,16 +12,16 @@
 	const result = document.getElementById('result');
 
 		const userBtn = document.getElementById('userBtn');
-		// Redirect to dedicated auth page with role query param
+		// 使用者按鈕會導向獨立登入/註冊頁。
 		if (userBtn) userBtn.addEventListener('click', () => { window.location.href = '/auth.html?role=user'; });
 
 
 
-		// modal unused when redirecting; keep handlers but hidden
+		// 目前主要走導頁登入；保留彈窗事件作為備援。
 		cancel.addEventListener('click', () => modal.style.display = 'none');
 
 		submit.addEventListener('click', async () => {
-			// If user didn't navigate, allow modal login as fallback
+			// 若沒有導頁成功，仍可用彈窗送出登入請求。
 			result.textContent = '登入中...';
 			try {
 				const resp = await fetch('/login', {
@@ -41,12 +41,12 @@
 			}
 		});
 
-	// allow Enter key to submit when focused in password
+	// 密碼欄按 Enter 時送出登入。
 	password.addEventListener('keydown', e => {
 		if (e.key === 'Enter') submit.click();
 	});
 
-	// close modal when clicking outside card
+	// 點擊彈窗背景時關閉彈窗。
 	modal.addEventListener('click', e => {
 		if (e.target === modal) modal.style.display = 'none';
 	});
