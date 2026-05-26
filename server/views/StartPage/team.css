@@ -8,6 +8,8 @@ body{font-family:Arial, 'Noto Sans TC', sans-serif;margin:0;background:#faf7f2;c
 .icon-btn:hover{background:#f5f5f5}
 .avatar-btn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}
 .layout{display:grid;grid-template-columns:220px minmax(0,1fr) 260px;gap:18px;height:calc(100dvh - 64px);padding:20px;overflow:hidden}
+.loginBtn a{display: block;border-radius: 20px;width: 60px;height: 40px;text-align: center;line-height: 40px;text-decoration: none;color: black;font: 10px;background: #f4f4f4;}
+.loginBtn a:hover{background: #c5c5c5}
 .sidebar,.content{min-height:0;overflow-y:auto;overscroll-behavior:contain}
 .sidebar{padding-right:2px}
 .content{padding-right:6px}
@@ -174,7 +176,7 @@ a{
 .search-list-item { padding: 12px; background: #fff; border: 1px solid #eee; border-radius: 8px; cursor: pointer; transition: all 0.2s;}
 .search-list-item:hover { border-color: #d4b283; background: #fffdf9; box-shadow: 0 4px 12px rgba(76, 55, 35, 0.05);}
 
-.carousel { width: 100%; height: 120px; overflow: hidden; border-radius: 10px; margin-bottom: 20px; position: relative; border: 1px solid #eadfd2; }
+.carousel { width: 100%; height: 200px; overflow: hidden; border-radius: 10px; margin-bottom: 20px; position: relative; border: 1px solid #eadfd2; }
 .carousel-inner { display: flex; width: 100%; height: 100%; transition: transform 0.5s ease-in-out; }
 .carousel-item { min-width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; color: #6b4f3a; }
 .contest-card.and-more { align-items: center; justify-content: center; background: #fffcf8; border: 2px dashed #d4b283; }
@@ -243,4 +245,12 @@ a{
   /* 點擊時下沉，並縮小陰影，模擬實體按鈕被按下去的感覺 */
   transform: translateY(1px);
   box-shadow: 0 2px 6px rgba(184, 147, 98, 0.3);
+}
+
+/* 讓輪播圖片完美填滿容器 */
+.carousel-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 這樣圖片會填滿整個框框。如果想保留圖片完整比例不被裁切，可以改成 contain */
+  display: block;
 }

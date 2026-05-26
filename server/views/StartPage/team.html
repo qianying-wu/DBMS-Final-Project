@@ -14,18 +14,25 @@
       <img src="/logo.png" alt="競賽組隊 Logo" class="logo-img">
     </a>
     <input type="text" id="globalSearch" class="global-search-input" placeholder="搜尋比賽、隊伍或用戶...">
-    <div id="authAction" class="loginBtn">
-      <a href="/auth.html">登入</a>
+    <div class="actions">
+      <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
+      <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
+    </div>
+    <div class="loginBtn">
+      <a href="auth.html">登入</a>
     </div>
   </header>
 
   <main class="layout">
     <aside class="sidebar left">
       <button id="openCreate" class="btn primary block">發起招募</button>
+      <div class="section section-filter">
+        <h4>搜尋/篩選</h4>
+        <input id="teamSearch" placeholder="搜尋隊名、主題或技能" />
+      </div>
 
       <div class="section section-contests">
         <h4>比賽</h4>
-        <!-- 比賽類別會由 team.js 依照標籤動態產生，點擊類別後展開對應比賽。 -->
         <ul id="contestsList" class="simple-list"></ul>
       </div>
     </aside>
@@ -33,10 +40,18 @@
     <section class="content">
       <!-- 廣告輪播 -->
       <div id="adCarousel" class="carousel">
-        <div class="carousel-inner">
-          <div class="carousel-item" style="background: #fdfaf7;">廣告橫幅 1：最新賽事報名中</div>
-          <div class="carousel-item" style="background: #f6efe6;">廣告橫幅 2：尋找你的神隊友</div>
-          <div class="carousel-item" style="background: #fff8ef;">廣告橫幅 3：企業贊助獎金加碼</div>
+        <div id="adCarousel" class="carousel">
+          <div class="carousel-inner">
+            <div class="carousel-item">
+              <img src="/ads.png" alt="廣告 1">
+            </div>
+            <div class="carousel-item">
+              <img src="/ads2.png" alt="廣告 2">
+            </div>
+            <div class="carousel-item">
+              <img src="/ads3.png" alt="廣告 3">
+            </div>
+          </div>
         </div>
       </div>
 
@@ -64,9 +79,9 @@
       </section>
 
       <section class="side-card side-card-fav" data-collapsible-card="favorites">
-        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">我的收藏</button>
+        <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">我的收藏隊伍</button>
         <div class="side-card-body">
-          <div id="myFavs" class="box">尚無收藏</div>
+          <div id="myFavs" class="box">尚無收藏隊伍</div>
         </div>
       </section>
 
@@ -78,7 +93,8 @@
       </section>
 
       <!-- 個人化推薦區：固定放在右側欄位最下方。 -->
-      <section id="recommendedContests" class="side-card side-card-recommend recommended-contests" data-collapsible-card="recommendations">
+      <section id="recommendedContests" class="side-card side-card-recommend recommended-contests"
+        data-collapsible-card="recommendations">
         <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">推薦比賽</button>
         <div id="recommendedBody" class="side-card-body"></div>
       </section>
@@ -128,20 +144,9 @@
       </div>
     </div>
   </div>
-
-  <!-- 未登入互動提醒：首頁可瀏覽，進一步查看或操作時才要求登入。 -->
-  <div id="loginPromptModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card login-required-card">
-      <h3>需要先登入</h3>
-      <p id="loginPromptMessage">這個功能需要登入後才能使用。</p>
-      <div class="modal-actions">
-        <button id="loginPromptCancel" class="btn outline">先逛逛</button>
-        <button id="loginPromptLogin" class="btn primary">前往登入</button>
-      </div>
-    </div>
-  </div>
-  <script src="/preferences.js"></script>
-  <script type="module" src="team.js"></script>
+  <script src="/notifications.js"></script>
+  <script src="/account-menu.js"></script>
+  <script src="/team.js"></script>
 </body>
 
 </html>

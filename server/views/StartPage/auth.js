@@ -8,7 +8,6 @@
   const account = document.getElementById('account');
   const password = document.getElementById('password');
   const submit = document.getElementById('submit');
-  const back = document.getElementById('back');
   const out = document.getElementById('out');
   const username = document.getElementById('username');
   const userEmail = document.getElementById('userEmail');
@@ -62,6 +61,7 @@
   // 切換登入/註冊模式與返回首頁。
   toLogin.addEventListener('click', () => { mode='login'; render(); });
   toRegister.addEventListener('click', () => { mode='register'; render(); });
+
   back.addEventListener('click', () => { window.location.href = '/team.html'; });
 
   // 登入成功後若有 redirect，回到原本想去的頁面，並補上 userId。
@@ -103,6 +103,7 @@
           // 登入成功後帶著 userId 進入使用者首頁。
           const id = json.userId || json.userId === 0 ? json.userId : '';
           localStorage.setItem('userId', id);
+
           const target = buildLoginTarget(id);
           setTimeout(()=> location.href = target, 500);
         } else {

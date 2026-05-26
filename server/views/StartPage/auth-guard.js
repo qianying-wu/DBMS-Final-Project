@@ -1,3 +1,4 @@
+
 // auth-guard.js
 (function() {
     function syncAuthUI() {
@@ -17,6 +18,7 @@
   
       if (!userArea || !authArea) return; // 確保頁面上有這些元素才執行
   
+
       if (userId && userId !== 'unknown') {
         userArea.style.display = 'flex';
         authArea.style.display = 'none';
@@ -26,6 +28,7 @@
       }
     }
   
+
     // 登出功能
     window.logout = function() {
         // 1. 清除標籤：把存好的 userId 刪掉
