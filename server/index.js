@@ -54,7 +54,9 @@ app.get('/contest', (req, res) => {
 app.get('/create-team', (req, res) => {
     res.sendFile(path.join(startPageDir, 'create-team.html'));
 });
-
+app.get('/contests/search', (req, res) => {
+    res.sendFile(path.join(startPageDir, 'create-team.html'));
+});
 // app.get('/competitions', async (req, res) => {
 //     try {
 //         const [rows] = await pool.execute(`

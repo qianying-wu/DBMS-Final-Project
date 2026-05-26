@@ -15,7 +15,7 @@
   // 讀取比賽資料，並補齊預設比賽與官方連結。
   async function loadContests(){
     try {
-      const path = '/contests';
+      const path = '/api/contests/competitions';      
       const response = await fetch(path);
       if (!response.ok) throw new Error('伺服器回應錯誤');
       
@@ -58,7 +58,6 @@
   function toggleNewContestFields(){
     selectedContestId = $('contestSelect').value ? Number($('contestSelect').value) : null;
     
-    // 如果你後面還有其他連帶的畫面渲染，再執行 render()
     if (typeof render === 'function') render();
   }
 
@@ -93,48 +92,20 @@
 
   // 更新頁面摘要、左右側狀態與通知。
   async function render(){
+    const contests = await loadContests();
+  
+    const select = $('contestSelect');
+    // 🚀 加上防呆：如果 select 存在，且它是個 SELECT 標籤時才塞 innerHTML
+    if (select && select.tagName === 'SELECT') {
+      select.innerHTML = contests.map(c => `<option value="${c.com_id}">${c.name}</option>`).join('');
+    }
     const contest = await getContest();
     const teams = await getContestTeams();
     window.AppNotifications?.ensureContestNotifications(loadContests());
     const openings = teams.reduce((sum,team) => sum + Math.max((team.num_limit || 0) - (team.members || 0), 0), 0);
     document.title = '發起招募';
 
-    $('contestSummary').innerHTML = `
-      <h2>發起招募</h2>
-      <div class="summary-grid">
-        <div class="summary-item"><span>比賽模式</span><strong>${contest ? '既有比賽' : '新增比賽'}</strong></div>
-        <div class="summary-item"><span>比賽日期</span><strong>${contest?.date || '建立後顯示'}</strong></div>
-        <div class="summary-item"><span>本比賽隊伍</span><strong>${contest ? `${teams.length} 隊` : '送出後建立'}</strong></div>
-      </div>
-    `;
 
-    $('contestLabel').textContent = contest ? `使用既有比賽：${contest.com_name}` : '新增比賽並建立隊伍';
-    const officialContestLink = $('officialContestLink');
-    if (officialContestLink) {
-      officialContestLink.href = contest?.officialUrl || '#';
-      officialContestLink.ariaDisabled = contest?.officialUrl ? 'false' : 'true';
-    }
-
-    $('contestTeams').innerHTML = teams.length ? teams.map(team => `
-      <li>
-        <strong>${team.team_name}</strong>
-        <div>${team.current_member_count} / ${team.num_limit} 人</div>
-      </li>
-    `).join('') : '<li>目前沒有隊伍</li>';
-
-    const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${currentUserId}`)||'[]');
-    const my = loadTeams().filter(team => joinedIds.some(id => Number(id) === Number(team.team_id)) && (!contest || Number(team.com_id) === Number(contest.com_id)));
-
-    $('myTeams').textContent = my.length ? my.map(team => team.team_name).join('\n') : '尚未加入隊伍';
-
-    const favs = loadFavorites();
-    const followed = teams.filter(team => favs.includes(team.team_id));
-
-    $('myFavs').textContent = followed.length ? followed.map(team => team.team_name).join('\n') : '尚無收藏';
-    const favoriteContests = loadContestFavorites().map(id => loadContests().find(item => Number(item.team_id) === Number(id))).filter(Boolean);
-
-    // 檢查這邊item是什麼
-    $('followed').textContent = favoriteContests.length ? favoriteContests.map(item => `${item.name}\n${item.date}`).join('\n\n') : '尚無關注';
   }
 
   // 渲染比賽下拉選單
@@ -181,10 +152,76 @@
     `).join('');
   }
 
+  async function renderContestResults() {
+    const keyword = $('contestSearch').value.trim();
+    const resultContainer = $('searchResultList'); // 🚀 對齊你的結果清單容器
+    const hiddenInput = $('contestSelect');        // 🚀 對齊你的隱藏欄位
+  
+    // 如果使用者把關鍵字刪光了，就把搜尋結果清空並返回
+    if (!keyword) {
+      resultContainer.innerHTML = '';
+      hiddenInput.value = '';
+      return;
+    }
+  
+    try {
+      // 1. 向後端發送搜尋請求
+      const path = `/api/teams/contests/search?q=${encodeURIComponent(keyword)}`;
+      const resp = await fetch(path);
+      if (!resp.ok) throw new Error('搜尋伺服器回應錯誤');
+      
+      const contests = await resp.json();
+  
+      // 2. 如果找不到符合的比賽
+      if (contests.length === 0) {
+        resultContainer.innerHTML = '<div class="no-result" style="color: #666; padding: 10px;">找不到符合條件的比賽</div>';
+        hiddenInput.value = ''; // 清空隱藏欄位
+        return;
+      }
+  
+      // 3. 渲染比賽卡片到 <div id="searchResultList"> 裡面
+      resultContainer.innerHTML = contests.map(contest => `
+        <div class="contest-card" data-id="${contest.com_id}" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+          <strong style="font-size: 1.1em; color: #333;">${contest.com_name}</strong>
+          <div style="font-size: 0.9em; color: #666; margin-top: 5px;">📆 比賽日期：${contest.com_date || '日期未定'}</div>
+          <div style="font-size: 0.9em; color: #888; margin-top: 3px;">📝 簡介：${contest.com_intro || '點擊查看詳情'}</div>
+        </div>
+      `).join('');
+  
+      // 4. 🚀 關鍵核心：幫點擊卡片加上「選定比賽」的監聽器
+      const cards = resultContainer.querySelectorAll('.contest-card');
+      cards.forEach(card => {
+        card.addEventListener('click', () => {
+          // 先把所有卡片的亮起外框洗掉，再幫被點擊的那張加上藍色外框
+          cards.forEach(c => c.style.borderColor = '#ddd');
+          card.style.borderColor = '#007bff'; 
+          card.style.backgroundColor = '#f8f9fa';
+  
+          // 把被選中的 com_id 塞進隱藏欄位，這樣送出表單時才抓得到 ID！
+          const selectedId = card.dataset.id;
+          hiddenInput.value = selectedId;
+          selectedContestId = Number(selectedId); // 同步全域變數
+  
+          console.log(`🎯 已選定比賽 ID: ${selectedId}`);
+        });
+      });
+  
+    } catch (error) {
+      console.error('❌ 前端即時搜尋渲染失敗:', error);
+      resultContainer.innerHTML = '<div class="error" style="color: red; padding: 10px;">搜尋發生網路錯誤</div>';
+    }
+  }
+
+    // 前端 JS
+  let debounceTimer;
   $('contestSearch').addEventListener('input', () => {
     selectedContestId = null;
-    renderContestResults();
-  });
+    clearTimeout(debounceTimer);
+  
+    // 倒數 300 毫秒（0.3秒）後才真正觸發後端搜尋
+    debounceTimer = setTimeout(() => {
+      renderContestResults();
+    }, 300);  });
 
   $('contestResults').addEventListener('click', event => {
     const option = event.target.closest('[data-contest]');
@@ -212,20 +249,39 @@
     renderQuestions();
   });
 
+  /**
+ * 取得當前使用者在搜尋結果中點選的比賽資料
+ * @returns {Object} 包含 com_id 的比賽物件
+ */
+function getSelectedContest() {
+  // 1. 從隱藏欄位中撈出剛剛點擊卡片塞進去的 com_id
+  const selectedComId = $('contestSelect')?.value;
+
+  // 2. 🚀 防呆機制：如果欄位是空的，代表使用者根本沒有點選任何一場比賽
+  if (!selectedComId || selectedComId.trim() === '') {
+    throw new Error('請先在上方輸入關鍵字，並「點擊選擇」一場比賽！');
+  }
+
+  // 3. 成功拿到 ID，包裝成物件回傳（對齊你後端需要的欄位名稱）
+  return {
+    com_id: Number(selectedComId)
+  };
+}
   // 表單送出：建立隊伍並導回對應比賽頁。
   $('createForm').addEventListener('submit', async event => { // 💡 注意：這裡加上了 async
 
     event.preventDefault();
-    const contest = getSelectedContest();
+    // const contest = getSelectedContest();
+    contest = resolveContestForSubmit();
     const name = $('teamName').value.trim();
     if (!contest) return alert('請先搜尋並選擇一個比賽');
     if (!name) return alert('請輸入隊伍名稱');
-    
-    try {
-      contest = resolveContestForSubmit();
-    } catch (error) {
-      return alert(error.message || error);
-    }
+
+    // try {
+    //   console.log(contest);
+    // } catch (error) {
+    //   return alert(error.message || error);
+    // }
   
     // ----------檢查這邊的邏輯------------
     const descParts = [$('teamDesc').value.trim(), $('teamSkills').value.trim() ? `需求：${$('teamSkills').value.trim()}` : ''].filter(Boolean);
@@ -243,17 +299,25 @@
   
     try {
       
-      const path = '/teams';
-    
+      const path = '/api/teams/create';
+      const token = localStorage.getItem('token'); // 🚀 假設你們登入時把 token 存存在這裡
+      console.log(token);
       const response = await fetch(path, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 
+                   'Authorization': ` ${token}` // 🚀 關鍵核心：手動把 JWT Token 傳給後端驗證
+        },
         body: JSON.stringify(teamData) // 把資料變成字串送過去
       });
   
       console.log(teamData);
+      // 🚀 3. 安全防護：如果是 401，抓出純文字提示
+      if (!response.ok) {
+        const errorText = await response.text();
+        return console.log(`建立失敗 (錯誤代碼 ${response.status}): ${errorText}\n提示：請檢查 Token 是否有效或是否已登入。`);
+      }
       const result = await response.json();
-  
+
       if (response.ok && result.success) {
         alert('🎉 隊伍建立成功！');
         
@@ -276,7 +340,7 @@
   // 🚀 2. 負責網頁載入啟動的監聽器，回呼函式要加上 async
   document.addEventListener('DOMContentLoaded', async () => {
     
-    await renderContestSelect(); 
+    // await renderContestSelect(); 
     
     const contests = await loadContests();
     
