@@ -5,6 +5,10 @@ import pool from './models/db.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
+console.log('[SERVER STARTUP] Environment Variables Loaded:');
+console.log('[SERVER STARTUP] PASSPORT_SECRET:', !!process.env.PASSPORT_SECRET ? '✓ Loaded' : '✗ NOT FOUND');
+console.log('[SERVER STARTUP] DB_HOST:', process.env.DB_HOST || 'NOT LOADED');
+
 import passport from "passport";
 import passportConfig from "./config/passport.js";
 

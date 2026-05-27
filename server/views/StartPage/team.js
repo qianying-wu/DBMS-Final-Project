@@ -24,6 +24,9 @@ const loginPromptCancel = $('loginPromptCancel');
 // 之後需要登入才能操作的請求，帶上 token
 // localStorage.setItem("token", token);
 //localStorage.setItem("current_user_id", response.userId); // 把當前登入者的 ID 存起來 
+
+
+
 const token = localStorage.getItem("token");
 const currentUserId = localStorage.getItem("userId");
 
@@ -181,13 +184,6 @@ function toggleFavorite(id) {
 
 // 點擊事件：切換某個比賽的收藏狀態
 function toggleContestFavorite(id) {
-  const token = localStorage.getItem('token');
-  // if (!token) {
-  //   alert('【系統提示】請先登入才能收藏隊伍喔！');
-  //   window.location.href = '/auth.html'; // 踢去登入頁面
-  //   return;
-  // }
-
   if (!requireLogin('收藏競賽需要先登入喔！')) return;
 
   const favs = Data.loadContestFavorites();

@@ -9,7 +9,7 @@ import { requireLogin } from '../middleware/auth-middleware.js';  // 這行是�
 const router = express.Router();
 
 // 公開 API（不需要登入）
-//router.get('/all', comController.getAllData); // 當前端呼叫 /api/com/all 時，執行 getAllData
+router.get('/all', comController.getComData); // 當前端呼叫 /api/com/all 時，執行 getAllData
 
 //  底下是保護 API（必須登入）
 // router.use(passport.authenticate("jwt", { session: false }));    // 驗證 Token 並注入 req.user
