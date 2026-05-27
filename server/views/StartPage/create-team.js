@@ -300,7 +300,6 @@ function getSelectedContest() {
       
       const path = '/api/teams/create';
       const token = localStorage.getItem('token'); // 🚀 假設你們登入時把 token 存存在這裡
-      console.log(token);
       const response = await fetch(path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 
