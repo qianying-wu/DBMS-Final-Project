@@ -116,7 +116,7 @@ async function render() {
 
   // 呼叫 UI 模組渲染各個區塊
   if (isLoggedIn()) UI.renderRecommendations(contests, currentPreferences);
-  else UI.renderGuestSidebar();
+  else ;
   UI.renderContestOverview(contests, teams, selectedContest, contestFavs);
   expandedContestCategory = UI.renderContestCategoryList(contests, selectedContest, expandedContestCategory);
 
@@ -412,7 +412,7 @@ document.addEventListener('click', event => {
   if (!contestButton) return;
   if (!requireLogin('查看比賽完整資訊需要先登入。')) return;
   const cid = Number(contestButton.dataset.cid);
-  Data.setSelectedContestId(cid);
+  // Data.setSelectedContestId(cid);
   location.href = Data.withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
 });
 
@@ -433,7 +433,7 @@ contestsGrid && contestsGrid.addEventListener('click', event => {
   if (!card) return;
   if (!requireLogin('查看比賽完整資訊需要先登入。')) return;
   const cid = Number(card.dataset.cid);
-  Data.setSelectedContestId(cid);
+  // Data.setSelectedContestId(cid);
   location.href = Data.withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
 });
 
