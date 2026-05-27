@@ -51,6 +51,16 @@ function categoryLabel(category) {
   }[category] || category;
 }
 
+// 產生目前比賽列表中每個分類的數量
+function computeCategoryCounts(list) {
+  const counts = {};
+  (list || []).forEach(c => {
+    const key = inferCategory(c) || 'Other';
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return counts;
+}
+
 // 核心渲染函式：負責將資料庫比賽轉換成 HTML 卡片並呈現在畫面上。
 function renderContests(data) {
   const grid = $('contestsGrid');
@@ -97,5 +107,6 @@ $('contestsGrid')?.addEventListener('click', event => {
 const homeLink = $('homeLink');
 if (homeLink) homeLink.href = withUserParam('/team.html');
 
+// 頁面初始載入時，先讀取資料庫，再顯示所有比賽，並建立分類下拉的動態選單。
 // 頁面初始載入時，先讀取資料庫，再顯示所有比賽。
 loadContests().then(applyFilters);
