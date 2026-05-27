@@ -17,7 +17,7 @@ import authRouter from './routes/auth-route.js';
 import reviewRouter from './routes/review-route.js';
 import teamRouter from './routes/team-route.js';
 import comRouter from './routes/com-route.js';
-import pvRouter from './routes/pv-route.js'; 
+import pvRouter from './routes/pv-route.js';
 
 import { requireLogin } from './middleware/auth-middleware.js';
 
@@ -46,7 +46,7 @@ passportConfig(passport);
 
 // --- HTML 頁面 routes  --- 看網址後面加什麼就帶去哪
 app.get('/', (req, res) => {
-    res.sendFile(path.join(startPageDir, 'team.html')); 
+    res.sendFile(path.join(startPageDir, 'team.html'));
 });
 app.get('/profile', (req, res) => {
     res.sendFile(path.join(startPageDir, 'profile.html'));
@@ -60,6 +60,7 @@ app.get('/contest', (req, res) => {
 app.get('/create-team', (req, res) => {
     res.sendFile(path.join(startPageDir, 'create-team.html'));
 });
+
 app.get('/contests/search', (req, res) => {
     res.sendFile(path.join(startPageDir, 'create-team.html'));
 });
@@ -114,14 +115,14 @@ app.get('/contests/search', (req, res) => {
 //     }
 // });
 
-// app.post('/notifications', async (req, res) => {
-//     const userId = Number(req.body.userId);
-//     const type = req.body.type || 'notice';
-//     const message = req.body.message;
-//     const sourceId = req.body.sourceId ? String(req.body.sourceId) : null;
-//     const sourceKey = req.body.sourceKey || `${type}:${sourceId || message}`;
-//     const action = req.body.action || null;
 
+// 通知 API：所有有通知鈴鐺的頁面都會透過這組 API 和資料庫同步通知。
+app.get('/notifications', async (req, res) => {
+    const userId = Number(req.query.userId);
+    if (!Number.isFinite(userId)) {
+        return res.status(400).json({ ok: false, error: '缺少有效的 userId' });
+    }
+});
 //     if (!Number.isFinite(userId) || !message) {
 //         return res.status(400).json({ ok: false, error: '缺少通知接收者或通知內容' });
 //     }
@@ -177,11 +178,13 @@ app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
 // --- API routes ---
 app.use('/api/auth', authRouter);
 app.use('/api/review', reviewRouter);
-app.use('/api/teams', teamRouter); 
+app.use('/api/teams', teamRouter);
 app.use('/api/contests', comRouter);
-app.use('/api/pv', pvRouter ); // 這條路由需要登入驗證
+app.use('/api/pv', pvRouter); // 這條路由需要登入驗證
 
 // 4. 啟動伺服器
 app.listen(port, () => {
     console.log(`伺服器啟動成功：http://localhost:${port}`);
-});
+})
+
+

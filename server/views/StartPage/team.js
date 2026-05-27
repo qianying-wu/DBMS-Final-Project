@@ -65,23 +65,31 @@ function authHref() {
 
 // 右上角依登入狀態切換成「登入 / 登出」，避免登入後仍停在登入入口。
 function renderAuthAction() {
-  const link = authAction?.querySelector('a');
-  if (!link) return;
+  const authBlock = document.getElementById('authAction');   // 登入按鈕區塊
+  const userBlock = document.getElementById('userActions');  // 鈴鐺+頭像區塊
+  const rightSidebar = document.getElementById('rightSide'); // 右側邊欄容器
+  const loginLink = authBlock?.querySelector('a');
+
+  // 防呆：確保畫面上找得到這些元素
+  if (!authBlock || !userBlock) return;
 
   if (isLoggedIn()) {
-    link.textContent = '登出';
-    link.href = '/team.html';
-    link.addEventListener('click', event => {
-      event.preventDefault();
-      localStorage.removeItem('token'); 
-      localStorage.removeItem('userId');
-      location.href = '/team.html';
-    }, { once: true });
-    return;
-  }
+    // 🔓 狀態一：已登入
+    authBlock.style.display = 'none';   // 隱藏登入按鈕
+    userBlock.style.display = 'flex';   // 顯示通知與頭像 (用 flex 保持按鈕並排)
+    rightSidebar.style.display = 'block'; // 顯示右側邊欄
 
-  link.textContent = '登入';
-  link.href = authHref();
+  } else {
+    // 🔒 狀態二：未登入
+    authBlock.style.display = 'block';  // 顯示登入按鈕
+    userBlock.style.display = 'none';   // 隱藏通知與頭像
+    rightSidebar.style.display = 'none'; // 隱藏右側邊欄
+
+    if (loginLink) {
+      loginLink.textContent = '登入';
+      loginLink.href = '/auth.html'; // 或者是你原本的 authHref()
+    }
+  }
 }
 
 // 首頁允許瀏覽；一旦要查看詳情、收藏、建立隊伍等互動，就用這個彈窗提醒登入。
@@ -102,7 +110,7 @@ function requireLogin(message = '這個功能需要登入後才能使用。') {
 async function render() {
   const response = await fetch('/api/teams/all');
 
-    if (!response.ok) throw new Error('無法取得後端隊伍資料');
+  if (!response.ok) throw new Error('無法取得後端隊伍資料');
   const { contests, teams } = await response.json();
 
   const favs = Data.loadFavorites();
@@ -112,7 +120,7 @@ async function render() {
 
   // 通知系統連動
   // window.AppNotifications?.ensureContestNotifications(contests);
-  
+
   // 主畫面目前只保留比賽總覽；若頁面有隊伍容器才渲染隊伍卡片。
   if (teamsGrid) teamsGrid.innerHTML = '';
 
@@ -129,21 +137,21 @@ async function render() {
     const isOwner = String(team.owner) === String(Data.currentUserId) || (String(Data.currentUserId) === String(Data.ME.id) && Number(team.owner) === Number(Data.ME.id));
     const pending = reqs.filter(request => request.teamId === team.id && request.status === 'pending').length;
     const contest = contests.find(item => Number(item.id) === Number(team.contestId));
-    
+
     // 建立隊伍卡片 DOM 並附加到 teamsGrid 容器中
     const card = document.createElement('div');
     card.className = 'team-card';
     card.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-        <div style="display:flex;align-items:center;gap:8px"><h4 style="margin:0">${Data.escapeHtml(team.name)}</h4>${isOwner && pending ? `<span class="pending-count">${pending}</span>` : ''}</div>
-        <button class="fav-btn ${isFav ? 'active' : ''}" data-id="${team.id}" aria-pressed="${isFav}">${isFav ? '♥' : '♡'}</button>
+        <div style="display:flex;align-items:center;gap:8px"><h4 style="margin:0">${Data.escapeHtml(team.team_name)}</h4>${isOwner && pending ? `<span class="pending-count">${pending}</span>` : ''}</div>
+        <button class="fav-btn ${isFav ? 'active' : ''}" data-id="${team.team_id}" aria-pressed="${isFav}">${isFav ? '♥' : '♡'}</button>
       </div>
-      <div class="team-meta">${Data.escapeHtml(team.desc || '')}</div>
-      ${contest ? `<div class="team-contest">比賽：<strong>${Data.escapeHtml(contest.name)}</strong></div>` : ''}
-      <div>成員 ${team.members} / ${team.slots}</div>
+      <div class="team-meta">${Data.escapeHtml(team.demand || '')}</div>
+      ${contest ? `<div class="team-contest">比賽：<strong>${Data.escapeHtml(contest.com_name)}</strong></div>` : ''}
+      <div>成員 ${team.current_member_count} / ${team.num_limit}</div>
       <div style="margin-top:8px">
         <button class="btn" data-id="${team.id}">查看 / 加入</button>
-        ${isOwner ? `<button class="btn outline manage-btn" data-team="${team.id}">管理</button>` : ''}
+        ${isOwner ? `<button class="btn outline manage-btn" data-team="${team.team_id}">管理</button>` : ''}
       </div>
     `;
     if (teamsGrid) teamsGrid.appendChild(card);
@@ -171,9 +179,10 @@ async function render() {
 // 點擊事件：切換某個隊伍的收藏狀態
 function toggleFavorite(id) {
   const token = localStorage.getItem('token');
- 
-  if (!requireLogin('收藏隊伍需要先登入喔！')) return;
-
+  if (!token) {
+    requireLogin('【系統提示】請先登入才能收藏比賽喔！');
+    return;
+  }
   const favorites = Data.loadFavorites();
   const index = favorites.indexOf(id);
   if (index >= 0) favorites.splice(index, 1);
@@ -184,8 +193,11 @@ function toggleFavorite(id) {
 
 // 點擊事件：切換某個比賽的收藏狀態
 function toggleContestFavorite(id) {
-  if (!requireLogin('收藏競賽需要先登入喔！')) return;
-
+  const token = localStorage.getItem('token');
+  if (!token) {
+    requireLogin('【系統提示】請先登入才能收藏隊伍喔！');
+    return;
+  }
   const favs = Data.loadContestFavorites();
   const index = favs.indexOf(Number(id));
   if (index >= 0) favs.splice(index, 1);
@@ -222,7 +234,7 @@ const requestsModal = $('requestsModal');
 const requestsList = $('requestsList');
 const closeReq = $('closeReq');
 
-// 開啟某隊伍的「管理申請」視窗，驗證權限並載入申請資料
+// 開啟某隊伍的「管理申請」視窗，驗證權限並載入申請資料 -----蛤--------
 function openRequestsForTeam(teamId) {
   if (!requireLogin('管理隊伍申請需要先登入。')) return;
   const teams = Data.loadTeams();
@@ -232,11 +244,12 @@ function openRequestsForTeam(teamId) {
   if (!isOwner) return alert('只有隊長可以管理本隊的加入請求');
   const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]').filter(request => request.teamId === teamId && request.status === 'pending');
   if (!reqs.length) { alert('目前沒有待審核申請'); return; }
-  
+
   requestsList.innerHTML = UI.renderRequestsHtml(reqs);
   requestsModal.classList.remove('hidden');
   document.body.classList.add('modal-open');
 }
+
 window.AppReview = { openTeamRequests: openRequestsForTeam };
 
 // 委派監聽：處理管理視窗內的「批准 (approve)」與「拒絕 (deny)」按鈕點擊邏輯
@@ -355,7 +368,12 @@ const openCreateTeamPage = () => {
 //如果頁面上還有另一個按鈕 openCreate，也順便一起保護起來：
 if (openCreate) { // 乾這裡的邏輯是反的
   openCreate.addEventListener('click', (e) => {
-    openCreateTeamPage()
+    const token = localStorage.getItem('token');
+    if (!token) {
+      requireLogin('【系統提示】請先登入才能創建隊伍喔！');
+      return;
+    }
+    openCreateTeamPage();
   });
 }
 
@@ -365,7 +383,7 @@ if (modalCancel) {
 }
 // 處理 Modal 內的建立送出邏輯，驗證欄位並存入 localStorage 後重新 render()
 modalCreate.addEventListener('click', () => {
- 
+
   const name = newTeamName.value.trim();
   if (!name) return alert('請輸入隊名');
   const desc = newTeamDesc.value.trim();
@@ -390,6 +408,9 @@ document.addEventListener('keydown', event => {
 
 const homeLink = $('homeLink');
 if (homeLink) homeLink.href = Data.withUserParam('/team.html');
+const notifyBtn = $('notifyBtn');
+const avatarBtn = $('avatarBtn');
+
 
 // --- 導覽列與左側選單的互動監聽 ---
 

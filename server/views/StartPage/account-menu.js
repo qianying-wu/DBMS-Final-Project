@@ -12,9 +12,35 @@
   }
 
   function askLogin(){
-    if (confirm('這個功能需要先登入，是否前往登入頁？')) {
-      location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+    const loginPromptModal = document.getElementById('loginPromptModal');
+    const loginPromptMessage = document.getElementById('loginPromptMessage');
+    if (loginPromptMessage) loginPromptMessage.textContent = '這個功能需要先登入，是否前往登入頁？';
+    if (loginPromptModal) {
+      // show modal
+      loginPromptModal.classList.remove('hidden');
+      document.body.classList.add('modal-open');
+
+      const onCancel = () => {
+        loginPromptModal.classList.add('hidden');
+        document.body.classList.remove('modal-open');
+        cleanup();
+      };
+      const onLogin = () => {
+        cleanup();
+        location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+      };
+
+      function cleanup(){
+        document.getElementById('loginPromptCancel')?.removeEventListener('click', onCancel);
+        document.getElementById('loginPromptLogin')?.removeEventListener('click', onLogin);
+      }
+
+      document.getElementById('loginPromptCancel')?.addEventListener('click', onCancel);
+      document.getElementById('loginPromptLogin')?.addEventListener('click', onLogin);
+      return;
     }
+    // fallback: go directly to auth page if the shared modal is missing
+    location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
   }
 
   // 關閉已存在的帳號選單。

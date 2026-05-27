@@ -28,14 +28,14 @@
   
     // 登出功能
     window.logout = function() {
-        // 1. 清除標籤：把存好的 userId 刪掉
-        localStorage.removeItem('userId');
+      // 1. 清除標籤：把存好的 userId 刪掉
+      localStorage.removeItem('userId');
         
-        // 2. 選擇性：也可以清空所有 LocalStorage
-        // localStorage.clear(); 
+      // 2. 選擇性：也可以清空所有 LocalStorage
+      // localStorage.clear(); 
     
-        // 3. 跳轉：導回首頁或登入頁
-        window.location.href = '/team.html'; 
+      // 3. 跳轉：導回首頁或登入頁
+      window.location.href = '/team.html'; 
     };
   
     // 確保一進頁面就執行同步

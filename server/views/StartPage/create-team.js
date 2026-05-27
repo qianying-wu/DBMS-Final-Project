@@ -142,14 +142,14 @@
 
   }
   // 渲染「給申請人的提問」列表。
-  function renderQuestions(){
-    $('questionsList').innerHTML = questions.map((question, index) => `
-      <div class="question-row">
-        <input class="question-input" data-index="${index}" type="text" value="${escapeAttr(question)}" placeholder="輸入給申請人的問題">
-        <button class="remove-question" data-remove="${index}" type="button" aria-label="刪除提問">×</button>
-      </div>
-    `).join('');
-  }
+  // function renderQuestions(){
+  //   $('questionsList').innerHTML = questions.map((question, index) => `
+  //     <div class="question-row">
+  //       <input class="question-input" data-index="${index}" type="text" value="${escapeAttr(question)}" placeholder="輸入給申請人的問題">
+  //       <button class="remove-question" data-remove="${index}" type="button" aria-label="刪除提問">×</button>
+  //     </div>
+  //   `).join('');
+  // }
 
   async function renderContestResults() {
     const keyword = $('contestSearch').value.trim();
@@ -162,6 +162,29 @@
       hiddenInput.value = '';
       return;
     }
+
+    // 監聽搜尋列表的點擊
+$('searchResultList').addEventListener('click', (e) => {
+    // 找到被點擊的那一項 (假設組員生成的 class 是 search-item)
+    const item = e.target.closest('.search-item') || e.target.closest('div'); 
+    if (!item || !item.dataset.id) return;
+
+    const id = item.dataset.id;
+    const name = item.dataset.name || item.innerText;
+
+    // 🚀 關鍵動作：把選中的 ID 存入隱藏欄位，送出時後端才抓得到 com_id
+    $('contestSelect').value = id;
+
+    // 視覺回饋：在畫面上顯示已選擇
+    $('contestResults').innerHTML = `
+        <div class="selected-tag" style="background:#f0f7ff; padding:10px; border:1px solid #1890ff; margin-top:10px;">
+            ✅ 已選擇比賽：<strong>${name}</strong>
+        </div>
+    `;
+    // 清空搜尋列表
+    $('searchResultList').innerHTML = '';
+    $('contestSearch').value = '';
+});
   
     try {
       // 1. 向後端發送搜尋請求
@@ -228,25 +251,25 @@
     selectContest(option.dataset.contest);
   });
 
-  $('addQuestion').addEventListener('click', () => {
-    questions.push('');
-    renderQuestions();
-    document.querySelectorAll('.question-input').item(questions.length - 1)?.focus();
-  });
+  // $('addQuestion').addEventListener('click', () => {
+  //   questions.push('');
+  //   renderQuestions();
+  //   document.querySelectorAll('.question-input').item(questions.length - 1)?.focus();
+  // });
 
-  $('questionsList').addEventListener('input', event => {
-    const input = event.target.closest('.question-input');
-    if (!input) return;
-    questions[Number(input.dataset.index)] = input.value;
-  });
+  // $('questionsList').addEventListener('input', event => {
+  //   const input = event.target.closest('.question-input');
+  //   if (!input) return;
+  //   questions[Number(input.dataset.index)] = input.value;
+  // });
 
-  $('questionsList').addEventListener('click', event => {
-    const button = event.target.closest('[data-remove]');
-    if (!button) return;
-    if (questions.length === 1) questions[0] = '';
-    else questions.splice(Number(button.dataset.remove), 1);
-    renderQuestions();
-  });
+  // $('questionsList').addEventListener('click', event => {
+  //   const button = event.target.closest('[data-remove]');
+  //   if (!button) return;
+  //   if (questions.length === 1) questions[0] = '';
+  //   else questions.splice(Number(button.dataset.remove), 1);
+  //   renderQuestions();
+  // });
 
   /**
  * 取得當前使用者在搜尋結果中點選的比賽資料
@@ -266,7 +289,7 @@ function getSelectedContest() {
     com_id: Number(selectedComId)
   };
 }
-  // 表單送出：建立隊伍並導回對應比賽頁。
+/*  // 表單送出：建立隊伍並導回對應比賽頁。
   $('createForm').addEventListener('submit', async event => { // 💡 注意：這裡加上了 async
 
     event.preventDefault();
@@ -320,7 +343,7 @@ function getSelectedContest() {
         alert('🎉 隊伍建立成功！');
         
         // 成功後看你要導頁回到哪裡，例如：
-        // window.location.href = `/contest/${contest.id}`;
+        window.location.href = withUserParam('/team.html');
       } else {
         alert('建立隊伍失敗：' + (result.message || '未知錯誤'));
       }
@@ -330,6 +353,93 @@ function getSelectedContest() {
     }
 
   });
+*/
+
+$('createForm').addEventListener('submit', async event => {
+    event.preventDefault();
+
+    // 1. 基本欄位獲取
+    const contest = resolveContestForSubmit();
+    const name = $('teamName').value.trim();
+    const desc = $('teamDesc').value.trim();     // 主題/說明
+    const skills = $('teamSkills').value.trim(); // 招募需求
+    const slots = Number($('teamSlots').value) || 4;
+
+    // 2. 🚀 新增檢查邏輯
+    if (!contest) return alert('請先搜尋並選擇一個比賽');
+    if (!name) return alert('請輸入隊伍名稱');
+    
+    // 檢查招募需求與說明
+    if (!skills) return alert('請輸入「招募需求」（例如：需要前端工程師）');
+    if (!desc) return alert('請輸入「主題/說明」，讓別人了解你的隊伍方向');
+
+    // 檢查「給申請者的提問」（假設你們動態生成的 input class 叫 question-input）
+    const questionInputs = document.querySelectorAll('.question-input'); 
+    let questionsData = [];
+    
+    // 如果有提問欄位，檢查是否為空
+    if (questionInputs.length > 0) {
+        for (let input of questionInputs) {
+            if (!input.value.trim()) {
+                return alert('請填寫所有「給申請者的提問」，或刪除不需要的問題框');
+            }
+            questionsData.push(input.value.trim());
+        }
+    } else {
+        // 如果你們規定至少要有一個提問，可以在這裡攔截
+        // return alert('請至少新增一個給申請者的提問');
+    }
+
+    // 3. 打包要丟給資料庫的欄位資料
+    const descParts = [desc, skills ? `需求：${skills}` : ''].filter(Boolean);
+    
+    const teamData = {
+        com_id: contest.id,
+        teamStatus: 'active',
+        num_limit: slots,
+        demand: descParts.join('\n'), // 將說明與需求合併存入 demand
+        team_name: name,
+        current_member_count: 1,
+        // 如果後端有支援存問題，可以加上：
+        // questions: questionsData 
+    };
+
+    // 4. 送出請求 (fetch 部分)
+    try {
+        const path = '/api/teams/create';
+        const token = localStorage.getItem('token');
+        
+        // 🚀 注意：檢查 Token 是否存在，沒登入直接擋掉
+        if (!token) return alert('登入逾時，請重新登入');
+
+        const response = await fetch(path, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${token}` // 🚀 建議加上 Bearer
+            },
+            body: JSON.stringify(teamData)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`建立失敗 (${response.status}): ${errorText}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('🎉 隊伍建立成功！');
+            // 🚀 解決你說的不會跳轉問題：
+            window.location.href = withUserParam('/team.html'); 
+        } else {
+            alert('建立隊伍失敗：' + (result.message || '未知錯誤'));
+        }
+    } catch (error) {
+        console.error('網路錯誤:', error);
+        alert('無法連接到伺服器：' + error.message);
+    }
+});
 
   $('cancelBtn').addEventListener('click', () => { location.href = withUserParam('/team.html'); });
   $('backBtn').addEventListener('click', () => { location.href = withUserParam('/team.html'); });
@@ -362,5 +472,5 @@ function getSelectedContest() {
   });  
   toggleNewContestFields();
   render();
-  renderQuestions();
+  // renderQuestions();
 })();

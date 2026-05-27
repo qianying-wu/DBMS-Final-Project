@@ -11,9 +11,22 @@
     <header class="topbar">
       <button id="backBtn" class="icon-btn" aria-label="回到組隊">←</button>
       <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
+       <!--右上的通知和個人icon圖示-->
       <div class="actions">
-        <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
-        <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
+       <button id="notifyBtn" class="icon-btn" aria-label="通知">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+       fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+  </svg>
+</button>
+<button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+       fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="8" r="4"/>
+    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+  </svg>
+</button>
       </div>
     </header>
 
@@ -68,12 +81,13 @@
           </label>
 
           <!-- 申請設定：是否要求履歷，以及申請者需要回答的問題。 -->
-          <label class="full check-row">
+           <!-- 這個按鈕在js還沒寫先祝解掉 -->
+          <!-- <label class="full check-row">
             <input id="requireResume" type="checkbox">
             要求申請者附上履歷
-          </label>
+          </label> -->
 
-          <section class="questions-section full">
+          <!-- <section class="questions-section full">
             <div class="questions-heading">
               <div>
                 <h3>給申請人的提問</h3>
@@ -82,7 +96,7 @@
               <button id="addQuestion" class="add-question-btn" type="button" aria-label="新增提問">+</button>
             </div>
             <div id="questionsList" class="questions-list"></div>
-          </section>
+          </section> -->
 
           <!-- 表單操作。 -->
           <div class="form-actions">
