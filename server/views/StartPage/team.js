@@ -150,8 +150,7 @@ async function render() {
 function toggleFavorite(id) {
   const token = localStorage.getItem('token');
   if (!token) {
-    alert('【系統提示】請先登入才能收藏比賽喔！');
-    window.location.href = '/auth.html';
+  requireLogin('【系統提示】請先登入才能收藏比賽喔！');
     return;
   }
   const favorites = Data.loadFavorites();
@@ -166,8 +165,7 @@ function toggleFavorite(id) {
 function toggleContestFavorite(id) {
   const token = localStorage.getItem('token');
   if (!token) {
-    alert('【系統提示】請先登入才能收藏隊伍喔！');
-    window.location.href = '/auth.html'; // 踢去登入頁面
+  requireLogin('【系統提示】請先登入才能收藏隊伍喔！');
     return;
   }
   const favs = Data.loadContestFavorites();
@@ -341,8 +339,7 @@ if (openCreate) { // 乾這裡的邏輯是反的
   openCreate.addEventListener('click', (e) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('【系統提示】請先登入才能創建隊伍喔！');
-      window.location.href = '/auth.html';
+    requireLogin('【系統提示】請先登入才能創建隊伍喔！');
       return;
     }
     openCreateTeamPage();
@@ -384,6 +381,9 @@ document.addEventListener('keydown', event => {
 
 const homeLink = $('homeLink');
 if (homeLink) homeLink.href = Data.withUserParam('/team.html');
+const notifyBtn = $('notifyBtn');
+const avatarBtn = $('avatarBtn');
+
 
 // --- 導覽列與左側選單的互動監聽 ---
 
