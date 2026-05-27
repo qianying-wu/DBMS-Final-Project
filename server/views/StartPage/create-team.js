@@ -142,14 +142,14 @@
 
   }
   // 渲染「給申請人的提問」列表。
-  function renderQuestions(){
-    $('questionsList').innerHTML = questions.map((question, index) => `
-      <div class="question-row">
-        <input class="question-input" data-index="${index}" type="text" value="${escapeAttr(question)}" placeholder="輸入給申請人的問題">
-        <button class="remove-question" data-remove="${index}" type="button" aria-label="刪除提問">×</button>
-      </div>
-    `).join('');
-  }
+  // function renderQuestions(){
+  //   $('questionsList').innerHTML = questions.map((question, index) => `
+  //     <div class="question-row">
+  //       <input class="question-input" data-index="${index}" type="text" value="${escapeAttr(question)}" placeholder="輸入給申請人的問題">
+  //       <button class="remove-question" data-remove="${index}" type="button" aria-label="刪除提問">×</button>
+  //     </div>
+  //   `).join('');
+  // }
 
   async function renderContestResults() {
     const keyword = $('contestSearch').value.trim();
@@ -228,25 +228,25 @@
     selectContest(option.dataset.contest);
   });
 
-  $('addQuestion').addEventListener('click', () => {
-    questions.push('');
-    renderQuestions();
-    document.querySelectorAll('.question-input').item(questions.length - 1)?.focus();
-  });
+  // $('addQuestion').addEventListener('click', () => {
+  //   questions.push('');
+  //   renderQuestions();
+  //   document.querySelectorAll('.question-input').item(questions.length - 1)?.focus();
+  // });
 
-  $('questionsList').addEventListener('input', event => {
-    const input = event.target.closest('.question-input');
-    if (!input) return;
-    questions[Number(input.dataset.index)] = input.value;
-  });
+  // $('questionsList').addEventListener('input', event => {
+  //   const input = event.target.closest('.question-input');
+  //   if (!input) return;
+  //   questions[Number(input.dataset.index)] = input.value;
+  // });
 
-  $('questionsList').addEventListener('click', event => {
-    const button = event.target.closest('[data-remove]');
-    if (!button) return;
-    if (questions.length === 1) questions[0] = '';
-    else questions.splice(Number(button.dataset.remove), 1);
-    renderQuestions();
-  });
+  // $('questionsList').addEventListener('click', event => {
+  //   const button = event.target.closest('[data-remove]');
+  //   if (!button) return;
+  //   if (questions.length === 1) questions[0] = '';
+  //   else questions.splice(Number(button.dataset.remove), 1);
+  //   renderQuestions();
+  // });
 
   /**
  * 取得當前使用者在搜尋結果中點選的比賽資料
@@ -320,7 +320,7 @@ function getSelectedContest() {
         alert('🎉 隊伍建立成功！');
         
         // 成功後看你要導頁回到哪裡，例如：
-        // window.location.href = `/contest/${contest.id}`;
+        window.location.href = withUserParam('/team.html');
       } else {
         alert('建立隊伍失敗：' + (result.message || '未知錯誤'));
       }
@@ -362,5 +362,5 @@ function getSelectedContest() {
   });  
   toggleNewContestFields();
   render();
-  renderQuestions();
+  // renderQuestions();
 })();
