@@ -60,17 +60,10 @@ app.get('/contest', (req, res) => {
 app.get('/create-team', (req, res) => {
     res.sendFile(path.join(startPageDir, 'create-team.html'));
 });
-
-// 通知 API：所有有通知鈴鐺的頁面都會透過這組 API 和資料庫同步通知。
-//========================================
-// 以後再處理，目前無這個表
-//=========================================
-// app.get('/notifications', async (req, res) => {
-//     const userId = Number(req.query.userId);
-//     if (!Number.isFinite(userId)) {
-//         return res.status(400).json({ ok: false, error: '缺少有效的 userId' });
-//     }
-
+app.get('/contests/search', (req, res) => {
+    res.sendFile(path.join(startPageDir, 'create-team.html'));
+});
+// app.get('/competitions', async (req, res) => {
 //     try {
 //         // 已讀通知保留五天，超過後自動刪除，避免通知列表越堆越長。
 //         await pool.execute(

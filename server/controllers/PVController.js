@@ -6,10 +6,10 @@ export const saveResume = async (req, res) => {
     const userId = req.user.user_id; // 從 JWT Token 辨識是誰在要資料
     // 從前端的 body 裡面拿到這些對齊好的欄位
     const { 
-        resume_id,        // 如果是修改舊履歷，前端會傳 id 過來；新履歷則是 null 或 undefined
+        resume_id,        
         resume_name, 
         user_school, 
-        department_grade, // 完美對應：系級！
+        department_grade, 
         user_intro, 
         tags              // 前端傳過來的陣列，例如: ["Python", "SQL", "Express"]
     } = req.body;
@@ -107,15 +107,15 @@ export const loadResumes = async (req, res) => {
         
         const [rows] = await pool.query(sql, [userId]);
 
-        // 將資料庫撈出來的 GROUP_CONCAT 字串（例如 "Python,SQL"）轉回前端需要的陣列格式格式（["Python", "SQL"]）
-        // const formattedResumes = rows.map(row => ({
-        //     resume_id: row.resume_id,
-        //     resume_name: row.resume_name,
-        //     user_school: row.user_school,
-        //     department_grade: row.department_grade,
-        //     user_intro: row.user_intro,
-        //     tags: row.tag_list ? row.tag_list.split(',') : [] // 如果沒標籤就給空陣列
-        // }));
+        //將資料庫撈出來的 GROUP_CONCAT 字串（例如 "Python,SQL"）轉回前端需要的陣列格式格式（["Python", "SQL"]）
+        const formattedResumes = rows.map(row => ({
+            resume_id: row.resume_id,
+            resume_name: row.resume_name,
+            user_school: row.user_school,
+            department_grade: row.department_grade,
+            user_intro: row.user_intro,
+            tags: row.tag_list ? row.tag_list.split(',') : [] // 如果沒標籤就給空陣列
+        }));
 
         res.json(formattedResumes);
     } catch (error) {

@@ -3,6 +3,9 @@ import pool from '../models/db.js';
 
 // 建立隊伍
 export const createTeam = async (req, res) => {
+    console.log('====== 🔍 後端攔截測試 ======');
+    console.log('前端送過來的 Authorization 是:', req.headers.authorization);
+    console.log('============================');
     // 從前端傳過來的 body 裡面解構出資料
     const {com_id, teamStatus, num_limit, demand, team_name, current_member_count} = req.body;
 
@@ -97,3 +100,28 @@ export const applyToTeam = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+//查詢比賽結果
+export const contestsResult = async (req, res) => {
+    // 1. 從網址後方的 Query String 取得關鍵字，例如 /api/contests/search?q=黑客松
+    const keyword = req.query.q || ''; 
+    
+    try {
+        // 2. 撰寫 MySQL 模糊搜尋語法
+        const sql = `
+            SELECT com_id, com_name, com_date, com_intro 
+            FROM Competition 
+            WHERE com_name LIKE ? OR com_intro LIKE ?;
+        `;
+        
+        // 3. 把關鍵字前後加上 % 符號
+        const searchTerm = `%${keyword}%`;
+        const [rows] = await pool.query(sql, [searchTerm, searchTerm]);
+        
+        // 4. 回傳搜尋結果陣列
+        res.json(rows);
+    } catch (error) {
+        console.error('❌ 資料庫搜尋比賽失敗:', error);
+        res.status(500).json({ message: '伺服器搜尋錯誤' });
+    }
+}
