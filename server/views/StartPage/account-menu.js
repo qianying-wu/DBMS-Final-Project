@@ -12,9 +12,35 @@
   }
 
   function askLogin(){
-    if (confirm('這個功能需要先登入，是否前往登入頁？')) {
-      location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+    const loginPromptModal = document.getElementById('loginPromptModal');
+    const loginPromptMessage = document.getElementById('loginPromptMessage');
+    if (loginPromptMessage) loginPromptMessage.textContent = '這個功能需要先登入，是否前往登入頁？';
+    if (loginPromptModal) {
+      // show modal
+      loginPromptModal.classList.remove('hidden');
+      document.body.classList.add('modal-open');
+
+      const onCancel = () => {
+        loginPromptModal.classList.add('hidden');
+        document.body.classList.remove('modal-open');
+        cleanup();
+      };
+      const onLogin = () => {
+        cleanup();
+        location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+      };
+
+      function cleanup(){
+        document.getElementById('loginPromptCancel')?.removeEventListener('click', onCancel);
+        document.getElementById('loginPromptLogin')?.removeEventListener('click', onLogin);
+      }
+
+      document.getElementById('loginPromptCancel')?.addEventListener('click', onCancel);
+      document.getElementById('loginPromptLogin')?.addEventListener('click', onLogin);
+      return;
     }
+    // fallback: go directly to auth page if the shared modal is missing
+    location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
   }
 
   // 關閉已存在的帳號選單。
@@ -39,20 +65,6 @@
     menu.style.top = `${rect.bottom + 8}px`;
     menu.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
   }
-
-  // 登出功能：清除登入資訊並導回首頁。 
-  window.logout = function() {
-    
-    // 1. 徹底清除瀏覽器上記錄的登入憑證
-    localStorage.removeItem('token');   // 清除 JWT 通行證
-    localStorage.removeItem('userId');  // 清除使用者 ID 紀錄
-
-    // 2. 提示使用者已登出
-    alert('👋 您已成功登出！');
-
-    // 3. 🚀 導向回首頁
-    location.href = '/team.html'; 
-  };
 
   // 動態注入帳號選單樣式，避免每個頁面重複寫 CSS。
   function injectStyle(){

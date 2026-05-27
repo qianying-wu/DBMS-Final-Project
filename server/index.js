@@ -54,6 +54,7 @@ app.get('/contest', (req, res) => {
 app.get('/create-team', (req, res) => {
     res.sendFile(path.join(startPageDir, 'create-team.html'));
 });
+
 app.get('/contests/search', (req, res) => {
     res.sendFile(path.join(startPageDir, 'create-team.html'));
 });
@@ -75,6 +76,7 @@ app.get('/contests/search', (req, res) => {
 //         res.status(500).json({ ok: false, error: '無法取得比賽資料' });
 //     }
 // });
+
 
 // 通知 API：所有有通知鈴鐺的頁面都會透過這組 API 和資料庫同步通知。
 app.get('/notifications', async (req, res) => {

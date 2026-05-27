@@ -19,6 +19,13 @@
     return Number.isFinite(savedParsed) ? savedParsed : CURRENT_USER_ID;
   }
 
+  // 判斷是否為已登入狀態（優先看 URL 或 localStorage 中的 userId）
+  function isLoggedIn(){
+    const raw = new URLSearchParams(location.search).get('userId');
+    const saved = localStorage.getItem('userId');
+    return Boolean((raw && raw !== 'unknown') || (saved && saved !== 'unknown'));
+  }
+
   // 本機備援：伺服器未啟動時仍保留原本的通知基本功能。
   function loadLocal(){
     return JSON.parse(localStorage.getItem('notifications') || '[]');
@@ -94,11 +101,11 @@
 
   // 更新右上角通知按鈕上的未讀數字。
   async function updateBadge(){
-    const notifyBtn = document.getElementById('notifyBtn');
-    if (!notifyBtn) return;
-    const notifications = await load();
-    const unread = notifications.filter(item => !isRead(item)).length;
-    notifyBtn.textContent = unread ? `🔔 ${unread}` : '🔔';
+    // const notifyBtn = document.getElementById('notifyBtn');
+    // if (!notifyBtn) return;
+    // const notifications = await load();
+    // const unread = notifications.filter(item => !isRead(item)).length;
+    // notifyBtn.textContent = unread ? `🔔 ${unread}` : '🔔';
   }
 
   // 動態加入通知彈窗所需的樣式。
@@ -164,6 +171,20 @@
 
   // 顯示通知彈窗，並處理通知中的動作按鈕。
   async function show(){
+    // require login: if not logged in, show the unified login prompt modal (or redirect)
+    if (!isLoggedIn()) {
+      const loginPromptModal = document.getElementById('loginPromptModal');
+      const loginPromptMessage = document.getElementById('loginPromptMessage');
+      if (loginPromptMessage) loginPromptMessage.textContent = '此功能需要登入後才能使用。';
+      if (loginPromptModal) {
+        loginPromptModal.classList.remove('hidden');
+        document.body.classList.add('modal-open');
+        return;
+      }
+      // fallback to auth page
+      location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+      return;
+    }
     document.getElementById('notificationModal')?.remove();
     const visible = (await load()).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
     const modal = document.createElement('div');
@@ -217,7 +238,19 @@
   // 綁定通知按鈕，並在頁面載入時先同步一次未讀數。
   function bind(){
     injectStyle();
-    document.getElementById('notifyBtn')?.addEventListener('click', show);
+    const btn = document.getElementById('notifyBtn');
+    if (!btn) return;
+    if (btn.dataset.notificationsBound) return;
+    btn.dataset.notificationsBound = '1';
+    btn.addEventListener('click', (e) => {
+      // Allow other page handlers (e.g. to show login modal) to run first.
+      setTimeout(async () => {
+        // If the unified login prompt is visible, abort showing notifications to avoid double-modals.
+        const loginPromptModal = document.getElementById('loginPromptModal');
+        if (loginPromptModal && !loginPromptModal.classList.contains('hidden')) return;
+        await show();
+      }, 60);
+    });
     updateBadge();
   }
 

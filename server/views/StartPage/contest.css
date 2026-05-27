@@ -75,3 +75,17 @@ body.modal-open{overflow:hidden}
   .modal-actions{flex-direction:column-reverse}
   .modal-actions .btn{width:100%}
 }
+
+.icon-btn svg, .avatar-btn svg {
+  display: block;
+  color: #7b6a59;
+}
+
+.icon-btn:hover svg, .avatar-btn:hover svg {
+  color: #4f3827;
+}
+
+.icon-btn:hover, .avatar-btn:hover {
+  background: #f5f0ea;
+}
+
