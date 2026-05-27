@@ -187,9 +187,9 @@ export function renderContestOverview(contests, teams, selectedContest, contestF
         <button class="contest-fav-btn ${isContestFav ? 'active' : ''}" data-contest-fav="${contest.id}" type="button" aria-pressed="${isContestFav}">${isContestFav ? '♥' : '♡'}</button>
         <h3>${escapeHtml(contest.name)}</h3>
         
-        <div class="contest-date">${escapeHtml(contest.com_date || '日期未定')}</div>
+        <div class="contest-date">${escapeHtml(contest.date || '日期未定')}</div>
         
-        <p>${escapeHtml(contest.com_intro || '尚未填寫比賽資訊')}</p>
+        <p>${escapeHtml(contest.info || '尚未填寫比賽資訊')}</p>
         
         <div class="tag-row">${contestTags.map(key => `<span class="match-tag">${escapeHtml(window.AppPreferences.labelFor(key))}</span>`).join('')}</div>
         <div class="contest-stats"><span>${contestTeams.length} 隊</span></div>
