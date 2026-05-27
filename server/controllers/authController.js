@@ -148,9 +148,7 @@ export const login = async (req, res) => {
                 error: '帳號或密碼錯誤' 
             });
         }
-
         const user = rows[0];
-
         // 3. 密碼比對 (使用 bcrypt)
         const isMatch = await bcrypt.compare(userPsw, user.userPsw);
         if (!isMatch) {
@@ -159,16 +157,12 @@ export const login = async (req, res) => {
                 error: '帳號或密碼錯誤' 
             });
         }
-        
         console.log(`使用者 ${user.account} (ID: ${user.user_id}) 登入成功`);
-
         const payload = { 
             user_id: user.user_id 
         };
-        
         // 簽發 Token，暗號記得是用你們的 PASSPORT_SECRET 喔
         const token = jwt.sign(payload, process.env.PASSPORT_SECRET, { expiresIn: '1d' });
-
         res.json({ 
             ok: true, 
             message: '登入成功',

@@ -19,7 +19,16 @@ const loginPromptModal = $('loginPromptModal');
 const loginPromptMessage = $('loginPromptMessage');
 const loginPromptLogin = $('loginPromptLogin');
 const loginPromptCancel = $('loginPromptCancel');
-const authAction = $('authAction');
+
+// jwt
+// 之後需要登入才能操作的請求，帶上 token
+// localStorage.setItem("token", token);
+//localStorage.setItem("current_user_id", response.userId); // 把當前登入者的 ID 存起來 
+
+
+
+const token = localStorage.getItem("token");
+const currentUserId = localStorage.getItem("userId");
 
 // 初始化狀態變數
 let currentPreferences = isLoggedIn() ? (window.AppPreferences?.getFallbackPreferences(Data.currentUserId) || []) : [];
@@ -43,11 +52,11 @@ function getCreateTeamHref() {
   return Data.withUserParam('/create-team.html');
 }
 
-// 只以網址上的 userId 判斷本頁是否登入，避免誤讀舊 localStorage 造成未登入也顯示個人資料。
-// 這是誰的神奇方法？不過目前看起來是可行的，至少不會誤讀到別人的登入狀態了。
 function isLoggedIn() {
-  const userId = new URLSearchParams(location.search).get('userId');
-  return Boolean(userId && userId !== 'unknown');
+  const token = localStorage.getItem("token");
+  return Boolean(token && token.trim() !== "");
+  // const userId = new URLSearchParams(location.search).get('userId');
+  // return Boolean(userId && userId !== 'unknown');
 }
 
 function authHref() {
@@ -99,8 +108,9 @@ function requireLogin(message = '這個功能需要登入後才能使用。') {
 
 // 核心渲染函式：負責讀取資料並驅動 UI 層去更新畫面
 async function render() {
-  const response = await fetch('/api/teams/all'); 
-    if (!response.ok) throw new Error('無法取得後端隊伍資料');
+  const response = await fetch('/api/teams/all');
+
+  if (!response.ok) throw new Error('無法取得後端隊伍資料');
   const { contests, teams } = await response.json();
 
   // Only surface stored favorites when the page is viewed as a logged-in user.
@@ -112,7 +122,7 @@ async function render() {
 
   // 通知系統連動
   // window.AppNotifications?.ensureContestNotifications(contests);
-  
+
   // 主畫面目前只保留比賽總覽；若頁面有隊伍容器才渲染隊伍卡片。
   if (teamsGrid) teamsGrid.innerHTML = '';
 
@@ -129,7 +139,7 @@ async function render() {
     const isOwner = String(team.owner) === String(Data.currentUserId) || (String(Data.currentUserId) === String(Data.ME.id) && Number(team.owner) === Number(Data.ME.id));
     const pending = reqs.filter(request => request.teamId === team.id && request.status === 'pending').length;
     const contest = contests.find(item => Number(item.id) === Number(team.contestId));
-    
+
     // 建立隊伍卡片 DOM 並附加到 teamsGrid 容器中
     const card = document.createElement('div');
     card.className = 'team-card';
@@ -157,11 +167,22 @@ async function render() {
   }
 }
 
+
+// {
+//     method: "POST",
+//     headers: {
+//       "Content-Type": "application/json",
+//       "Authorization": `JWT ${token}`,   // ← 這行是重點
+//     },
+//     body: JSON.stringify({ emp_no: "E002", name: "王小明" }),
+// }
+
+
 // 點擊事件：切換某個隊伍的收藏狀態
 function toggleFavorite(id) {
   const token = localStorage.getItem('token');
   if (!token) {
-  requireLogin('【系統提示】請先登入才能收藏比賽喔！');
+    requireLogin('【系統提示】請先登入才能收藏比賽喔！');
     return;
   }
   const favorites = Data.loadFavorites();
@@ -178,7 +199,7 @@ function toggleFavorite(id) {
 function toggleContestFavorite(id) {
   const token = localStorage.getItem('token');
   if (!token) {
-  requireLogin('【系統提示】請先登入才能收藏隊伍喔！');
+    requireLogin('【系統提示】請先登入才能收藏隊伍喔！');
     return;
   }
   const favs = Data.loadContestFavorites();
@@ -229,7 +250,7 @@ function openRequestsForTeam(teamId) {
   if (!isOwner) return alert('只有隊長可以管理本隊的加入請求');
   const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]').filter(request => request.teamId === teamId && request.status === 'pending');
   if (!reqs.length) { alert('目前沒有待審核申請'); return; }
-  
+
   requestsList.innerHTML = UI.renderRequestsHtml(reqs);
   requestsModal.classList.remove('hidden');
   document.body.classList.add('modal-open');
@@ -354,29 +375,25 @@ const openCreateTeamPage = () => {
   location.href = getCreateTeamHref();
 };
 
-// 如果頁面上還有另一個按鈕 openCreate，也順便一起保護起來：
+//如果頁面上還有另一個按鈕 openCreate，也順便一起保護起來：
 if (openCreate) { // 乾這裡的邏輯是反的
   openCreate.addEventListener('click', (e) => {
     const token = localStorage.getItem('token');
     if (!token) {
-    requireLogin('【系統提示】請先登入才能創建隊伍喔！');
+      requireLogin('【系統提示】請先登入才能創建隊伍喔！');
       return;
     }
     openCreateTeamPage();
   });
 }
 
-
-
 // 保留取消按鈕
 if (modalCancel) {
   modalCancel.addEventListener('click', closeModal);
 }
-
-
 // 處理 Modal 內的建立送出邏輯，驗證欄位並存入 localStorage 後重新 render()
 modalCreate.addEventListener('click', () => {
-  if (!requireLogin('建立隊伍需要先登入。')) return;
+
   const name = newTeamName.value.trim();
   if (!name) return alert('請輸入隊名');
   const desc = newTeamDesc.value.trim();

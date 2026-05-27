@@ -1,31 +1,32 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>個人履歷</title>
-    <link rel="stylesheet" href="/profile.css">
-  </head>
-  <body>
-    <header class="topbar">
-      <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
-      <div class="actions">
-        <button id="notifyBtn" class="icon-btn" aria-label="通知">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-               fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-          </svg>
-        </button>
-        <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-               fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-        </button>
-      </div>
-    </header>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>個人履歷</title>
+  <link rel="stylesheet" href="/profile.css">
+</head>
+
+<body>
+  <header class="topbar">
+    <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
+    <div class="actions">
+      <button id="notifyBtn" class="icon-btn" aria-label="通知">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+      </button>
+      <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg>
+      </button>
+    </div>
 
     <main class="layout profile-layout">
       <section class="content profile-content">
@@ -50,19 +51,20 @@
             </div>
             <div id="expPreview" class="exp-preview"></div>
           </div>
-
-          <div id="resumeGallery" class="resume-gallery"></div>
         </div>
 
         <div id="resumeEditor" class="card editor-card" hidden>
           <div class="editor-heading">
             <div>
               <div class="editor-title-row">
-                <h2 id="editorTitle" class="editor-title" contenteditable="true" spellcheck="false" aria-label="編輯履歷名稱">新增履歷</h2>
+                <h2 id="editorTitle" class="editor-title" contenteditable="true" spellcheck="false" aria-label="編輯履歷名稱">
+                  新增履歷</h2>
                 <button id="editorRenameBtn" class="rename-btn" type="button" aria-label="編輯履歷名稱">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true">
                     <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="currentColor" />
-                    <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor" />
+                    <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                      fill="currentColor" />
                   </svg>
                 </button>
               </div>
@@ -146,13 +148,6 @@
         const qs = new URLSearchParams(location.search);
         const userId = qs.get('userId') || 'unknown';
 
-        function getExpHref(view) {
-          const base = location.protocol === 'file:' ? 'experience.html' : '/experience.html';
-          const viewBase = location.protocol === 'file:' ? 'experience-view.html' : '/experience-view.html';
-          const suffix = userId !== 'unknown' ? '?userId=' + encodeURIComponent(userId) : '';
-          return view ? viewBase + suffix : base + suffix;
-        }
-
         document.getElementById('goExpEditorBtn').addEventListener('click', () => {
           location.href = getExpHref(false);
         });
@@ -160,6 +155,7 @@
           location.href = getExpHref(true);
         });
 
+        // 預覽最近 2 筆經歷
         function renderExpPreview() {
           const list = JSON.parse(localStorage.getItem('experiences:' + userId) || '[]');
           const preview = document.getElementById('expPreview');
@@ -167,19 +163,37 @@
             preview.innerHTML = '<span class="empty-note" style="font-size:13px">尚未填寫任何經歷</span>';
             return;
           }
-          preview.innerHTML = list.slice(0, 2).map(item => `
+
+          document.getElementById('goExpEditorBtn').addEventListener('click', () => {
+            location.href = getExpHref(false);
+          });
+          document.getElementById('goExpViewBtn').addEventListener('click', () => {
+            location.href = getExpHref(true);
+          });
+
+          function renderExpPreview() {
+            const list = JSON.parse(localStorage.getItem('experiences:' + userId) || '[]');
+            const preview = document.getElementById('expPreview');
+            if (!list.length) {
+              preview.innerHTML = '<span class="empty-note" style="font-size:13px">尚未填寫任何經歷</span>';
+              return;
+            }
+            preview.innerHTML = list.slice(0, 2).map(item => `
             <div class="exp-preview-chip">
               <span class="exp-type-badge">${item.exp_type || '未分類'}</span>
               <span class="exp-preview-name">${item.title || '未命名'}</span>
             </div>
           `).join('') + (list.length > 2 ? `<span class="exp-more">＋ ${list.length - 2} 筆更多</span>` : '');
-        }
+          }
 
-        renderExpPreview();
-        window.addEventListener('storage', e => {
-          if (e.key === 'experiences:' + userId) renderExpPreview();
-        });
+          renderExpPreview();
+          window.addEventListener('storage', e => {
+            if (e.key === 'experiences:' + userId) renderExpPreview();
+          });
+        }
       })();
+
     </script>
-  </body>
+</body>
+
 </html>
