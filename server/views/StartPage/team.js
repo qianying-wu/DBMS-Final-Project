@@ -56,22 +56,31 @@ function authHref() {
 
 // 右上角依登入狀態切換成「登入 / 登出」，避免登入後仍停在登入入口。
 function renderAuthAction() {
-  const link = authAction?.querySelector('a');
-  if (!link) return;
+  const authBlock = document.getElementById('authAction');   // 登入按鈕區塊
+  const userBlock = document.getElementById('userActions');  // 鈴鐺+頭像區塊
+  const rightSidebar = document.getElementById('rightSide'); // 右側邊欄容器
+  const loginLink = authBlock?.querySelector('a');
+
+  // 防呆：確保畫面上找得到這些元素
+  if (!authBlock || !userBlock) return;
 
   if (isLoggedIn()) {
-    link.textContent = '登出';
-    link.href = '/team.html';
-    link.addEventListener('click', event => {
-      event.preventDefault();
-      localStorage.removeItem('userId');
-      location.href = '/team.html';
-    }, { once: true });
-    return;
-  }
+    // 🔓 狀態一：已登入
+    authBlock.style.display = 'none';   // 隱藏登入按鈕
+    userBlock.style.display = 'flex';   // 顯示通知與頭像 (用 flex 保持按鈕並排)
+    rightSidebar.style.display = 'block'; // 顯示右側邊欄
 
-  link.textContent = '登入';
-  link.href = authHref();
+  } else {
+    // 🔒 狀態二：未登入
+    authBlock.style.display = 'block';  // 顯示登入按鈕
+    userBlock.style.display = 'none';   // 隱藏通知與頭像
+    rightSidebar.style.display = 'none'; // 隱藏右側邊欄
+
+    if (loginLink) {
+      loginLink.textContent = '登入';
+      loginLink.href = '/auth.html'; // 或者是你原本的 authHref()
+    }
+  }
 }
 
 // 首頁允許瀏覽；一旦要查看詳情、收藏、建立隊伍等互動，就用這個彈窗提醒登入。

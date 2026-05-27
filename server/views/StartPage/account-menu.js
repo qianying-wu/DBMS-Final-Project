@@ -40,6 +40,20 @@
     menu.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
   }
 
+  // 登出功能：清除登入資訊並導回首頁。 
+  window.logout = function() {
+    
+    // 1. 徹底清除瀏覽器上記錄的登入憑證
+    localStorage.removeItem('token');   // 清除 JWT 通行證
+    localStorage.removeItem('userId');  // 清除使用者 ID 紀錄
+
+    // 2. 提示使用者已登出
+    alert('👋 您已成功登出！');
+
+    // 3. 🚀 導向回首頁
+    location.href = '/team.html'; 
+  };
+
   // 動態注入帳號選單樣式，避免每個頁面重複寫 CSS。
   function injectStyle(){
     if (document.getElementById('accountMenuStyle')) return;
