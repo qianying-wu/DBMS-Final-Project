@@ -85,20 +85,6 @@ export const getAllData = async (req, res) => {
     }
 };
 
-// 處理加入申請 (取代原本存進 localStorage 的邏輯)
-export const applyToTeam = async (req, res) => {
-    const { teamId, userId, applicationData } = req.body;
-    try {
-        await pool.query(
-            'INSERT INTO join_requests (team_id, user_id, application_json, status) VALUES (?, ?, ?, "pending")',
-            [teamId, userId, JSON.stringify(applicationData)]
-        );
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
 //查詢比賽結果
 export const contestsResult = async (req, res) => {
     // 1. 從網址後方的 Query String 取得關鍵字，例如 /api/contests/search?q=黑客松
@@ -123,3 +109,51 @@ export const contestsResult = async (req, res) => {
         res.status(500).json({ message: '伺服器搜尋錯誤' });
     }
 }
+
+export const applyToTeam = async (req, res) => {
+  const { user_id, team_id } = req.body;
+
+  if (!user_id || !team_id) {
+    return res.status(400).json({ success: false, message: '缺少必要參數' });
+  }
+
+  try {
+    // 1. 防呆：檢查是否已經申請過或已經是團員
+    const [existing] = await pool.execute(
+      'SELECT mem_status FROM Membership WHERE user_id = ? AND team_id = ?',
+      [user_id, team_id]
+    );
+
+    if (existing.length > 0) {
+      const status = existing[0].mem_status;
+      return res.status(400).json({ 
+        success: false, 
+        message: status === '申請中' ? '你已送出申請，請勿重複點擊' : '你已經是此隊伍成員' 
+      });
+    }
+
+    // 2. 防呆：檢查隊伍人數是否已滿 (比對當前人數與上限)
+    const [teamCheck] = await pool.execute(
+      'SELECT current_member_count, num_limit FROM Team WHERE team_id = ?',
+      [team_id]
+    );
+    if (teamCheck.length === 0) return res.status(404).json({ success: false, message: '找不到該隊伍' });
+    
+    if (teamCheck[0].current_member_count >= teamCheck[0].num_limit) {
+      return res.status(400).json({ success: false, message: '該隊伍人數已滿，無法申請' });
+    }
+
+    // 3. 核心：寫入 Membership 表，設定為 組員 / 申請中
+    await pool.execute(
+      `INSERT INTO Membership (user_id, team_id, role, mem_status) 
+       VALUES (?, ?, '組員', '申請中')`,
+      [user_id, team_id]
+    );
+
+    res.status(200).json({ success: true, message: '申請已成功送出' });
+
+  } catch (error) {
+    console.error('後端申請出錯:', error);
+    res.status(500).json({ success: false, message: '伺服器內部錯誤' });
+  }
+};
