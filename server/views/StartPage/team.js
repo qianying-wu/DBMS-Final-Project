@@ -49,8 +49,6 @@ function getCreateTeamHref() {
   return Data.withUserParam('/create-team.html');
 }
 
-// 只以網址上的 userId 判斷本頁是否登入，避免誤讀舊 localStorage 造成未登入也顯示個人資料。
-// 這是誰的神奇方法？不過目前看起來是可行的，至少不會誤讀到別人的登入狀態了。
 function isLoggedIn() {
   const token = localStorage.getItem("token");
   return Boolean(token && token.trim() !== "");

@@ -1,1 +1,150 @@
+// controllers/PVController.js
 import pool from '../models/db.js';
+
+export const saveResume = async (req, res) => {
+    // 🌟 還記得之前的 Token 嗎？後端驗證完 Token 後，會把 user_id 塞在 req.user 裡面
+    const userId = req.user._id; 
+    
+    // 從前端的 body 裡面拿到這些對齊好的欄位
+    const { 
+        resume_id,        // 如果是修改舊履歷，前端會傳 id 過來；新履歷則是 null 或 undefined
+        resume_name, 
+        user_school, 
+        department_grade, // 完美對應：系級！
+        user_intro, 
+        tags              // 前端傳過來的陣列，例如: ["Python", "SQL", "Express"]
+    } = req.body;
+
+    // 因為涉及多張表的連續操作，建議用資料庫交易 (Transaction) 防止寫入到一半壞掉
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+        let currentResumeId = resume_id;
+
+        // --- 步驟 1：寫入或更新 resumes 主表 ---
+        if (currentResumeId) {
+            // 情況 A：如果是修改舊履歷
+            const updateSql = `
+                UPDATE resumes 
+                SET resume_name = ?, user_school = ?, department_grade = ?, user_intro = ?
+                WHERE resume_id = ? AND user_id = ?
+            `;
+            await connection.query(updateSql, [resume_name, user_school, department_grade, user_intro, currentResumeId, userId]);
+        } else {
+            // 情況 B：如果是建立全新履歷
+            const insertSql = `
+                INSERT INTO resumes (user_id, resume_name, user_school, department_grade, user_intro) 
+                VALUES (?, ?, ?, ?, ?)
+            `;
+            const [result] = await connection.query(insertSql, [userId, resume_name, user_school, department_grade, user_intro]);
+            currentResumeId = result.insertId; // 🌟 撈出這份新履歷在資料庫裡自動生成的 ID！
+        }
+
+        // --- 步驟 2：清除舊的標籤連線 ---
+        // 不管是新是舊，先把這份履歷在 resume_tags 裡的舊資料清空，等一下重新建立，最乾淨！
+        await connection.query('DELETE FROM resume_tags WHERE resume_id = ?', [currentResumeId]);
+
+        // --- 步驟 3 & 4：處理專長標籤 (多對多處理) ---
+        if (tags && tags.length > 0) {
+            for (let tagName of tags) {
+                tagName = tagName.trim();
+                if (!tagName) continue;
+
+                // 3.1 檢查標籤在 tags 總表裡存在了沒
+                const [existingTag] = await connection.query('SELECT tag_id FROM tags WHERE tag_name = ?', [tagName]);
+                let currentTagId;
+
+                if (existingTag.length > 0) {
+                    currentTagId = existingTag[0].tag_id;
+                } else {
+                    // 如果是世界上第一次出現的新標籤（例如：'Express'），就新增進總表
+                    const [newTagResult] = await connection.query('INSERT INTO tags (tag_name) VALUES (?)', [tagName]);
+                    currentTagId = newTagResult.insertId;
+                }
+
+                // 4.1 把這份履歷的 ID 跟標籤的 ID 綁定，寫入中介表
+                await connection.query('INSERT INTO resume_tags (resume_id, tag_id) VALUES (?, ?)', [currentResumeId, currentTagId]);
+            }
+        }
+
+        // 提交本次的所有變更
+        await connection.commit();
+        
+        res.json({
+            ok: true,
+            message: '履歷與專長標籤已成功存入資料庫！',
+            resumeId: currentResumeId
+        });
+
+    } catch (error) {
+        // 萬一中間有任何一步出錯，全部撤回，確保資料庫不會留下一半的髒資料
+        await connection.rollback();
+        console.error('儲存履歷失敗：', error);
+        res.status(500).json({ ok: false, message: '後端資料庫寫入失敗' });
+    } finally {
+        connection.release();
+    }
+};
+
+export const getResumes = async (req, res) => {
+    const userId = req.user.user_id; // 從 JWT Token 辨識是誰在要資料
+
+    try {
+        // 🌟 進階技術：利用 GROUP_CONCAT 把多對多的標籤直接當成字串陣列抓出來，這樣撈資料最快！
+        const sql = `
+            SELECT 
+                r.resume_id, 
+                r.resume_name, 
+                r.user_school, 
+                r.department_grade, 
+                r.user_intro,
+                GROUP_CONCAT(t.tag_name) AS tag_list
+            FROM resumes r
+            LEFT JOIN resume_tags rt ON r.resume_id = rt.resume_id
+            LEFT JOIN tags t ON rt.tag_id = t.tag_id
+            WHERE r.user_id = ?
+            GROUP BY r.resume_id
+            ORDER BY r.resume_id DESC
+        `;
+        
+        const [rows] = await pool.query(sql, [userId]);
+
+        // 將資料庫撈出來的 GROUP_CONCAT 字串（例如 "Python,SQL"）轉回前端需要的陣列格式格式（["Python", "SQL"]）
+        const formattedResumes = rows.map(row => ({
+            resume_id: row.resume_id,
+            resume_name: row.resume_name,
+            user_school: row.user_school,
+            department_grade: row.department_grade,
+            user_intro: row.user_intro,
+            tags: row.tag_list ? row.tag_list.split(',') : [] // 如果沒標籤就給空陣列
+        }));
+
+        res.json(formattedResumes);
+    } catch (error) {
+        console.error('撈取履歷列表失敗：', error);
+        res.status(500).json({ ok: false, message: '伺服器內部錯誤' });
+    }
+};
+
+export const deleteResume = async (req, res) => {
+    const userId = req.user.user_id;
+    const { id } = req.params; // 從網址 /api/resumes/:id 拿到要刪除的 ID
+
+    try {
+        // 由於資料庫通常有外鍵約束（Foreign Key），保險起見我們先手動把中介表的標籤連結斷開
+        await pool.query('DELETE FROM resume_tags WHERE resume_id = ?', [id]);
+
+        // 接著刪除履歷主表，且必須加上 user_id 確保不能刪到別人的履歷
+        const [result] = await pool.query('DELETE FROM resumes WHERE resume_id = ? AND user_id = ?', [id, userId]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ ok: false, message: '找不到該履歷或無權限刪除' });
+        }
+
+        res.json({ ok: true, message: '履歷已成功從資料庫刪除！' });
+    } catch (error) {
+        console.error('刪除履歷失敗：', error);
+        res.status(500).json({ ok: false, message: '刪除失敗' });
+    }
+};

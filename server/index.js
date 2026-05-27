@@ -1,10 +1,5 @@
 import express from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import authRouter from './routes/auth-route.js';
-import reviewRouter from './routes/review-route.js';
-import teamRouter from './routes/team-route.js';
-import comRouter from './routes/com-route.js';
 import pool from './models/db.js';
 
 import dotenv from 'dotenv';
@@ -12,6 +7,13 @@ dotenv.config();
 
 import passport from "passport";
 import passportConfig from "./config/passport.js";
+
+import { fileURLToPath } from 'url';
+import authRouter from './routes/auth-route.js';
+import reviewRouter from './routes/review-route.js';
+import teamRouter from './routes/team-route.js';
+import comRouter from './routes/com-route.js';
+import pvRouter from './routes/pv-route.js'; 
 
 import { requireLogin } from './middleware/auth-middleware.js';
 
@@ -180,6 +182,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/review', reviewRouter);
 app.use('/api/teams', teamRouter); 
 app.use('/api/contests', comRouter);
+app.use('/api/pv', pvRouter ); // 這條路由需要登入驗證
 
 // 4. 啟動伺服器
 app.listen(port, () => {
