@@ -58,6 +58,7 @@ function categoryLabel(category) {
   }[category] || category;
 }
 
+
 // 核心渲染函式：負責將比賽資料陣列轉換成 HTML 卡片。
 function renderContests(dataList = []) {
   const grid = $('contestsGrid');
@@ -110,7 +111,9 @@ $('contestsGrid')?.addEventListener('click', event => {
 const homeLink = $('homeLink');
 if (homeLink) homeLink.href = withUserParam('/team.html');
 
+
 // 頁面初始載入時，先從後端讀取資料庫，再執行篩選渲染。
 document.addEventListener('DOMContentLoaded', () => {
   loadContests().then(applyFilters);
 });
+
