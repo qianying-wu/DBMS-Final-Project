@@ -133,15 +133,15 @@ async function render() {
     card.className = 'team-card';
     card.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-        <div style="display:flex;align-items:center;gap:8px"><h4 style="margin:0">${Data.escapeHtml(team.name)}</h4>${isOwner && pending ? `<span class="pending-count">${pending}</span>` : ''}</div>
-        <button class="fav-btn ${isFav ? 'active' : ''}" data-id="${team.id}" aria-pressed="${isFav}">${isFav ? '♥' : '♡'}</button>
+        <div style="display:flex;align-items:center;gap:8px"><h4 style="margin:0">${Data.escapeHtml(team.team_name)}</h4>${isOwner && pending ? `<span class="pending-count">${pending}</span>` : ''}</div>
+        <button class="fav-btn ${isFav ? 'active' : ''}" data-id="${team.team_id}" aria-pressed="${isFav}">${isFav ? '♥' : '♡'}</button>
       </div>
-      <div class="team-meta">${Data.escapeHtml(team.desc || '')}</div>
-      ${contest ? `<div class="team-contest">比賽：<strong>${Data.escapeHtml(contest.name)}</strong></div>` : ''}
-      <div>成員 ${team.members} / ${team.slots}</div>
+      <div class="team-meta">${Data.escapeHtml(team.demand || '')}</div>
+      ${contest ? `<div class="team-contest">比賽：<strong>${Data.escapeHtml(contest.com_name)}</strong></div>` : ''}
+      <div>成員 ${team.current_member_count} / ${team.num_limit}</div>
       <div style="margin-top:8px">
         <button class="btn" data-id="${team.id}">查看 / 加入</button>
-        ${isOwner ? `<button class="btn outline manage-btn" data-team="${team.id}">管理</button>` : ''}
+        ${isOwner ? `<button class="btn outline manage-btn" data-team="${team.team_id}">管理</button>` : ''}
       </div>
     `;
     if (teamsGrid) teamsGrid.appendChild(card);
@@ -215,7 +215,7 @@ const requestsModal = $('requestsModal');
 const requestsList = $('requestsList');
 const closeReq = $('closeReq');
 
-// 開啟某隊伍的「管理申請」視窗，驗證權限並載入申請資料
+// 開啟某隊伍的「管理申請」視窗，驗證權限並載入申請資料 -----蛤--------
 function openRequestsForTeam(teamId) {
   if (!requireLogin('管理隊伍申請需要先登入。')) return;
   const teams = Data.loadTeams();
@@ -230,6 +230,7 @@ function openRequestsForTeam(teamId) {
   requestsModal.classList.remove('hidden');
   document.body.classList.add('modal-open');
 }
+
 window.AppReview = { openTeamRequests: openRequestsForTeam };
 
 // 委派監聽：處理管理視窗內的「批准 (approve)」與「拒絕 (deny)」按鈕點擊邏輯
