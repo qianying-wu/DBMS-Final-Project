@@ -26,7 +26,7 @@ export function renderSidebarTeams(teams) {
     const team = teams.find(item => item.id === id);
     return team ? `<li><strong>${escapeHtml(team.name)}</strong></li>` : null;
   }).filter(Boolean);
-  if (myFavsEl) myFavsEl.innerHTML = favEls.length ? `<ul class="fav-list">${favEls.join('')}</ul>` : '尚無收藏';
+  if (myFavsEl) myFavsEl.innerHTML = favEls.length ? `<ul class="fav-list">${favEls.join('')}</ul>` : '尚無收藏隊伍';
 
   // 3. 處理並渲染「我建立的隊伍」
   const owned = teams.filter(team => String(team.owner) === String(currentUserId) || (String(currentUserId) === String(ME.id) && Number(team.owner) === Number(ME.id)));
@@ -53,7 +53,7 @@ export function renderGuestSidebar() {
 
   if (myJoinedTeams) myJoinedTeams.textContent = '登入後查看加入的隊伍';
   if (myOwnedTeams) myOwnedTeams.textContent = '登入後查看建立的隊伍';
-  if (myFavsEl) myFavsEl.textContent = '登入後查看收藏';
+  if (myFavsEl) myFavsEl.textContent = '登入後查看收藏隊伍';
   if (followed) followed.textContent = '登入後查看關注內容';
   if (recommendedBody) {
     recommendedBody.innerHTML = `

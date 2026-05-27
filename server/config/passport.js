@@ -5,7 +5,7 @@ import db from "../models/db.js";
 export default (passport) => {
   const opts = {
     // 從請求的 Header 中取出 Token（格式：JWT <token>）
-    jwtFromRequest: ExtractJwt.fromAuthHeaderWithScheme("jwt"),
+    jwtFromRequest: ExtractJwt.fromAuthHeaderWithScheme("JWT"),
     // 用來解密 Token 的金鑰，放在 .env 裡面
     secretOrKey: process.env.PASSPORT_SECRET,
   };

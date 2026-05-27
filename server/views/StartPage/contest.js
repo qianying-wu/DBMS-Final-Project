@@ -136,7 +136,7 @@
 
     // 渲染側邊欄：「我收藏的隊伍」
     const favoriteTeams = loadTeams().filter(team => favs.includes(team.id));
-    if ($('myFavs')) $('myFavs').textContent = favoriteTeams.length ? favoriteTeams.map(team => team.name).join('\n') : '尚無收藏';
+    if ($('myFavs')) $('myFavs').textContent = favoriteTeams.length ? favoriteTeams.map(team => team.name).join('\n') : '尚無收藏隊伍';
 
     // 渲染側邊欄：「我關注的比賽」
     const favoriteContests = loadContestFavorites().map(id => loadContests().find(item => Number(item.id) === Number(id))).filter(Boolean);
@@ -177,7 +177,7 @@
 
   // 導覽列與返回按鈕的跳轉設定
   $('backBtn').addEventListener('click', ()=>{ location.href = withUserParam('/team.html'); });
-  document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/user.html'));
+  document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/team.html'));
 
   // 頁面載入後執行初始渲染
   render();

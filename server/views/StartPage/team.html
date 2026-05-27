@@ -39,7 +39,7 @@
       <button id="openCreate" class="btn primary block">發起招募</button>
 
       <div class="section section-contests">
-        <h4>比賽</h4>
+        <h4>比賽類別</h4>
         <!-- 比賽類別會由 team.js 依照標籤動態產生，點擊類別後展開對應比賽。 -->
         <ul id="contestsList" class="simple-list"></ul>
       </div>
@@ -48,10 +48,18 @@
     <section class="content">
       <!-- 廣告輪播 -->
       <div id="adCarousel" class="carousel">
-        <div class="carousel-inner">
-          <div class="carousel-item" style="background: #fdfaf7;">廣告橫幅 1：最新賽事報名中</div>
-          <div class="carousel-item" style="background: #f6efe6;">廣告橫幅 2：尋找你的神隊友</div>
-          <div class="carousel-item" style="background: #fff8ef;">廣告橫幅 3：企業贊助獎金加碼</div>
+        <div id="adCarousel" class="carousel">
+          <div class="carousel-inner">
+            <div class="carousel-item">
+              <img src="/ads.png" alt="廣告 1">
+            </div>
+            <div class="carousel-item">
+              <img src="/ads2.png" alt="廣告 2">
+            </div>
+            <div class="carousel-item">
+              <img src="/ads3.png" alt="廣告 3">
+            </div>
+          </div>
         </div>
       </div>
 
@@ -81,7 +89,7 @@
       <section class="side-card side-card-fav" data-collapsible-card="favorites">
         <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">我的收藏隊伍</button>
         <div class="side-card-body">
-          <div id="myFavs" class="box">尚無收藏</div>
+          <div id="myFavs" class="box">尚無收藏隊伍</div>
         </div>
       </section>
 
@@ -93,7 +101,8 @@
       </section>
 
       <!-- 個人化推薦區：固定放在右側欄位最下方。 -->
-      <section id="recommendedContests" class="side-card side-card-recommend recommended-contests" data-collapsible-card="recommendations">
+      <section id="recommendedContests" class="side-card side-card-recommend recommended-contests"
+        data-collapsible-card="recommendations">
         <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">推薦比賽</button>
         <div id="recommendedBody" class="side-card-body"></div>
       </section>
