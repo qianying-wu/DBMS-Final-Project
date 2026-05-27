@@ -391,7 +391,6 @@ document.addEventListener('keydown', event => {
 
 const homeLink = $('homeLink');
 if (homeLink) homeLink.href = Data.withUserParam('/team.html');
-const notifyBtn = $('notifyBtn');
 const avatarBtn = $('avatarBtn');
 
 

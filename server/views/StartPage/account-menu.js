@@ -80,11 +80,10 @@
     document.head.appendChild(style);
   }
 
-  // 綁定頭像按鈕、組隊按鈕與選單關閉事件。
+  // 綁定頭像按鈕與選單關閉事件。
   function bind(){
     injectStyle();
-    const teamBtn = document.getElementById('teamBtn');
-    if (teamBtn) teamBtn.href = withUser('/team.html');
+
     document.addEventListener('click', event => {
       const avatar = event.target.closest('#avatarBtn');
       if (avatar) {
