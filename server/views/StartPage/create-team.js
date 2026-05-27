@@ -126,7 +126,7 @@
     $('contestSelect').value = selectedValue;
   }
 
-  // 送出表單時取得比賽；若是新增比賽模式，會先建立比賽資料。
+  // 送出表單時取得比賽
   function resolveContestForSubmit() {
     const selectedComId = $('contestSelect').value;
 
@@ -356,89 +356,68 @@ function getSelectedContest() {
 */
 
 $('createForm').addEventListener('submit', async event => {
-    event.preventDefault();
+  event.preventDefault();
 
-    // 1. 基本欄位獲取
-    const contest = resolveContestForSubmit();
-    const name = $('teamName').value.trim();
-    const desc = $('teamDesc').value.trim();     // 主題/說明
-    const skills = $('teamSkills').value.trim(); // 招募需求
-    const slots = Number($('teamSlots').value) || 4;
+  // 1. 基本欄位獲取
+  const contest = resolveContestForSubmit();
+  const name = $('teamName').value.trim();
+  const desc = $('teamDesc').value.trim();     
+  const skills = $('teamSkills').value.trim(); 
+  const slots = Number($('teamSlots').value) || 4;
 
-    // 2. 🚀 新增檢查邏輯
-    if (!contest) return alert('請先搜尋並選擇一個比賽');
-    if (!name) return alert('請輸入隊伍名稱');
-    
-    // 檢查招募需求與說明
-    if (!skills) return alert('請輸入「招募需求」（例如：需要前端工程師）');
-    if (!desc) return alert('請輸入「主題/說明」，讓別人了解你的隊伍方向');
+  // 2. 檢查邏輯
+  if (!contest) return alert('請先搜尋並選擇一個比賽');
+  if (!name) return alert('請輸入隊伍名稱');
+  if (!skills) return alert('請輸入「招募需求」');
+  if (!desc) return alert('請輸入「主題/說明」');
 
-    // 檢查「給申請者的提問」（假設你們動態生成的 input class 叫 question-input）
-    const questionInputs = document.querySelectorAll('.question-input'); 
-    let questionsData = [];
-    
-    // 如果有提問欄位，檢查是否為空
-    if (questionInputs.length > 0) {
-        for (let input of questionInputs) {
-            if (!input.value.trim()) {
-                return alert('請填寫所有「給申請者的提問」，或刪除不需要的問題框');
-            }
-            questionsData.push(input.value.trim());
-        }
-    } else {
-        // 如果你們規定至少要有一個提問，可以在這裡攔截
-        // return alert('請至少新增一個給申請者的提問');
-    }
+  // 3. 打包要丟給資料庫的欄位資料
+  const descParts = [desc, skills ? `需求：${skills}` : ''].filter(Boolean);
+      
+  const teamData = {
+      // 🚀 雙重保險：不管你選擇比賽後跳成哪種格式，兩個欄位通通丟給後端去抓！
+      com_id: contest.com_id || contest.id,
+      contestId: contest.id || contest.com_id,
+      num_limit: slots,
+      demand: descParts.join('\n'), 
+      team_name: name,
+      user_id: localStorage.getItem("userId")
+  };
 
-    // 3. 打包要丟給資料庫的欄位資料
-    const descParts = [desc, skills ? `需求：${skills}` : ''].filter(Boolean);
-    
-    const teamData = {
-        com_id: contest.id,
-        teamStatus: 'active',
-        num_limit: slots,
-        demand: descParts.join('\n'), // 將說明與需求合併存入 demand
-        team_name: name,
-        current_member_count: 1,
-        // 如果後端有支援存問題，可以加上：
-        // questions: questionsData 
-    };
+  // 4. 送出請求 (一次 Fetch 搞定兩張表！)
+  try {
+      const path = '/api/teams/create';
+      const token = localStorage.getItem('token');
+      
+      if (!token) return alert('登入逾時，請重新登入');
 
-    // 4. 送出請求 (fetch 部分)
-    try {
-        const path = '/api/teams/create';
-        const token = localStorage.getItem('token');
-        
-        // 🚀 注意：檢查 Token 是否存在，沒登入直接擋掉
-        if (!token) return alert('登入逾時，請重新登入');
+      const response = await fetch(path, {
+          method: 'POST',
+          headers: { 
+              'Content-Type': 'application/json', 
+              'Authorization': `Bearer ${token}` // 修正：加上 Bearer 比較標準
+          },
+          body: JSON.stringify(teamData)
+      });
 
-        const response = await fetch(path, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json', 
-                'Authorization': `Bearer ${token}` // 🚀 建議加上 Bearer
-            },
-            body: JSON.stringify(teamData)
-        });
+      if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`建立失敗 (${response.status}): ${errorText}`);
+      }
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`建立失敗 (${response.status}): ${errorText}`);
-        }
+      const result = await response.json();
 
-        const result = await response.json();
-
-        if (result.success) {
-            alert('🎉 隊伍建立成功！');
-            // 🚀 解決你說的不會跳轉問題：
-            window.location.href = withUserParam('/team.html'); 
-        } else {
-            alert('建立隊伍失敗：' + (result.message || '未知錯誤'));
-        }
-    } catch (error) {
-        console.error('網路錯誤:', error);
-        alert('無法連接到伺服器：' + error.message);
-    }
+      if (result.success) {
+          alert('🎉 隊伍與成員身分同步建立成功！');
+          // 🚀 順利解鎖跳轉功能
+          window.location.href = withUserParam('/team.html'); 
+      } else {
+          alert('建立隊伍失敗：' + (result.message || '未知錯誤'));
+      }
+  } catch (error) {
+      console.error('網路錯誤:', error);
+      alert('無法連接到伺服器：' + error.message);
+  }
 });
 
   $('cancelBtn').addEventListener('click', () => { location.href = withUserParam('/team.html'); });

@@ -1,37 +1,6 @@
 // server/controllers/teamController.js
 import pool from '../models/db.js';
 
-// 建立隊伍
-export const createTeam = async (req, res) => {
-
-    // 從前端傳過來的 body 裡面解構出資料
-    const {com_id, teamStatus, num_limit, demand, team_name, current_member_count} = req.body;
-
-    try {
-        // 2. 修正為 MySQL 語法：移除雙引號、移除 RETURNING
-        const sql = `
-        INSERT INTO Team (com_id, teamStatus, num_limit, demand, team_name, current_member_count)
-        VALUES (?, ?, ?, ?, ?, ?);
-        `;
-        const values = [com_id, teamStatus, num_limit, demand, team_name, current_member_count];
-
-        // 3. 執行 MySQL 查詢
-        const [result] = await pool.query(sql, values);
-        // 4. 🚀 關鍵：MySQL 取得自動遞增的 ID 是透過 result.insertId
-        const newTeamId = result.insertId; 
-        // 5. 回傳成功訊息給前端
-        return res.status(201).json({
-        success: true,
-        message: '隊伍建立成功',
-        teamId: newTeamId
-        });
-
-    } catch (error) {
-        console.error('❌ Controller 建立隊伍失敗:', error);
-        return res.status(500).json({ message: '伺服器錯誤，無法寫入資料庫' });
-    }
-};
-
 // 取得單一隊伍詳細資訊（包含比賽資訊）
 export const getTeamDetail = async (req, res) => {
     const { teamId } = req.params;
@@ -157,3 +126,55 @@ export const applyToTeam = async (req, res) => {
     res.status(500).json({ success: false, message: '伺服器內部錯誤' });
   }
 };
+
+// 建立隊伍與membership
+export const createTeam = async (req, res) => {
+    // 🚀 終極相容：不管是底線 com_id 還是小駝峰 contestId，通通都接收！
+    const com_id = req.body.com_id || req.body.comId || req.body.contestId || req.body.contest_id;
+    const { team_name, demand, num_limit, user_id } = req.body;
+  
+    // 檢查到底是哪一個欄位沒傳過來
+    if (!team_name || !com_id || !user_id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `缺少必要欄位！收到的 team_name: ${team_name}, com_id: ${com_id}, user_id: ${user_id}` 
+      });
+    }
+  
+    const connection = await pool.getConnection();
+  
+    try {
+      await connection.beginTransaction();
+  
+      // 1. 插入新隊伍
+      const [teamResult] = await connection.execute(
+        `INSERT INTO Team (team_name, com_id, demand, num_limit, current_member_count, teamStatus) 
+         VALUES (?, ?, ?, ?, 1, 'active')`, 
+        [team_name, com_id, demand || '尚未填寫說明', num_limit || 4]
+      );
+  
+      const newTeamId = teamResult.insertId;
+  
+      // 2. 同步寫入 Membership
+      await connection.execute(
+        `INSERT INTO Membership (user_id, team_id, role, mem_status) 
+         VALUES (?, ?, '建立人', '通過')`,
+        [Number(user_id), newTeamId]
+      );
+  
+      await connection.commit();
+  
+      res.status(201).json({
+        success: true,
+        message: '隊伍建立成功！',
+        team_id: newTeamId
+      });
+  
+    } catch (error) {
+      await connection.rollback();
+      console.error('建立隊伍與 Membership 失敗:', error);
+      res.status(500).json({ success: false, message: '伺服器內部錯誤' });
+    } finally {
+      connection.release();
+    }
+  };
