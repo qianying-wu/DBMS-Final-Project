@@ -113,8 +113,10 @@ async function render() {
   if (!response.ok) throw new Error('無法取得後端隊伍資料');
   const { contests, teams } = await response.json();
 
-  const favs = Data.loadFavorites();
-  const contestFavs = Data.loadContestFavorites();
+  // Only surface stored favorites when the page is viewed as a logged-in user.
+  // Guests should not see items pre-marked as "favorited" even if localStorage contains values.
+  const favs = isLoggedIn() ? Data.loadFavorites() : [];
+  const contestFavs = isLoggedIn() ? Data.loadContestFavorites() : [];
   const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
   const selectedContest = Data.getSelectedContestId();
 
@@ -188,6 +190,8 @@ function toggleFavorite(id) {
   if (index >= 0) favorites.splice(index, 1);
   else favorites.push(id);
   Data.saveFavorites(favorites);
+  // Update sidebar favorites immediately for snappier UX, then re-render main content
+  if (isLoggedIn()) UI.renderSidebarTeams(Data.loadTeams());
   render();
 }
 
@@ -203,6 +207,8 @@ function toggleContestFavorite(id) {
   if (index >= 0) favs.splice(index, 1);
   else favs.push(Number(id));
   Data.saveContestFavorites(favs);
+  // Refresh followed/contest lists on the sidebar immediately, then re-render main content
+  if (isLoggedIn()) UI.renderFollowedContests(Data.loadContests(), Data.loadContestFavorites());
   render();
 }
 
@@ -336,7 +342,11 @@ teamsGrid && teamsGrid.addEventListener('click', event => {
   if (!btn) return;
   const teamId = btn.dataset.id || btn.dataset.team;
   if (!teamId) return;
-  if (btn.classList.contains('fav-btn')) { toggleFavorite(Number(teamId)); return; }
+  if (btn.classList.contains('fav-btn')) {
+    if (!requireLogin('請先登入才能收藏隊伍。')) return;
+    toggleFavorite(Number(teamId));
+    return;
+  }
   if (btn.classList.contains('manage-btn')) { openRequestsForTeam(Number(teamId)); return; }
   openTeamDetail(Number(teamId));
 });
@@ -438,6 +448,7 @@ contestsGrid && contestsGrid.addEventListener('click', event => {
   const favBtn = event.target.closest('[data-contest-fav]');
   if (favBtn) {
     event.stopPropagation();
+    if (!requireLogin('請先登入才能收藏比賽。')) return;
     toggleContestFavorite(Number(favBtn.dataset.contestFav));
     return;
   }
