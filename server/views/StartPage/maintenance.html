@@ -37,7 +37,7 @@
   </head>
   <body>
     <header class="topbar">
-      <a id="homeLink" href="/user.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
+      <a id="homeLink" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
       <div class="actions">
         <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
         <a id="teamBtn" class="icon-btn" aria-label="組隊" href="/team.html">🤝</a>
@@ -82,7 +82,7 @@
       const qs = new URLSearchParams(location.search);
       const id = qs.get('userId') || 'unknown';
       document.getElementById('info').textContent = 'maintenance userId: ' + id;
-      document.getElementById('homeLink').href = '/user.html?userId=' + encodeURIComponent(id);
+      document.getElementById('homeLink').href = '/team.html?userId=' + encodeURIComponent(id);
       document.getElementById('teamLink').href = '/team.html?userId=' + encodeURIComponent(id) + '&role=maintenance';
       document.getElementById('teamBtn').href = '/team.html?userId=' + encodeURIComponent(id) + '&role=maintenance';
       document.getElementById('userLink').href = '/user.html?userId=' + encodeURIComponent(id);

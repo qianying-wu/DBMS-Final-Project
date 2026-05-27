@@ -14,16 +14,12 @@
   const addTag = $('addTag');
   const newTag = $('newTag');
   const tagsWrap = $('tags');
-  const photo = $('photo');
   const photoPreview = $('photoPreview');
-  const photoImage = $('photoImage');
-  const photoScale = $('photoScale');
-  const resetPhoto = $('resetPhoto');
   const myTeamsBox = $('myTeams');
   const followedBox = $('followed');
 
-  // 照片狀態會保留圖片來源、縮放比例與拖曳偏移量。
-  let photoState = { src: null, scale: 1, x: 0, y: 0 };
+  // 照片功能已移除，使用預設頭像（不儲存圖片）
+  let photoState = { src: null };
 
   // 履歷資料儲存在 localStorage.profiles，格式為 { id, name, data }。
   function loadProfiles(){
@@ -47,30 +43,20 @@
   }
 
   // 根據目前照片狀態更新預覽區。
-  function renderPhoto(){
-    if (!photoState.src) {
-      photoPreview.classList.remove('has-photo');
-      photoImage.removeAttribute('src');
-      photoImage.style.transform = '';
-      photoScale.value = '1';
-      return;
-    }
-
-    photoPreview.classList.add('has-photo');
-    photoImage.src = photoState.src;
-    photoImage.style.transform = `translate(${photoState.x}px, ${photoState.y}px) scale(${photoState.scale})`;
-    photoScale.value = String(photoState.scale);
+   function renderPhoto(){
+  // No-op if photo preview element was removed from DOM
+  if (!photoPreview) return;
+  // Ensure default styling (no user-supplied photo)
+  if (photoPreview.classList) photoPreview.classList.remove('has-photo');
+  try { const img = photoPreview.querySelector && photoPreview.querySelector('img'); if (img) img.remove(); } catch (e) { /* ignore */ }
   }
+  
 
   // 從履歷資料還原照片與照片調整設定。
   function setPhotoFromData(data){
-    photoState = {
-      src: data.photo || null,
-      scale: data.photoTransform?.scale || 1,
-      x: data.photoTransform?.x || 0,
-      y: data.photoTransform?.y || 0
-    };
-    renderPhoto();
+  // Ignore any stored photo; keep default avatar
+  photoState = { src: null };
+  renderPhoto();
   }
 
   // 將使用者輸入轉成安全文字，避免插入 HTML 時破壞畫面。
@@ -228,7 +214,15 @@
       card.innerHTML = `
         <div class="resume-cover"><span class="resume-ribbon">開啟</span></div>
         <div class="resume-body">
-          <h3 class="resume-title" contenteditable="true" spellcheck="false">${escapeHtml(p.name || '未命名履歷')}</h3>
+            <div style="display:flex;align-items:center;gap:8px;grid-column:1 / -1">
+            <h3 class="resume-title" contenteditable="true" spellcheck="false">${escapeHtml(p.name || '未命名履歷')}</h3>
+            <button class="rename-btn" type="button" aria-label="重命名">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="currentColor" />
+                <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
           <span class="resume-time">${formatDateTime(p.updatedAt || p.createdAt)}</span>
           <div class="resume-card-actions">
             <button class="icon-action view-resume" type="button" aria-label="查看履歷">查看</button>
@@ -236,7 +230,8 @@
           </div>
         </div>
       `;
-      const title = card.querySelector('.resume-title');
+  const title = card.querySelector('.resume-title');
+  const renameBtn = card.querySelector('.rename-btn');
       title.addEventListener('click', event => event.stopPropagation());
       title.addEventListener('input', () => {
         const next = loadProfiles();
@@ -248,6 +243,19 @@
           if (String(p.id) === String(getActiveProfileId())) editorTitle.textContent = next[idx].name;
         }
       });
+      if (renameBtn) {
+        renameBtn.addEventListener('click', event => {
+          event.stopPropagation();
+          // focus the title for editing and move caret to end
+          title.focus();
+          try {
+            const range = document.createRange();
+            range.selectNodeContents(title);
+            range.collapse(false);
+            const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+          } catch (err) { /* ignore selection errors */ }
+        });
+      }
       title.addEventListener('blur', renderResumeGallery);
       resumeGallery.appendChild(card);
     });
@@ -277,7 +285,7 @@
     const profile = ps.find(x=>String(x.id)===String(activeId)) || ps[0] || null;
     const data = profile ? profile.data : {};
     if (profile && !activeId) setActiveProfileId(profile.id);
-    editorTitle.textContent = profile?.name || '新增履歷';
+  editorTitle.textContent = profile?.name || '新增履歷';
     $('name').value = data.name||'';
     $('school').value = data.school||'';
     $('grade').value = data.grade||'';
@@ -286,6 +294,45 @@
     const tags = data.tags||[]; renderTags(tags);
     window._tags = tags;
     setPhotoFromData(data);
+  }
+
+  // 編輯器標題可 inline 編輯；變更時同步到當前履歷名稱
+  if (editorTitle) {
+    editorTitle.addEventListener('input', () => {
+      const activeId = getActiveProfileId();
+      if (!activeId) return;
+      const ps = loadProfiles();
+      const idx = ps.findIndex(p => String(p.id) === String(activeId));
+      if (idx >= 0) {
+        const v = editorTitle.textContent.trim() || '未命名履歷';
+        ps[idx].name = v;
+        ps[idx].updatedAt = new Date().toISOString();
+        saveProfiles(ps);
+        // also update gallery render title in-place
+        const card = document.querySelector(`.resume-card[data-id="${activeId}"]`);
+        if (card) {
+          const t = card.querySelector('.resume-title');
+          if (t) t.textContent = v;
+        }
+      }
+    });
+
+    // make sure clicking title in editor doesn't accidentally navigate
+    editorTitle.addEventListener('click', e => e.stopPropagation());
+    // editor header rename button focuses the title for quick editing
+    const editorRenameBtn = document.getElementById('editorRenameBtn');
+    if (editorRenameBtn) {
+      editorRenameBtn.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        try {
+          editorTitle.focus();
+          const range = document.createRange();
+          range.selectNodeContents(editorTitle);
+          range.collapse(false);
+          const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+        } catch (err) { /* ignore */ }
+      });
+    }
   }
 
   // 顯示履歷列表首頁。
@@ -355,11 +402,20 @@
   });
 
   exportBtn.addEventListener('click', ()=>{
+    // Inline validation: clear old errors
+    const clearErrors = () => { $('error-name').textContent=''; $('error-school').textContent=''; $('error-intro').textContent=''; };
+    clearErrors();
+    const nameVal = $('name').value.trim();
+    const schoolVal = $('school').value.trim();
+    const introVal = $('intro').value.trim();
+    const invalids = [];
+    if (!nameVal) { $('error-name').textContent = '姓名為必填'; invalids.push($('name')); }
+    if (!schoolVal) { $('error-school').textContent = '學校為必填'; invalids.push($('school')); }
+    if (!introVal) { $('error-intro').textContent = '請簡短介紹自己'; invalids.push($('intro')); }
+    if (invalids.length) { invalids[0].focus(); return; }
     const data = {
-      name:$('name').value, school:$('school').value, grade:$('grade').value,
-      experience:$('experience').value, intro:$('intro').value, tags: window._tags||[],
-      photo: photoState.src,
-      photoTransform: { scale: photoState.scale, x: photoState.x, y: photoState.y }
+      name: nameVal, school: schoolVal, grade:$('grade').value,
+      experience:$('experience').value, intro: introVal, tags: window._tags||[],
     };
     const s = JSON.stringify(data, null, 2);
     const blob = new Blob([s], {type:'application/json'});
@@ -378,11 +434,20 @@
   });
 
   saveBtn.addEventListener('click', ()=>{
+    // Inline validation on save: show errors and focus first empty
+    const clearErrors2 = () => { $('error-name').textContent=''; $('error-school').textContent=''; $('error-intro').textContent=''; };
+    clearErrors2();
+    const nameVal2 = $('name').value.trim();
+    const schoolVal2 = $('school').value.trim();
+    const introVal2 = $('intro').value.trim();
+    const invalids2 = [];
+    if (!nameVal2) { $('error-name').textContent = '姓名為必填'; invalids2.push($('name')); }
+    if (!schoolVal2) { $('error-school').textContent = '學校為必填'; invalids2.push($('school')); }
+    if (!introVal2) { $('error-intro').textContent = '請簡短介紹自己'; invalids2.push($('intro')); }
+    if (invalids2.length) { invalids2[0].focus(); return; }
     const data = {
-      name:$('name').value, school:$('school').value, grade:$('grade').value,
-      experience:$('experience').value, intro:$('intro').value, tags: window._tags||[],
-      photo: photoState.src,
-      photoTransform: { scale: photoState.scale, x: photoState.x, y: photoState.y }
+      name: nameVal2, school: schoolVal2, grade:$('grade').value,
+      experience:$('experience').value, intro: introVal2, tags: window._tags||[],
     };
     // 將表單資料儲存到目前履歷；若尚未有履歷，則建立一份新的。
     let ps = loadProfiles(); let activeId = getActiveProfileId();
@@ -396,50 +461,7 @@
     saveProfiles(ps); renderResumeGallery(); alert('已儲存到 localStorage');
   });
 
-  photo.addEventListener('change', e=>{
-    const f = e.target.files && e.target.files[0]; if(!f) return;
-    const reader = new FileReader(); reader.onload = ()=>{
-      photoState = { src: reader.result, scale: 1, x: 0, y: 0 };
-      renderPhoto();
-    };
-    reader.readAsDataURL(f);
-  });
-
-  photoScale.addEventListener('input', e=>{
-    photoState.scale = Number(e.target.value);
-    renderPhoto();
-  });
-
-  resetPhoto.addEventListener('click', ()=>{
-    photoState.scale = 1;
-    photoState.x = 0;
-    photoState.y = 0;
-    renderPhoto();
-  });
-
-  // 拖曳照片預覽區時，更新照片在框內的位置。
-  photoPreview.addEventListener('pointerdown', e=>{
-    if (!photoState.src) return;
-    photoPreview.setPointerCapture(e.pointerId);
-    const start = { pointerX: e.clientX, pointerY: e.clientY, photoX: photoState.x, photoY: photoState.y };
-
-    function onPointerMove(moveEvent){
-      photoState.x = start.photoX + moveEvent.clientX - start.pointerX;
-      photoState.y = start.photoY + moveEvent.clientY - start.pointerY;
-      renderPhoto();
-    }
-
-    function onPointerUp(upEvent){
-      photoPreview.releasePointerCapture(upEvent.pointerId);
-      photoPreview.removeEventListener('pointermove', onPointerMove);
-      photoPreview.removeEventListener('pointerup', onPointerUp);
-      photoPreview.removeEventListener('pointercancel', onPointerUp);
-    }
-
-    photoPreview.addEventListener('pointermove', onPointerMove);
-    photoPreview.addEventListener('pointerup', onPointerUp);
-    photoPreview.addEventListener('pointercancel', onPointerUp);
-  });
+  // Photo upload and editing removed; photoPreview kept only for display.
 
   // 右上角按鈕的防禦性綁定，避免缺少共用模組時整頁失效。
   try {

@@ -1,5 +1,13 @@
 import { escapeHtml, withUserParam, currentUserId, ME, loadFavorites} from './team-data.js';
 
+// 將日期字串格式化為台灣慣用格式
+function formatDate(value) {
+  if (!value) return '日期未定';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+
 // 渲染側邊欄區塊：包含「我加入的隊伍」、「我收藏的隊伍」以及「我管理的隊伍」
 export function renderSidebarTeams(teams) {
   const myJoinedTeams = document.getElementById('myJoinedTeams');
@@ -48,7 +56,7 @@ export function renderContestInfo(contests, selectedContest) {
   }
   const selected = contests.find(item => Number(item.id) === Number(selectedContest));
   contestInfoWrap.innerHTML = selected
-    ? `<h3>${escapeHtml(selected.name)}</h3><div>${escapeHtml(selected.date)}</div><p>${escapeHtml(selected.info)}</p>`
+? `<h3>${escapeHtml(selected.name)}</h3><div>${formatDate(selected.date)}</div><p>${escapeHtml(selected.info)}</p>`
     : '<h3>全部隊伍</h3><div>顯示所有跨比賽隊伍</div>';
 }
 
@@ -115,7 +123,18 @@ export function renderRecommendations(contests, currentPreferences) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 
-  // 生成推薦卡片 HTML
+  // helper: map tag keys to semantic CSS class names so colors are centrally controlled in CSS
+  function tagClassFor(key){
+    if (!key) return 'tag-default';
+    const k = String(key).toLowerCase();
+    if (k.includes('ai') || k.includes('machine') || k.includes('ml')) return 'tag-ai';
+    if (k.includes('data') || k.includes('分析') || k.includes('analytics')) return 'tag-data';
+    if (k.includes('robot') || k.includes('robotics') || k.includes('機器')) return 'tag-robot';
+    if (k.includes('web') || k.includes('前端') || k.includes('後端')) return 'tag-web';
+    return 'tag-default';
+  }
+
+  // 生成推薦卡片 HTML（包含一個顯眼的 badge 與有色標籤）
   recommendedBody.innerHTML = scored.length ? `
     <div class="recommend-panel">
       <div class="recommend-head">
@@ -126,13 +145,22 @@ export function renderRecommendations(contests, currentPreferences) {
         <a class="btn outline" href="${withUserParam('/account-info.html')}">修改偏好</a>
       </div>
       <div class="recommend-list">
-        ${scored.map(item => `
+        ${scored.map(item => {
+          const tagHtml = item.matches.map(key => {
+            const label = escapeHtml(window.AppPreferences.labelFor(key));
+            const cls = tagClassFor(key);
+            return `<span class="match-tag ${cls}">${label}</span>`;
+          }).join('');
+          return `
           <article class="recommend-card" data-cid="${item.contest.id}">
             <h4>${escapeHtml(item.contest.name)}</h4>
-            <div class="recommend-reason">符合 ${item.score} 個偏好：${item.matches.map(key => escapeHtml(window.AppPreferences.labelFor(key))).join('、')}</div>
-            <div class="tag-row">${item.matches.map(key => `<span class="match-tag">${escapeHtml(window.AppPreferences.labelFor(key))}</span>`).join('')}</div>
+            <div class="recommend-meta">
+              <span class="match-badge">符合 ${item.score} 個偏好</span>
+              <div class="recommend-reason">${item.matches.map(key => escapeHtml(window.AppPreferences.labelFor(key))).join('、')}</div>
+            </div>
+            <div class="tag-row">${tagHtml}</div>
           </article>
-        `).join('')}
+        `}).join('')}
       </div>
     </div>
   ` : '';
@@ -179,7 +207,13 @@ export function renderFollowedContests(contests, contestFavs) {
   const followed = document.getElementById('followed');
   if (!followed) return;
   const followedContests = contestFavs.map(id => contests.find(contest => Number(contest.id) === Number(id))).filter(Boolean);
-  followed.textContent = followedContests.length ? followedContests.map(contest => `${contest.name}\n${contest.date}`).join('\n\n') : '尚無關注';
+function formatDate(value) {
+  if (!value) return '日期未定';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+followed.textContent = followedContests.length ? followedContests.map(contest => `${contest.name}\n${formatDate(contest.date)}`).join('\n\n') : '尚無關注';
 }
 
 // 根據傳入的加入申請 (requests)，產生待審核名單的 HTML 結構，包含履歷資訊等

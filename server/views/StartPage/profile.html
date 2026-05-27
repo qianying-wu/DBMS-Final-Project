@@ -11,8 +11,21 @@
     <header class="topbar">
       <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
       <div class="actions">
-        <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
-        <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
+         <!--右上的通知和個人icon圖示-->
+       <button id="notifyBtn" class="icon-btn" aria-label="通知">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+       fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+  </svg>
+</button>
+<button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+       fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="8" r="4"/>
+    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+  </svg>
+</button>
       </div>
     </header>
 
@@ -51,7 +64,15 @@
           <div class="editor-heading">
             <div>
               <span class="eyebrow">履歷編輯</span>
-              <h2 id="editorTitle">新增履歷</h2>
+              <div style="display:flex;align-items:center;gap:8px">
+                <h2 id="editorTitle" class="editor-title" contenteditable="true" spellcheck="false" aria-label="編輯履歷名稱">新增履歷</h2>
+                <button id="editorRenameBtn" class="rename-btn" type="button" aria-label="編輯履歷名稱">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="currentColor" />
+                    <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor" />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="editor-actions">
               <button id="backToGallery" type="button" class="btn outline">返回列表</button>
@@ -60,51 +81,47 @@
           </div>
 
           <form id="profileForm">
-            <!-- 基本資料與照片上傳。 -->
+            <!-- 基本資料（已移除照片上傳） -->
             <div class="row">
-              <label>姓名<input id="name" type="text" placeholder="你的名字"></label>
-              <label>照片
-                <div class="photo-row">
-                  <input id="photo" type="file" accept="image/*">
-                  <div class="photo-editor">
-                    <div id="photoPreview" class="photo-preview">
-                      <span id="photoPlaceholder">預覽</span>
-                      <img id="photoImage" alt="">
-                    </div>
-                    <div class="photo-controls">
-                      <label for="photoScale">大小</label>
-                      <input id="photoScale" type="range" min="1" max="3" step="0.01" value="1">
-                      <button id="resetPhoto" type="button" class="btn outline small">置中</button>
-                    </div>
-                  </div>
-                </div>
-              </label>
+                <label class="field-label"><span class="label-title">姓名 <span class="required-star">*</span></span>
+                  <input id="name" type="text" placeholder="你的名字" required>
+                  <div class="field-error" id="error-name" aria-live="polite"></div>
+                </label>
+              <!-- 照片欄位已移除 -->
             </div>
 
             <!-- 學籍資料。 -->
             <div class="row">
-              <label>學校<input id="school" type="text" placeholder="學校"></label>
-              <label>年級<input id="grade" type="text" placeholder="年級"></label>
+                <label class="field-label"><span class="label-title">學校 <span class="required-star">*</span></span>
+                  <input id="school" type="text" placeholder="學校" required>
+                  <div class="field-error" id="error-school" aria-live="polite"></div>
+                </label>
+                <label class="field-label">系級
+                  <input id="grade" type="text" placeholder="系級">
+                </label>
             </div>
 
             <!-- 專長標籤，可新增與移除。 -->
             <div class="row">
-              <label class="full">專長
+              <label class="field-label full">專長
                 <div class="tags" id="tags"></div>
                 <div class="tag-input">
                   <input id="newTag" placeholder="新增專長">
-                  <button id="addTag" type="button">+</button>
+                  <button id="addTag" type="button" aria-label="新增專長">＋</button>
                 </div>
               </label>
             </div>
 
             <!-- 經歷與自我介紹。 -->
             <div class="row">
-              <label class="full">個人經歷<textarea id="experience" placeholder="描述你的專案、比賽或經歷" rows="6"></textarea></label>
+              <label class="field-label full">個人經歷<textarea id="experience" placeholder="描述你的專案、比賽或經歷" rows="6"></textarea></label>
             </div>
 
             <div class="row">
-              <label class="full">自我介紹<textarea id="intro" placeholder="一段短介紹" rows="4"></textarea></label>
+              <label class="field-label full"><span class="label-title">自我介紹 <span class="required-star">*</span></span>
+                <textarea id="intro" placeholder="一段短介紹" rows="4" required></textarea>
+                <div class="field-error" id="error-intro" aria-live="polite"></div>
+              </label>
             </div>
 
             <!-- 表單操作按鈕。 -->
