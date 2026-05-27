@@ -201,7 +201,7 @@
     // 其他導覽按鈕
     $('contactBtn').addEventListener('click', () => { alert('測試中'); });
     $('backBtn').addEventListener('click', () => { history.back(); });
-    document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/user.html'));
+    document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/team.html'));
   }
 
   // 3. 執行初始化
