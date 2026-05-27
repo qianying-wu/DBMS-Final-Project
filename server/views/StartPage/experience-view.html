@@ -41,7 +41,7 @@
       const userId = qs.get('userId') || 'unknown';
 
       document.querySelector('.logo-link').href =
-        userId !== 'unknown' ? '/user.html?userId=' + encodeURIComponent(userId) : '/team.html';
+        userId !== 'unknown' ? '/team.html?userId=' + encodeURIComponent(userId) : '/team.html';
 
       function esc(v) {
         return String(v ?? '').replace(/[&<>"']/g, c =>

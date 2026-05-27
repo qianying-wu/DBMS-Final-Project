@@ -3,9 +3,7 @@ import pool from '../models/db.js';
 
 // 建立隊伍
 export const createTeam = async (req, res) => {
-    console.log('====== 🔍 後端攔截測試 ======');
-    console.log('前端送過來的 Authorization 是:', req.headers.authorization);
-    console.log('============================');
+
     // 從前端傳過來的 body 裡面解構出資料
     const {com_id, teamStatus, num_limit, demand, team_name, current_member_count} = req.body;
 

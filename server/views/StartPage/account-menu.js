@@ -66,8 +66,6 @@
     menu.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
   }
 
-  // logout() is provided globally by `auth-guard.js` to ensure a single unified behavior across pages.
-
   // 動態注入帳號選單樣式，避免每個頁面重複寫 CSS。
   function injectStyle(){
     if (document.getElementById('accountMenuStyle')) return;

@@ -42,7 +42,7 @@
       // 讀取目前使用者，並同步頁首 logo 導向。
       const qs = new URLSearchParams(location.search);
       const userId = qs.get('userId') || '9999';
-      document.querySelector('.logo-link').href = '/user.html?userId=' + encodeURIComponent(userId);
+      document.querySelector('.logo-link').href = '/team.html?userId=' + encodeURIComponent(userId);
 
       // 從 localStorage 取出隊伍、比賽與申請紀錄。
       const teams = JSON.parse(localStorage.getItem('teams') || '[]');

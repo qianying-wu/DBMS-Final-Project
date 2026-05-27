@@ -78,8 +78,7 @@ import { currentUserId, withUserParam, escapeHtml } from './team-data.js';
 
     $('contactBtn').addEventListener('click', () => { alert('聯絡功能開發中'); });
     $('backBtn').addEventListener('click', () => { history.back(); });
-    
-    // 修正 Logo 導回首頁帶有身分識別
+
     document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/team.html'));
   }
 
