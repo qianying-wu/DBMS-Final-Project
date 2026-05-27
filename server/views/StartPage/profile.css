@@ -32,7 +32,7 @@
 .resume-card.open .resume-ribbon{display:block}
 .resume-ribbon{display:none;position:absolute;right:-36px;top:14px;transform:rotate(45deg);background:#61c3cb;color:#fff;font-weight:700;padding:7px 38px}
 .resume-body{padding:14px 16px 16px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
-.resume-title{grid-column:1 / -1;margin:0;color:#333;font-size:20px;font-weight:800;outline:none;border-radius:6px;padding:2px 4px}
+.resume-title{grid-column:1 / -1;margin:0;color:#333;font-size:20px;font-weight:800;outline:none;border-radius:6px;padding:6px 8px}
 .resume-title:focus{background:#fff7ec;box-shadow:0 0 0 2px #f58228}
 .resume-time{color:#888;font-size:14px}
 .resume-card-actions{display:flex;gap:8px}
@@ -42,15 +42,25 @@
 .add-resume-card strong{font-size:20px}
 .add-resume-card span{color:#888;font-weight:700}
 .editor-card{max-width:980px;margin:0 auto}
-.editor-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}
-.editor-heading h2{margin:3px 0 0;color:#4f3827}
+.editor-card{max-width:920px;margin:18px auto;padding:20px}
+.editor-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px}
+.editor-heading h2{margin:0;color:#4f3827;font-weight:800;letter-spacing:0.2px}
 .eyebrow{color:#a17851;font-size:13px;font-weight:700}
 .editor-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .card{background:#fff;padding:18px;border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,0.06)}
-.row{display:flex;gap:12px}
-.row label{flex:1;display:flex;flex-direction:column;font-size:14px}
+/* consistent form rows: align labels and inputs */
+.row{display:flex;gap:14px;align-items:flex-start;margin-bottom:12px}
+.row label{flex:1;display:flex;flex-direction:column;font-size:14px;align-items:flex-start}
 .row label.full{flex:1}
-input[type=text], textarea{padding:10px;border-radius:8px;border:1px solid #eee}
+.field-label{display:flex;flex-direction:column;gap:6px}
+.field-label .label-title{font-weight:700;color:#3f342c;margin-bottom:4px}
+.field-label input, .field-label textarea{font-size:15px;color:#2f2f2f;line-height:1.4}
+
+/* make non-title label text slightly bolder for consistency */
+.row label{color:#3b3228;font-weight:600}
+input[type=text], textarea{padding:12px;border-radius:8px;border:1px solid #eee;background:#fff;box-shadow:none;width:100%;font-size:15px;font-family:inherit}
+input[type=text]:focus, textarea:focus{outline:none;border-color:#d7b78e;box-shadow:0 0 0 4px rgba(215,183,142,0.06)}
+textarea{min-height:84px}
 .photo-row{display:flex;gap:10px;align-items:flex-start}
 .photo-editor{display:flex;flex-direction:column;gap:8px}
 .photo-preview{width:120px;height:120px;border-radius:8px;border:1px dashed #ddd;display:flex;align-items:center;justify-content:center;color:#aaa;overflow:hidden;position:relative;background:#fff;cursor:grab;touch-action:none;user-select:none}
@@ -67,6 +77,11 @@ input[type=text], textarea{padding:10px;border-radius:8px;border:1px solid #eee}
 .tag .remove{margin-left:6px;cursor:pointer}
 .tag-input{display:flex;gap:6px;margin-top:6px}
 .btn{padding:10px 14px;border-radius:8px;border:none;cursor:pointer}
+.tag-input{display:flex;gap:8px;margin-top:8px;align-items:center}
+.btn{padding:10px 14px;border-radius:8px;border:none;cursor:pointer}
+.actions-row{display:flex;gap:10px;margin-top:18px}
+.actions-row{display:flex;gap:12px;margin-top:16px;align-items:center}
+.actions-row .btn{min-width:110px}
 .btn.primary{background:linear-gradient(90deg,#D2B48C,#caa77a);color:#fff}
 .btn.outline{background:transparent;border:1px solid #ddd}
 .btn.danger{color:#9f3f35;border-color:#edc7c2}
@@ -90,7 +105,38 @@ input[type=text], textarea{padding:10px;border-radius:8px;border:1px solid #eee}
 .resume-template{background:#fff;border:1px solid #eadfd2;border-radius:12px;box-shadow:0 14px 32px rgba(0,0,0,.08);overflow:hidden}
 .resume-template-head{display:flex;gap:18px;align-items:center;background:#fff7ec;padding:24px;border-bottom:1px solid #eadfd2}
 .resume-avatar{width:96px;height:96px;border-radius:18px;background:#fff;border:1px solid #eadfd2;display:flex;align-items:center;justify-content:center;color:#a17851;font-weight:800;overflow:hidden;flex:none}
+.resume-template{background:#fff;border:1px solid #eadfd2;border-radius:12px;box-shadow:0 10px 26px rgba(0,0,0,.06);overflow:hidden}
+.resume-template-head{display:flex;gap:16px;align-items:center;background:#fff7ec;padding:18px;border-bottom:1px solid #eadfd2}
+.resume-avatar{width:84px;height:84px;border-radius:14px;background:#fff;border:1px solid #eadfd2;display:flex;align-items:center;justify-content:center;color:#a17851;font-weight:800;overflow:hidden;flex:none}
 .resume-avatar img{width:100%;height:100%;object-fit:cover}
+
+/* Default avatar styles when photo upload is disabled */
+.photo-preview.default-avatar{border-style:solid;border-color:transparent;background:#f1f1f1;color:#bdbdbd;display:flex;align-items:center;justify-content:center}
+.photo-preview.default-avatar::before{content:"";width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#dcdcdc,#bfbfbf);display:block}
+.avatar-placeholder{display:block;width:84px;height:84px;border-radius:14px;background:linear-gradient(180deg,#e9e9e9,#d4d4d4);box-shadow:inset 0 -6px 12px rgba(0,0,0,0.03)}
+
+/* layout tweak: two-column row where fields match widths */
+.row--two{display:flex;gap:12px}
+.row--two .field-label{flex:1}
+.row--two .field-label + .field-label{flex:1}
+
+/* required star */
+.required-star{color:#d9534f;margin-left:6px;font-weight:700}
+
+/* keep label text and star on one line */
+.label-title{display:inline-block;white-space:nowrap;font-weight:700;color:#3f342c;margin-bottom:6px}
+.field-label > .label-title {margin-bottom:6px}
+.field-label .required-star{margin-left:6px}
+
+/* inline field error */
+.field-error{color:#d9534f;font-size:13px;margin-top:6px;min-height:18px}
+
+/* nicer tag input */
+.tag-input{align-items:center}
+.tag-input input#newTag{flex:1;padding:8px 10px;border-radius:8px;border:1px solid #e6d6c2}
+.tag-input button#addTag{background:#f7f1ea;border:1px solid #e6d6c2;padding:8px 12px;border-radius:8px;color:#a17851;cursor:pointer}
+.tag-input button#addTag:hover{background:#efe5d7}
+.tags .tag{background:#fff7ee;border:1px solid #eedfcf;padding:6px 8px;border-radius:8px;color:#6b4f3a}
 .resume-template-head p{margin:0 0 5px;color:#a17851;font-weight:700}
 .resume-template-head h3{margin:0 0 5px;color:#3f342c;font-size:28px}
 .resume-template-head span{color:#7b6a59}
@@ -105,6 +151,10 @@ input[type=text], textarea{padding:10px;border-radius:8px;border:1px solid #eee}
 .template-tags{display:flex;flex-wrap:wrap;gap:8px}
 .template-tags span{background:#f0d8b3;color:#4f3827;border-radius:999px;padding:7px 10px;font-weight:700}
 .template-tags em{color:#8a735e}
+/* default empty tags label should match other section text */
+.template-tags .no-tags{color:#3f342c;font-weight:600;font-style:normal;padding-left:0}
+/* unified no-data placeholder for empty fields (normal weight) */
+.no-data{color:#55483d;font-weight:400;font-style:normal}
 
 @media (max-width: 920px){
   .layout{grid-template-columns:1fr;padding:14px}
@@ -170,13 +220,22 @@ input[type=text], textarea{padding:10px;border-radius:8px;border:1px solid #eee}
 
 .rename-btn {
   opacity: 0;
-  transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
+  transition: opacity 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.12s ease;
   flex-shrink: 0;
+  display:inline-flex;align-items:center;justify-content:center;border-radius:6px;padding:6px;border:0;background:transparent;color:#7b6a59;cursor:pointer
 }
 
 .resume-card:hover .rename-btn {
-  opacity: 1;
+  opacity: 1; transform: translateY(-1px);
 }
+
+.rename-btn svg{width:14px;height:14px;color:inherit}
+.rename-btn:hover{background:rgba(0,0,0,0.04);color:#4f3827}
+
+/* editor title rename button (visible near editor header) */
+#editorRenameBtn{display:inline-flex;align-items:center;justify-content:center;border-radius:6px;padding:6px;border:0;background:transparent;color:#7b6a59;cursor:pointer;transition:background .18s}
+#editorRenameBtn svg{width:14px;height:14px}
+#editorRenameBtn:hover{background:rgba(0,0,0,0.04);color:#4f3827}
 
 /* 其他按鈕也補上 transition */
 .btn,
@@ -205,3 +264,9 @@ input[type=text], textarea{padding:10px;border-radius:8px;border:1px solid #eee}
 }
 
 @media(max-width:520px){.exp-entry-heading{flex-direction:column}.exp-entry-btns{width:100%}}
+
+/* --- additional editor niceties --- */
+.tag-input input#newTag{flex:1;padding:10px 12px;border-radius:8px;border:1px solid #e6d6c2}
+.tag-input button#addTag{background:#f7f1ea;border:1px solid #e6d6c2;padding:9px 12px;border-radius:8px;color:#a17851;cursor:pointer}
+.editor-title{font-size:22px;line-height:1.1;padding:6px 8px;border-radius:6px}
+.editor-title:focus{background:#fff7ec;box-shadow:0 0 0 3px rgba(245,130,40,0.08);outline:none}

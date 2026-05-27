@@ -32,7 +32,12 @@
     <!-- 履歷查看區：內容會由下方 script 依 resumeId 動態填入。 -->
     <main class="layout" style="grid-template-columns:1fr;max-width:820px;margin:0 auto">
       <section class="content">
-        <h2 class="page-title">履歷查看</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <h2 class="page-title">履歷查看</h2>
+          <div>
+            <button id="backBtnResume" class="btn outline">返回上一頁</button>
+          </div>
+        </div>
         <div class="resume-template" id="resumeView"></div>
 
         <!-- ★ 經驗履歷連結區塊（有資料時才顯示） ★ -->
@@ -68,32 +73,24 @@
 
       // 將履歷資料套入制式履歷版型。
       document.getElementById('resumeView').innerHTML = profile ? `
-        <header class="resume-template-head">
-          <div class="resume-avatar">${data.photo ? `<img src="${esc(data.photo)}" alt="">` : '<span>履歷</span>'}</div>
-          <div>
-            <p>標準履歷模板</p>
-            <h3>${esc(profile.name || data.name || '履歷')}</h3>
-            <span>${esc(data.school || '未填寫學校')} ${esc(data.grade || '')}</span>
-          </div>
-        </header>
         <section class="template-section">
           <h4>基本資料</h4>
           <div class="template-grid">
-            <div><strong>姓名</strong><span>${esc(data.name || '未填寫')}</span></div>
-            <div><strong>學校 / 年級</strong><span>${esc(data.school || '未填寫')} ${esc(data.grade || '')}</span></div>
+            <div><strong>姓名</strong><span>${data.name ? esc(data.name) : '<span class="no-data">未填寫</span>'}</span></div>
+            <div><strong>學校 / 年級</strong><span>${data.school ? esc(data.school) : '<span class="no-data">未填寫</span>'} ${esc(data.grade || '')}</span></div>
           </div>
         </section>
         <section class="template-section">
           <h4>專長</h4>
-          <div class="template-tags">${(data.tags || []).length ? data.tags.map(tag => `<span>${esc(tag)}</span>`).join('') : '<em>未填寫</em>'}</div>
+          <div class="template-tags">${(data.tags || []).length ? data.tags.map(tag => `<span>${esc(tag)}</span>`).join('') : '<p class="no-data">未填寫</p>'}</div>
         </section>
         <section class="template-section">
           <h4>個人經歷</h4>
-          <p>${esc(data.experience || '未填寫')}</p>
+          ${data.experience ? `<p>${esc(data.experience)}</p>` : '<p class="no-data">未填寫</p>'}
         </section>
         <section class="template-section">
           <h4>自我介紹</h4>
-          <p>${esc(data.intro || '未填寫')}</p>
+          ${data.intro ? `<p>${esc(data.intro)}</p>` : '<p class="no-data">未填寫</p>'}
         </section>
       ` : '<div class="empty-note">尚未建立履歷</div>';
 
@@ -109,6 +106,15 @@
         const base = location.protocol === 'file:' ? 'experience-view.html' : '/experience-view.html';
         btn.href = base + '?userId=' + encodeURIComponent(userId);
       })();
+
+        // 返回上一頁按鈕（若歷史紀錄可用則回前一頁，否則回到 profile 列表）
+        document.getElementById('backBtnResume').addEventListener('click', function (){
+          if (window.history && window.history.length > 1) {
+            window.history.back();
+          } else {
+            window.location.href = '/profile.html';
+          }
+        });
     </script>
   </body>
 </html>
