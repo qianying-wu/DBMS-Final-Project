@@ -95,6 +95,7 @@ export const applyToTeam = async (req, res) => {
 
     if (existing.length > 0) {
       const status = existing[0].mem_status;
+
       return res.status(400).json({ 
         success: false, 
         message: status === '申請中' ? '你已送出申請，請勿重複點擊' : '你已經是此隊伍成員' 
@@ -106,7 +107,9 @@ export const applyToTeam = async (req, res) => {
       'SELECT current_member_count, num_limit FROM Team WHERE team_id = ?',
       [team_id]
     );
-    if (teamCheck.length === 0) return res.status(404).json({ success: false, message: '找不到該隊伍' });
+    if (teamCheck.length === 0){
+        return res.status(404).json({ success: false, message: '找不到該隊伍' });
+    } 
     
     if (teamCheck[0].current_member_count >= teamCheck[0].num_limit) {
       return res.status(400).json({ success: false, message: '該隊伍人數已滿，無法申請' });
