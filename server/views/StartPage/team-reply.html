@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>審核申請</title>
+    <link rel="stylesheet" href="/team-reply.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <button id="backBtn" class="icon-btn" aria-label="回到組隊">←</button>
+      <a class="logo-link" href="/team.html">
+        <img src="/logo.png" alt="競賽組隊 Logo" class="logo-img">
+      </a>
+      <div class="actions">
+        <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 主畫面：列表式排版 -->
+    <main class="review-layout">
+      <section class="main-panel">
+        <div class="page-heading">
+          <span class="eyebrow">Team Management</span>
+          <h1>審核隊員申請</h1>
+          <p>這裡列出所有想加入你隊伍的申請，請審慎評估後決定是否放行。</p>
+        </div>
+
+        <!-- 申請者列表的容器，交給 JS 動態渲染 -->
+        <div id="applicationsList" class="applications-list">
+          <!-- 載入中提示 -->
+          <div class="loading-state">載入申請資料中...</div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/team-reply.js"></script>
+  </body>
+</html>

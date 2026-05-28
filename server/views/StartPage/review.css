@@ -1,0 +1,151 @@
+/* 新增：左右欄位佈局 (電腦版 1:1，手機版會自動變上下疊加) */
+.split-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .split-layout {
+    grid-template-columns: 1fr; /* 螢幕小的時候變成一欄 */
+  }
+}
+
+/* --- 履歷卡片樣式 (參考截圖設計) --- */
+.resume-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e8e2d9;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+
+.resume-header {
+  background-color: #fdfaf6; /* 米色背景 */
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid #e8e2d9;
+}
+
+.resume-avatar {
+  width: 80px;
+  height: 80px;
+  background: #fff;
+  border: 1px solid #e8e2d9;
+  border-radius: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  color: #8a735e;
+}
+
+.resume-title-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resume-template-name {
+  font-size: 13px;
+  color: #8a735e;
+  font-weight: 700;
+}
+
+.resume-title {
+  margin: 0;
+  font-size: 24px;
+  color: #333;
+}
+
+.resume-school {
+  color: #8a735e;
+  font-size: 14px;
+}
+
+.resume-body {
+  padding: 0;
+}
+
+.resume-section {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e8e2d9;
+}
+.resume-section:last-child {
+  border-bottom: none;
+}
+
+.resume-section h4 {
+  margin: 0 0 16px 0;
+  color: #4f3827;
+  font-size: 16px;
+}
+
+.basic-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.info-box {
+  border: 1px solid #e8e2d9;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-label {
+  font-size: 12px;
+  color: #8a735e;
+}
+
+.info-value {
+  font-size: 15px;
+  color: #333;
+}
+
+.skills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-tag {
+  background: #f1e4d3; /* 淺卡其色標籤 */
+  color: #55483d;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.resume-section p {
+  margin: 0;
+  color: #55483d;
+  line-height: 1.6;
+}
+
+/* --- 下方保留原本的評價區塊 CSS --- */
+.star-rating {
+  display: flex;
+  gap: 8px;
+  font-size: 28px;
+  color: #eadfd2;
+  cursor: pointer;
+  margin-top: 6px;
+  user-select: none;
+}
+.star-rating .star { transition: color 0.2s ease; }
+.star-rating .star.active { color: #f58228; }
+.review-list { display: flex; flex-direction: column; gap: 16px; margin-top: 12px; }
+.review-item { border: 1px solid #f1e8dd; border-radius: 8px; padding: 16px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+.review-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.review-item-author { font-weight: 700; color: #4f3827; }
+.review-item-time { font-size: 13px; color: #8a735e; }
+.review-item-stars { color: #f58228; font-size: 16px; letter-spacing: 2px; margin-bottom: 8px; }
+.review-item-content { color: #55483d; line-height: 1.6; margin: 0; white-space: pre-line; }
