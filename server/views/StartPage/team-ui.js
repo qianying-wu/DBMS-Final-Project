@@ -73,27 +73,30 @@ export function renderContestCategoryList(contests, selectedContest, expandedCon
     }))
     .filter(category => category.contests.length);
 
-  // 保留使用者目前的展開狀態；空字串代表全部收合，不再自動打開第一個分類。
-  const currentExpanded = expandedContestCategory;
+// 🚀 關鍵：一打開網頁時不自動打開任何分類（將 currentExpanded 設為空或 null）
+  // 如果 expandedContestCategory 一開始是空的，isOpen 就絕對會是 false
+  const currentExpanded = expandedContestCategory || '';
 
   list.innerHTML = categories.map(category => {
-    const isOpen = category.key === currentExpanded;
+    // 只有當 key 完全符合目前使用者點擊的項目時，IsOpen 才會是 true
+    const isOpen = category.key === currentExpanded && currentExpanded !== '';
+    
     return `
-      <li class="contest-category ${isOpen ? 'open' : ''}">
-        <button class="contest-category-toggle" type="button" data-contest-category="${category.key}" aria-expanded="${isOpen}">
-          <span>${escapeHtml(category.label)}</span>
-          <span class="contest-category-count">${category.contests.length} 個</span>
-        </button>
-        <div class="contest-category-panel">
-          ${category.contests.map(contest => `
-            <button class="contest-child ${Number(selectedContest) === Number(contest.id) ? 'active' : ''}" type="button" data-cid="${contest.id}" aria-label="前往 ${escapeHtml(contest.name)} 詳細">
-              <strong>${escapeHtml(contest.name)}</strong>
-              <span>${escapeHtml(contest.date || '日期未定')}</span>
-            </button>
-          `).join('')}
-        </div>
-      </li>
-    `;
+    <li class="contest-category">
+      <button class="contest-category-toggle" type="button" data-contest-category="${category.key}" aria-expanded="false">
+        <span>${escapeHtml(category.label)}</span>
+        <span class="contest-category-count">${category.contests.length} 個</span>
+      </button>
+      <div class="contest-category-panel" style="max-height: 0;">
+        ${category.contests.map(contest => `
+          <button class="contest-child ${Number(selectedContest) === Number(contest.id) ? 'active' : ''}" type="button" data-cid="${contest.id}">
+            <strong>${escapeHtml(contest.name)}</strong>
+            <span>${escapeHtml(contest.date || '日期未定')}</span>
+          </button>
+        `).join('')}
+      </div>
+    </li>
+  `;
   }).join('');
   return currentExpanded;
 }

@@ -386,3 +386,29 @@ a{
   transition: background 0.2s ease, border-color 0.2s ease,
               color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
+
+/* 1. 預設的選單面板狀態（收合） */
+.contest-category-panel {
+  overflow: hidden;
+  max-height: 0; 
+  opacity: 0;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease-in-out;}
+
+/* 2. 當點擊後，父層被加上 .open 時的狀態（展開） */
+.contest-category.open .contest-category-panel {
+  max-height: 1000px; /* 🚀 給予一個足夠容納內容的最大高度（可根據內容多少調整） */
+  opacity: 1;
+}
+
+/* 3. 可選：箭頭旋轉動畫（如果你的按鈕內有小箭頭的話） */
+.contest-category-toggle::after {
+  content: '▼';
+  font-size: 0.8em;
+  display: inline-block;
+  transition: transform 0.3s ease;
+  margin-left: auto; /* 靠右對齊 */
+}
+
+.contest-category.open .contest-category-toggle::after {
+  transform: rotate(180deg); /* 🚀 展開時箭頭反轉 */
+}
