@@ -9,7 +9,7 @@
 </head>
 
 <body>
-  <!-- 1. 修正：將 header 獨立出來並正確閉合 -->
+  <!-- 頂部導覽列 -->
   <header class="topbar">
     <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
     <div class="actions">
@@ -30,11 +30,11 @@
     </div>
   </header>
 
-  <!-- 2. 修正：main 移到 header 外層，作為主要的網頁骨架 -->
+  <!-- 主要內容區塊 -->
   <main class="layout profile-layout">
     <section class="content profile-content">
       
-      <!-- 履歷列表主頁 -->
+      <!-- 履歷列表主頁 (對應截圖樣式) -->
       <div id="resumeHome" class="resume-home">
         <div class="profile-heading">
           <div>
@@ -42,13 +42,12 @@
             <p>建立不同用途的履歷，申請隊伍時可以選擇要附上的版本。</p>
           </div>
         </div>
-        <!-- 3. 修正：原本在此處有多餘且錯位的 </div>，已將其移除 -->
-        
-        <!-- 履歷畫廊 (profile.js 載入資料的目標區塊) -->
+         
+        <!-- 履歷卡片畫廊：JS 會在這裡渲染出截圖中的卡片結構 -->
         <div id="resumeGallery" class="resume-gallery"></div>
       </div>
 
-      <!-- 履歷編輯器 -->
+      <!-- 履歷編輯器 (預設隱藏) -->
       <div id="resumeEditor" class="card editor-card" hidden>
         <div class="editor-heading">
           <div>
@@ -143,7 +142,6 @@
       const qs = new URLSearchParams(location.search);
       const userId = qs.get('userId') || 'unknown';
 
-      // 4. 修正：補上之前程式碼因重複複製而寫壞的 JavaScript 閉合結構與邏輯
       function renderExpPreview() {
         const list = JSON.parse(localStorage.getItem('experiences:' + userId) || '[]');
         const preview = document.getElementById('expPreview');

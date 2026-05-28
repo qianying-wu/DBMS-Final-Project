@@ -34,7 +34,7 @@
         if (!response.ok) throw new Error('無法取得履歷資料');
 
         const existProfiles = await response.json();
-        return existProfiles
+        return existProfiles;
       } catch (err) {
         console.error(err);
         alert('讀取資料庫失敗，改用暫存載入');
@@ -143,7 +143,7 @@
       }
     }
 
-    // 主邏輯：載入並渲染履歷畫廊（首頁）
+    // 主邏輯：載入並渲染履歷畫廊（✨此處已依據 profile.css 重構以還原原本的精緻樣式）
     async function load() {
       renderSyncedSidebar();
       if (!resumeGallery) return;
@@ -152,45 +152,41 @@
       const profiles = await loadProfiles();
       resumeGallery.innerHTML = '';
 
-      profiles.forEach(p => {
+      // 渲染已存在的履歷版本卡片
+      profiles.forEach((p, index) => {
         const card = document.createElement('div');
-        card.className = 'card profile-card';
+        // 第一張卡片預設加上 'open' 類別來顯示「開啟」絲帶
+        card.className = `resume-card ${index === 0 ? 'open' : ''}`;
         card.innerHTML = `
-          <div class="card-body">
-            <h3 class="profile-name">${escapeHtml(p.name)}</h3>
-            <p class="profile-meta">🏫 ${escapeHtml(p.data.school || '未填寫學校')}</p>
-            <div class="profile-tags-preview">
-              ${(p.data.tags || []).map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join('')}
-            </div>
-            <p class="profile-bio-preview">${escapeHtml(p.data.bio || '尚未新增自我介紹...')}</p>
+          <div class="resume-cover">
+            <div class="resume-ribbon">開啟</div>
           </div>
-          <div class="card-footer">
-            <button class="btn edit-btn" data-id="${p.id}">編輯此版本</button>
+          <div class="resume-body">
+            <h3 class="resume-title">${escapeHtml(p.name)}</h3>
+            <span class="resume-time">${p.updatedAt || '2026/05/28 上午12:00'}</span>
+            <div class="resume-card-actions">
+              <button class="icon-action edit-btn" data-id="${p.id}" type="button">查看</button>
+              <button class="icon-action" type="button">···</button>
+            </div>
           </div>
         `;
         resumeGallery.appendChild(card);
       });
 
-      // 補上「新增履歷」的空白虛線卡片
+      // 渲染大橘色虛線的「+ 新增履歷」按鈕卡片
       const createCard = document.createElement('div');
-      createCard.className = 'card profile-card create-card-trigger';
-      createCard.style.border = '2px dashed #dfcfbd';
-      createCard.style.background = '#fffcf9';
-      createCard.style.justifyContent = 'center';
-      createCard.style.alignItems = 'center';
-      createCard.style.cursor = 'pointer';
+      createCard.className = 'add-resume-card';
       createCard.innerHTML = `
-        <div style="text-align:center; color:#7b6a59;">
-          <div style="font-size:32px; margin-bottom:8px;">+</div>
-          <strong style="font-size:14px;">建立全新履歷版本</strong>
-        </div>
+        <strong>+ 新增履歷</strong>
+        <span>針對不同工作客製化履歷，申請隊伍時選擇要附上的版本。</span>
       `;
       createCard.addEventListener('click', () => openEditor(null));
       resumeGallery.appendChild(createCard);
 
-      // 綁定所有卡片的編輯按鈕
+      // 重新綁定所有卡片中「查看」按鈕的點擊事件
       resumeGallery.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation(); // 防止事件冒泡
           openEditor(Number(btn.dataset.id));
         });
       });
@@ -298,12 +294,15 @@
           if (idx !== -1) {
             profiles[idx].name = titleStr;
             profiles[idx].data = dataObj;
+            // 記錄或更新編輯時間
+            profiles[idx].updatedAt = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' + new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: true });
           }
         } else {
           profiles.push({
             id: Date.now(),
             name: titleStr,
-            data: dataObj
+            data: dataObj,
+            updatedAt: new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' + new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: true })
           });
         }
 
@@ -323,7 +322,7 @@
         profiles = profiles.filter(p => p.id !== Number(pId));
         await saveProfiles(profiles);
 
-        alert('已成功移徐該版本');
+        alert('已成功移除該版本');
         if (backToGallery) backToGallery.click();
       });
     }
