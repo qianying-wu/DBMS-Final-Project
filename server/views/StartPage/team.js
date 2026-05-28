@@ -573,7 +573,6 @@ searchTabs.forEach(tab => {
 });
 
 // 執行文字比對並渲染搜尋結果列表 HTML
-// 執行文字比對並渲染搜尋結果列表 HTML
 function runGlobalSearch() {
   const q = globalSearch.value.trim().toLowerCase();
   if (!q) {

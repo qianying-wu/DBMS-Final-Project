@@ -74,6 +74,13 @@
     // 2. 清除登入狀態
     localStorage.removeItem('token');
     localStorage.removeItem('user'); // 檢查你們存的是什麼 key，如果不確定就用 localStorage.clear();
+
+    // 🚀 新增：把畫面上所有的紅色愛心變回灰色/空心
+    // 假設你的愛心標籤是 <i class="fav-btn active"> 或 <div class="fav-btn red">
+    const activeHearts = document.querySelectorAll('.fav-btn.active, .fav-btn.red');
+    activeHearts.forEach(heart => {
+        heart.classList.remove('active', 'red');
+    });
     
     // 3. 提示並跳轉
     alert('您已成功登出');
