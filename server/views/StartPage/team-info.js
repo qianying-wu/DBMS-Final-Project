@@ -1,48 +1,66 @@
+import { currentUserId, withUserParam, escapeHtml } from './team-data.js';
+
+// 使用立即執行函式 (IIFE) 包裝，避免內部的變數污染到全域環境
 (function(){
   const $ = id => document.getElementById(id);
+  
   // 從網址列取得要查看的隊伍 ID (例如：team-info.html?teamId=1)
   const params = new URLSearchParams(location.search);
   const currentTeamId = Number(params.get('teamId') || params.get('id'));
   const userIdParam = params.get('userId');
   const ME = { id: userIdParam && userIdParam !== 'unknown' ? userIdParam : '9999', name: '你自己' };
-  const defaultNames = ['AI 聯合隊', '機器人挑戰隊', '資料探勘小隊'];
-  const seed = [
-    { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽', officialUrl: 'https://www.kaggle.com/competitions' },
-    { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽', officialUrl: 'https://www.robocup.org/' },
-    { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰', officialUrl: 'https://devpost.com/hackathons' },
-    { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽', officialUrl: 'https://www.drivendata.org/competitions/' },
-    { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽', officialUrl: 'https://www.hultprize.org/' },
-    { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽', officialUrl: 'https://www.fintechfestival.sg/' }
-  ];
 
-  // 沿用共用的讀取資料邏輯
-  function loadContests(){
-    const raw = localStorage.getItem('contests');
-    if (!raw) {
-      localStorage.setItem('contests', JSON.stringify(seed));
-      return seed;
-    }
-    const existing = JSON.parse(raw);
-    const merged = existing.map(contest => {
-      const defaults = seed.find(item => Number(item.id) === Number(contest.id));
-      return defaults ? { ...defaults, ...contest, officialUrl: contest.officialUrl || defaults.officialUrl } : contest;
-    });
-    seed.forEach(contest => {
-      if (!merged.some(item => Number(item.id) === Number(contest.id))) merged.push(contest);
-    });
-    if (merged.length !== existing.length) localStorage.setItem('contests', JSON.stringify(merged));
-    return merged;
-  }
+  // --- 資料讀寫輔助函式區塊 (轉正為連線真實資料庫) ---
 
-  function loadTeams(){
-    const raw = localStorage.getItem('teams');
-    if (!raw) {
-      localStorage.setItem('teams', '[]');
+  // 🚀 轉正版：從後端真實資料庫讀取全部比賽
+  async function loadContests() {
+    try {
+      const res = await fetch('/api/contests/competitions'); 
+      if (!res.ok) throw new Error('無法取得資料庫比賽資料');
+      
+      const result = await res.json();
+      const dbContests = result.competitions || result; 
+
+      const mappedContests = dbContests.map(contest => ({
+        id: contest.com_id,                             
+        name: contest.com_name,                       
+        com_date: contest.com_date || '日期未定',     
+        com_intro: contest.com_intro || '尚未填寫說明', 
+        officialUrl: contest.com_link || '#'    
+      }));
+      return mappedContests;
+    } catch (err) {
+      console.error('❌ 讀取比賽資料庫失敗:', err);
       return [];
     }
-    const teams = JSON.parse(raw).filter(team => !defaultNames.includes(team.name));
-    if (teams.length !== JSON.parse(raw).length) localStorage.setItem('teams', JSON.stringify(teams));
-    return teams;
+  }
+
+  // 🚀 轉正版：從後端真實資料庫讀取全部隊伍
+  async function loadTeams() {
+    try {
+      const res = await fetch('/api/teams/all'); 
+      if (!res.ok) throw new Error('無法取得資料庫隊伍資料');
+
+      const result = await res.json();
+      const dbTeams = result.data || result.teams || result;
+
+      const mappedTeams = dbTeams.map(team => ({
+        id: team.team_id || team.id,                  
+        team_id: team.team_id,                        
+        team_name: team.team_name,                    
+        com_id: team.com_id,                          
+        demand: team.team_intro || team.demand || '尚未填寫說明', 
+        current_member_count: team.current_member_count || 0,     
+        num_limit: team.num_limit || 0,
+        // owner: team.leader_id || team.owner || 9999, // 預留隊長/擁有者 ID
+        requireResume: team.require_resume || team.requireResume || false,
+        applicationQuestions: team.application_questions ? JSON.parse(team.application_questions) : []
+      }));
+      return mappedTeams;
+    } catch (err) {
+      console.error('❌ 讀取隊伍資料庫失敗:', err);
+      return [];
+    }
   }
 
   function escapeAttr(value){
@@ -58,163 +76,118 @@
     return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
   }
 
-  // 1. 核心渲染函式：將隊伍資料填入 HTML
-  function renderTeamInfo() {
-    const teams = loadTeams();
-    const contests = loadContests();
+  // 1. 🚀 核心渲染函式：轉正為 async 確保資料庫讀取完畢才渲染
+  async function renderTeamInfo() {
+    const teams = await loadTeams();
+    const contests = await loadContests();
     
-    // 找出當前隊伍
-    const team = teams.find(t => Number(t.id) === currentTeamId);
+    // 找出當前隊伍 (使用 team_id 對齊)
+    const team = teams.find(t => Number(t.team_id) === currentTeamId);
     if (!team) {
-      alert('找不到該隊伍資訊');
-      location.href = withUserParam('/team.html');
+      alert('找不到該隊伍資訊！');
+      history.back();
       return;
     }
 
-    // 找出所屬比賽
-    const contest = contests.find(c => Number(c.id) === Number(team.contestId)) || { name: '未知比賽', date: '日期未定', info: '尚未填寫比賽資訊。', officialUrl: '#' };
+    // 找出所屬比賽 (使用 com_id 對齊)
+    const contest = contests.find(c => Number(c.id) === Number(team.com_id)) || { name: '未知比賽', com_date: '日期未定', com_intro: '尚未填寫比賽資訊。', officialUrl: '#' };
 
-    // 填入基本資訊
-    document.title = `${team.name} - 隊伍資訊`;
-    $('displayTeamName').textContent = team.name;
+    // 填入基本資訊 (全變數對齊)
+    document.title = `${team.team_name} - 隊伍資訊`;
+    $('displayTeamName').textContent = team.team_name;
     $('displayContestLabel').textContent = contest.name;
     $('displayContestName').textContent = contest.name;
-    $('displayContestDate').textContent = contest.date || '日期未定';
-    $('displayContestInfo').textContent = contest.info || '尚未填寫比賽資訊。';
-    const officialContestLink = $('officialContestLink');
-    if (officialContestLink) officialContestLink.href = contest.officialUrl || '#';
-    $('officialContestButton').href = contest.officialUrl || '#';
-    $('displayMemberCount').textContent = team.members;
-    $('displayMaxSlots').textContent = team.slots;
+    $('displayContestDate').textContent = contest.com_date || '日期未定';
+    $('displayContestInfo').textContent = contest.com_intro || '尚未填寫比賽資訊。';
+    $('displayMemberCount').textContent = team.current_member_count;
+    $('displayMaxSlots').textContent = team.num_limit;
     
-    // 處理說明與技能 (因為在 create-team 是合併存在 desc 裡)
-    $('displayDesc').textContent = team.desc || '這支隊伍還沒有填寫詳細說明。';
+    // 🚀 需求字眼自動換行偵測：偵測「需求：」並在前面加上換行，且維持 white-space 特性
+    const formattedDemand = team.demand ? team.demand.replace(/(需求：)/g, '\n$1') : '這支隊伍還沒有填寫詳細說明。';
+    $('displayDesc').style.whiteSpace = 'pre-line';
+    $('displayDesc').textContent = formattedDemand;
     
-    // 簡單判斷是否有包含「需求：」字眼來分離技能標籤
-    if (team.desc && team.desc.includes('需求：')) {
-      const skillsMatch = team.desc.match(/需求：(.*)/);
-      $('displaySkills').textContent = skillsMatch ? skillsMatch[1] : '詳見說明';
-    } else {
-      $('displaySkills').textContent = '不限';
-    }
+    // 分離技能標籤顯示
+    // if (team.demand && (team.demand.includes('需求：') || team.demand.includes('需求:'))) {
+    //   const skillsMatch = team.demand.match(/(需求：)(.*)/);
+    //   $('displaySkills').textContent = skillsMatch ? skillsMatch[2] : '詳見說明';
+    // } else {
+    //   $('displaySkills').textContent = '不限';
+    // }
 
-    // 渲染成員列表 (這裡先寫死隊長，實務上會從 team.memberList 陣列去 map)
-    const isOwner = String(team.owner) === String(ME.id);
-    $('memberList').innerHTML = `
-      <li>👑 ${isOwner ? ME.name : '隊長 (ID: '+team.owner+')'}</li>
-      ${Array.from({length: team.members - 1}).map((_, i) => `<li>👤 隊員 ${i+1}</li>`).join('')}
-    `;
+    // 渲染成員列表 ------等memership串好再用---------
+    // $('memberList').innerHTML = `
+    //   ${Array.from({length: Math.max(team.current_member_count, 0)}).map((_, i) => `<li>👤 隊員 ${i+1} </li>`).join('')}
+    // `;
 
     // 準備申請表單的提問
-    const questions = team.applicationQuestions || [];
-    const profiles = loadProfiles();
-    if (team.requireResume) {
-      $('resumeSelectWrap').style.display = 'flex';
-      $('resumeSelect').required = true;
-      $('resumeSelect').innerHTML = profiles.length
-        ? profiles.map(profile => `<option value="${escapeAttr(profile.id)}">${escapeAttr(profile.name || profile.data?.name || '履歷')}</option>`).join('')
-        : '<option value="">尚未建立履歷</option>';
-    } else {
-      $('resumeSelectWrap').style.display = 'none';
-      $('resumeSelect').required = false;
-    }
-    if (questions.length > 0) {
-      $('applicationQuestions').innerHTML = questions.map((q, index) => `
-        <div class="application-question-item">
-          <p>Q${index + 1}: ${escapeAttr(q)}</p>
-          <textarea rows="3" data-question="${escapeAttr(q)}" placeholder="請輸入你的回答" required></textarea>
-        </div>
-      `).join('');
-    } else {
-      $('applicationQuestions').innerHTML = '<p>隊長沒有設定特別的提問，請直接送出申請即可。</p>';
-    }
+    // const questions = team.applicationQuestions || [];
+    // const profiles = loadProfiles();
+    // if (team.requireResume) {
+    //   $('resumeSelectWrap').style.display = 'flex';
+    //   $('resumeSelect').required = true;
+    //   $('resumeSelect').innerHTML = profiles.length
+    //     ? profiles.map(profile => `<option value="${escapeAttr(profile.id)}">${escapeAttr(profile.name || profile.data?.name || '履歷')}</option>`).join('')
+    //     : '<option value="">尚未建立履歷</option>';
+    // } else {
+    //   $('resumeSelectWrap').style.display = 'none';
+    //   $('resumeSelect').required = false;
+    // }
 
+    // if (questions.length > 0) {
+    //   $('applicationQuestions').innerHTML = questions.map((q, index) => `
+    //     <div class="application-question-item">
+    //       <p>Q${index + 1}: ${escapeAttr(q)}</p>
+    //       <textarea rows="3" data-question="${escapeAttr(q)}" placeholder="請輸入你的回答" required></textarea>
+    //     </div>
+    //   `).join('');
+    // } else {
+    //   $('applicationQuestions').innerHTML = '<p>隊長沒有設定特別的提問，請直接送出申請即可。</p>';
+    // }
+
+    // 🚀 判定是否已申请或滿員（串接 API 前的初步前端按鈕防護狀態）
     const userTeamIds = JSON.parse(localStorage.getItem(`myTeams:${ME.id}`) || '[]');
-    const alreadyJoined = userTeamIds.some(id => Number(id) === Number(team.id));
-    const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').some(req => Number(req.teamId) === Number(team.id) && String(req.user?.id) === String(ME.id) && req.status === 'pending');
-    if (alreadyJoined || pending || Number(team.members) >= Number(team.slots)) {
-      $('applyBtn').disabled = true;
+    const alreadyJoined = userTeamIds.some(id => Number(id) === Number(team.team_id));
+    const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').some(req => Number(req.teamId) === Number(team.team_id) && String(req.user?.id) === String(ME.id) && req.status === 'pending');
+    
+    if (alreadyJoined || pending || Number(team.current_member_count) >= Number(team.num_limit)) {
       $('applyBtn').textContent = alreadyJoined ? '已在隊伍中' : pending ? '審核中...' : '隊伍已額滿';
     }
   }
 
-  // 2. 設定按鈕的互動事件
+  // 2. 綁定事件處理器
   function setupEventListeners() {
-    // 申請按鈕：隱藏一般按鈕，顯示申請表單
-    $('applyBtn').addEventListener('click', () => {
-      $('actionButtons').style.display = 'none';
-      $('applyForm').style.display = 'block';
-    });
-
-    // 取消申請：隱藏表單，恢復一般按鈕
-    $('cancelApplyBtn').addEventListener('click', () => {
-      $('applyForm').style.display = 'none';
-      $('actionButtons').style.display = 'flex';
-    });
-
-    // 送出申請表單
-    $('applyForm').addEventListener('submit', async (e) => {
+    // 申請按鈕
+    $('applyBtn').addEventListener('click', async (e) => {
       e.preventDefault();
-      const teams = loadTeams();
-      const team = teams.find(t => Number(t.id) === currentTeamId);
-      if (team) {
-        if (Number(team.members) >= Number(team.slots)) return alert('隊伍已額滿，無法申請');
-        const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
-        if (reqs.some(req => Number(req.teamId) === Number(team.id) && String(req.user?.id) === String(ME.id) && req.status === 'pending')) {
-          return alert('你已送出申請，請等待隊長審核');
-        }
-        const answers = Array.from(document.querySelectorAll('#applicationQuestions textarea')).map((textarea, index) => ({
-          question: textarea.dataset.question || `Q${index + 1}`,
-          answer: textarea.value.trim()
-        }));
-        const application = {
-          applicantName: $('applicantName').value.trim(),
-          applicantContact: $('applicantContact').value.trim(),
-          applicantReason: $('applicantReason').value.trim(),
-          answers,
-          resume: null
-        };
-        if (team.requireResume) {
-          const selectedResume = loadProfiles().find(profile => String(profile.id) === String($('resumeSelect').value));
-          if (!selectedResume) return alert('請先建立並選擇要附上的履歷');
-          application.resume = selectedResume;
-        }
-        reqs.push({ id: Date.now(), teamId: team.id, teamName: team.name, user: ME, status: 'pending', application });
-        localStorage.setItem('joinRequests', JSON.stringify(reqs));
-        await window.AppNotifications?.add({
-          type: 'join-request',
-          userId: team.owner,
-          sourceId: `${team.id}:${ME.id}`,
-          sourceKey: `join-request:${team.id}:${ME.id}`,
-          message: `${ME.name} 申請加入你的隊伍「${team.name}」`,
-          action: { type: 'review-request', teamId: team.id }
+      
+      try {
+        const res = await fetch('/api/teams/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: ME.id,       // 目前登入的使用者 ID
+            team_id: currentTeamId // 目前頁面的隊伍 ID
+          })
         });
+
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.message || '申請失敗');
+
+        alert('申請成功！目前狀態：審核中。');
+
+      } catch (err) {
+        alert(err.message);
       }
-      alert('已送出加入申請！隊長審核後會發送通知。');
-      // 實務上這裡要把答案存進資料庫
-      $('applyForm').style.display = 'none';
-      $('actionButtons').style.display = 'flex';
-      $('applyBtn').textContent = '審核中...';
-      $('applyBtn').disabled = true;
     });
+
 
     // 其他導覽按鈕
-    $('contactBtn').addEventListener('click', () => { alert('測試中'); });
-    $('backBtn').addEventListener('click', () => { history.back(); });
+    $('contactBtn').addEventListener('click', () => { alert('聯絡功能整合中...'); });
     document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/team.html'));
   }
 
-  // 3. 執行初始化
+  // 3. 🚀 執行初始化：呼叫 async 渲染
   renderTeamInfo();
   setupEventListeners();
-
 })();
-
-/*const seed = [
-      { id: 10, name: '全國資料科學競賽', date: '2026-07-20', info: '針對資料科學專題的校內外隊伍競賽', officialUrl: 'https://www.kaggle.com/competitions' },
-      { id: 11, name: '全國機器人盃', date: '2026-09-10', info: '機器人實作與競賽', officialUrl: 'https://www.robocup.org/' },
-      { id: 12, name: '校園創新黑客松', date: '2026-08-15', info: '48 小時產品原型、簡報與實作挑戰', officialUrl: 'https://devpost.com/hackathons' },
-      { id: 13, name: '智慧醫療應用競賽', date: '2026-10-02', info: '結合資料分析、AI 與醫療場景的跨域競賽', officialUrl: 'https://www.drivendata.org/competitions/' },
-      { id: 14, name: '永續科技提案賽', date: '2026-11-18', info: '以永續、能源與社會影響為主題的提案競賽', officialUrl: 'https://www.hultprize.org/' },
-      { id: 15, name: '金融科技創意賽', date: '2026-12-05', info: '金融資料、風控、支付與數位服務創新競賽', officialUrl: 'https://www.fintechfestival.sg/' }
-    ];*/

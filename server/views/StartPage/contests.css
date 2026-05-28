@@ -47,6 +47,9 @@ a { text-decoration: none; }
 .filter-bar input { flex: 1; }
 .filter-bar input:focus, .filter-bar select:focus { border-color: #d4b283; }
 
+/* Category list (copied from team.css for pixel-match) */
+/* category-list styles were removed to restore original select-based UI */
+
 /* --- 3. 競賽網格與卡片 (承襲 team.css 的 contest-card) --- */
 .contests-grid {
   display: grid;

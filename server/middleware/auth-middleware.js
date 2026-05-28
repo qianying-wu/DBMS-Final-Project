@@ -4,6 +4,9 @@
 export const requireLogin = (req, res, next) => {
   // passport 驗證完之後，會把使用者資料存進 req.user
   // 如果 req.user 是空的，代表沒有登入或 Token 無效
+  console.log('[AUTH MIDDLEWARE] req.user:', req.user);
+  console.log('[AUTH MIDDLEWARE] Authorization Header:', req.headers.authorization);
+  
   if (!req.user) {
     return res.status(401).json({
       success: false,
@@ -13,3 +16,6 @@ export const requireLogin = (req, res, next) => {
   // 有登入 → 放行，繼續往下走
   next();
 };
+
+
+// export { requireLogin };
