@@ -26,19 +26,39 @@
       return token ? { 'Authorization': `${token}` } : {};
     }
 
-    // 載入：從資料庫獲取所有履歷
+    // 載入：【修正防禦】優先使用本機暫存，若 API 失敗不阻斷畫面渲染
     async function loadProfiles() {
+      // 先拿到本機既有的資料作為保底
+      let localData = [];
+      try {
+        localData = JSON.parse(localStorage.getItem('profiles') || '[]');
+      } catch(e) {
+        localData = [];
+      }
+
       try {
         const path = '/api/pv/loadPV';
-        const response = await fetch(path, { headers: { ...getAuthHeader() } });
-        if (!response.ok) throw new Error('無法取得履歷資料');
+        // 設定 3 秒超時，防止請求無休止卡死網頁
+        const controller = new AbController ? new AbortController() : null;
+        const timeoutId = controller ? setTimeout(() => controller.abort(), 3000) : null;
+        
+        const response = await fetch(path, { 
+          headers: { ...getAuthHeader() },
+          signal: controller ? controller.signal : undefined 
+        });
+        if (timeoutId) clearTimeout(timeoutId);
 
-        const existProfiles = await response.json();
-        return existProfiles;
+        if (response.ok) {
+          const existProfiles = await response.json();
+          if (Array.isArray(existProfiles)) {
+            localStorage.setItem('profiles', JSON.stringify(existProfiles));
+            return existProfiles;
+          }
+        }
+        return localData;
       } catch (err) {
-        console.error(err);
-        alert('讀取資料庫失敗，改用暫存載入');
-        return JSON.parse(localStorage.getItem('profiles') || '[]');
+        console.warn('無法連線到後端伺服器 API，將直接展示本機快取履歷。', err);
+        return localData;
       }
     }
 
@@ -64,6 +84,7 @@
     function renderTags(tags) {
       if (!tagsWrap) return;
       tagsWrap.innerHTML = '';
+      if (!Array.isArray(tags)) return;
       tags.forEach((t, i) => {
         const el = document.createElement('span');
         el.className = 'tag';
@@ -80,13 +101,12 @@
 
     // 取得當前網址列的 userId，用來保持登入與選單同步
     function getUserIdFromUrl() {
-      const u = new URLSearchParams(window.location.search).get('userId') || localStorage.getItem('userId') || 'unknown';
-      return u;
+      return new URLSearchParams(window.location.search).get('userId') || localStorage.getItem('userId') || 'unknown';
     }
 
     function getTeamHref() {
       const id = getUserIdFromUrl();
-      const base = location.protocol === 'file:' ? 'team.html' : '/team.html';
+      const base = '/team.html';
       return id !== 'unknown' ? `${base}?userId=${encodeURIComponent(id)}` : base;
     }
 
@@ -94,7 +114,6 @@
     function renderSyncedSidebar() {
       const uId = getUserIdFromUrl();
       
-      // 1. 渲染使用者基本名片資料
       const savedName = localStorage.getItem('userName');
       if ($('profileUsername') && savedName) {
         $('profileUsername').textContent = savedName;
@@ -103,7 +122,6 @@
         $('profileUserEmail').textContent = uId !== 'unknown' ? '已驗證參賽者' : '訪客身分';
       }
 
-      // 2. 渲染我的隊伍清單
       if (myTeamsBox) {
         const teams = JSON.parse(localStorage.getItem('myTeams') || '[]');
         if (!teams.length) {
@@ -121,7 +139,6 @@
         }
       }
 
-      // 3. 渲染關注的競賽
       if (followedBox) {
         const favs = JSON.parse(localStorage.getItem('favorites') || '[]');
         const contests = JSON.parse(localStorage.getItem('contests') || '[]');
@@ -143,7 +160,7 @@
       }
     }
 
-    // 主邏輯：載入並渲染履歷畫廊（✨此處已依據 profile.css 重構以還原原本的精緻樣式）
+    // 主邏輯：載入並渲染履歷畫廊（✨ 修正結構對齊 profile.css）
     async function load() {
       renderSyncedSidebar();
       if (!resumeGallery) return;
@@ -152,41 +169,43 @@
       const profiles = await loadProfiles();
       resumeGallery.innerHTML = '';
 
-      // 渲染已存在的履歷版本卡片
-      profiles.forEach((p, index) => {
-        const card = document.createElement('div');
-        // 第一張卡片預設加上 'open' 類別來顯示「開啟」絲帶
-        card.className = `resume-card ${index === 0 ? 'open' : ''}`;
-        card.innerHTML = `
-          <div class="resume-cover">
-            <div class="resume-ribbon">開啟</div>
-          </div>
-          <div class="resume-body">
-            <h3 class="resume-title">${escapeHtml(p.name)}</h3>
-            <span class="resume-time">${p.updatedAt || '2026/05/28 上午12:00'}</span>
-            <div class="resume-card-actions">
-              <button class="icon-action edit-btn" data-id="${p.id}" type="button">查看</button>
-              <button class="icon-action" type="button">···</button>
+      // 1. 渲染已經儲存的履歷卡片
+      if (Array.isArray(profiles)) {
+        profiles.forEach((p, index) => {
+          const card = document.createElement('div');
+          // 第一張卡片顯示「開啟」絲帶
+          card.className = `resume-card ${index === 0 ? 'open' : ''}`;
+          card.innerHTML = `
+            <div class="resume-cover">
+              <div class="resume-ribbon">開啟</div>
             </div>
-          </div>
-        `;
-        resumeGallery.appendChild(card);
-      });
+            <div class="resume-body">
+              <h3 class="resume-title">${escapeHtml(p.name)}</h3>
+              <span class="resume-time">${p.updatedAt || '2026/05/28 上午12:00'}</span>
+              <div class="resume-card-actions">
+                <button class="icon-action edit-btn" data-id="${p.id}" type="button">查看</button>
+                <button class="icon-action" type="button">···</button>
+              </div>
+            </div>
+          `;
+          resumeGallery.appendChild(card);
+        });
+      }
 
-      // 渲染大橘色虛線的「+ 新增履歷」按鈕卡片
+      // 2. 渲染右側經典大橘色虛線「+ 新增履歷」按鈕
       const createCard = document.createElement('div');
       createCard.className = 'add-resume-card';
       createCard.innerHTML = `
         <strong>+ 新增履歷</strong>
-        <span>針對不同工作客製化履歷，申請隊伍時選擇要附上的版本。</span>
+        <span>針對不同工作客製化履歷，申請隊伍時可以選擇要附上的版本。</span>
       `;
       createCard.addEventListener('click', () => openEditor(null));
       resumeGallery.appendChild(createCard);
 
-      // 重新綁定所有卡片中「查看」按鈕的點擊事件
+      // 3. 綁定卡片點擊查看事件
       resumeGallery.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          e.stopPropagation(); // 防止事件冒泡
+          e.stopPropagation();
           openEditor(Number(btn.dataset.id));
         });
       });
@@ -207,16 +226,15 @@
         setActiveProfileId('');
       }
 
-      // 填充表單欄位
       if (current) {
         if (editorTitle) editorTitle.textContent = current.name || '未命名履歷';
-        if ($('name')) $('name').value = current.data.name || '';
-        if ($('school')) $('school').value = current.data.school || '';
-        if ($('bio')) $('bio').value = current.data.bio || '';
-        if ($('email')) $('email').value = current.data.email || '';
-        if ($('github')) $('github').value = current.data.github || '';
-        photoState.src = current.data.photo || null;
-        renderTags(current.data.tags || []);
+        if ($('name')) $('name').value = current.data?.name || '';
+        if ($('school')) $('school').value = current.data?.school || '';
+        if ($('bio')) $('bio').value = current.data?.bio || '';
+        if ($('email')) $('email').value = current.data?.email || '';
+        if ($('github')) $('github').value = current.data?.github || '';
+        photoState.src = current.data?.photo || null;
+        renderTags(current.data?.tags || []);
         if (delResume) delResume.style.display = 'inline-block';
         if (exportBtn) exportBtn.removeAttribute('hidden');
       } else {
@@ -235,13 +253,15 @@
       }
     }
 
-    // ✨ 安全事件綁定：所有 addEventListener 皆加上 if 存在檢查，完美防禦 null 報錯
-
+   // 綁定「返回列表」按鈕點擊事件（新增 e.preventDefault() 防止任何表單或網頁重新整理）
     if (backToGallery) {
-      backToGallery.addEventListener('click', () => {
-        if (resumeHome) resumeHome.hidden = false;
-        if (resumeEditor) resumeEditor.setAttribute('hidden', 'true');
-        load();
+      backToGallery.addEventListener('click', (e) => {
+        if (e) e.preventDefault(); // 阻斷一切網頁原生提交/刷新行為
+        
+        if (resumeHome) resumeHome.hidden = false;       // 秀出列表主首頁
+        if (resumeEditor) resumeEditor.setAttribute('hidden', 'true'); // 隱藏編輯器
+        
+        load(); // 重新載入最新履歷列表
       });
     }
 
@@ -289,25 +309,26 @@
           photo: photoState.src
         };
 
+        const nowTime = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' + new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: true });
+
         if (pId) {
           const idx = profiles.findIndex(p => p.id === Number(pId));
           if (idx !== -1) {
             profiles[idx].name = titleStr;
             profiles[idx].data = dataObj;
-            // 記錄或更新編輯時間
-            profiles[idx].updatedAt = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' + new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: true });
+            profiles[idx].updatedAt = nowTime;
           }
         } else {
           profiles.push({
             id: Date.now(),
             name: titleStr,
             data: dataObj,
-            updatedAt: new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' + new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: true })
+            updatedAt: nowTime
           });
         }
 
         await saveProfiles(profiles);
-        alert('🎉 履歷變更已成功同步至資料庫！');
+        alert('🎉 履歷變更已成功同步！');
         if (backToGallery) backToGallery.click();
       });
     }
@@ -354,7 +375,6 @@
       });
     }
 
-    // 右上角全站系統通知整合區
     function updateNotificationBadge() {
       const b = $('notificationBadge');
       if (!b) return;
@@ -385,21 +405,14 @@
       if (teamBtn) {
         const teamHref = getTeamHref();
         teamBtn.setAttribute('href', teamHref);
-        teamBtn.addEventListener('click', event => {
-          event.preventDefault();
-          window.location.href = teamHref;
-        });
-        teamBtn.setAttribute('data-href', teamHref);
       }
     } catch (err) {
-      console.error('Error binding top-right buttons:', err);
-      const teamBtn = document.getElementById('teamBtn');
-      if (teamBtn) teamBtn.setAttribute('href', 'team.html');
+      console.error(err);
     }
 
     const logoLink = document.querySelector('.logo-link');
     if (logoLink) {
-      logoLink.setAttribute('href', new URLSearchParams(window.location.search).get('userId') ? `/team.html?userId=${encodeURIComponent(new URLSearchParams(window.location.search).get('userId'))}` : '/team.html');
+      logoLink.setAttribute('href', getTeamHref());
     }
 
     window.addEventListener('storage', e => {
@@ -411,14 +424,9 @@
     if (!window.AppNotifications) updateNotificationBadge();
   }
 
-  // 確保 DOM 完成後才啟動
-  try {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
-    }
-  } catch (err) {
-    console.error('profile.js initialization failed:', err);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 })();

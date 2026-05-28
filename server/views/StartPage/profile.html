@@ -9,7 +9,6 @@
 </head>
 
 <body>
-  <!-- 頂部導覽列 -->
   <header class="topbar">
     <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
     <div class="actions">
@@ -30,11 +29,9 @@
     </div>
   </header>
 
-  <!-- 主要內容區塊 -->
   <main class="layout profile-layout">
     <section class="content profile-content">
       
-      <!-- 履歷列表主頁 (對應截圖樣式) -->
       <div id="resumeHome" class="resume-home">
         <div class="profile-heading">
           <div>
@@ -43,11 +40,9 @@
           </div>
         </div>
          
-        <!-- 履歷卡片畫廊：JS 會在這裡渲染出截圖中的卡片結構 -->
         <div id="resumeGallery" class="resume-gallery"></div>
       </div>
 
-      <!-- 履歷編輯器 (預設隱藏) -->
       <div id="resumeEditor" class="card editor-card" hidden>
         <div class="editor-heading">
           <div>
@@ -70,8 +65,7 @@
           </div>
         </div>
 
-        <form id="profileForm">
-          <!-- 姓名 -->
+        <form id="profileForm" onsubmit="return false;">
           <div class="row">
             <div class="field-label full">
               <span class="label-title">姓名 <span class="required-star">*</span></span>
@@ -80,7 +74,6 @@
             </div>
           </div>
 
-          <!-- 學校 / 系級 -->
           <div class="row">
             <div class="field-label">
               <span class="label-title">學校 <span class="required-star">*</span></span>
@@ -93,7 +86,6 @@
             </div>
           </div>
 
-          <!-- 專長 -->
           <div class="row">
             <div class="field-label full">
               <span class="label-title">專長</span>
@@ -105,7 +97,6 @@
             </div>
           </div>
 
-          <!-- 自我介紹 -->
           <div class="row">
             <div class="field-label full">
               <span class="label-title">自我介紹 <span class="required-star">*</span></span>
@@ -114,7 +105,6 @@
             </div>
           </div>
 
-          <!-- 個人經歷 -->
           <div class="row">
             <div class="field-label full">
               <span class="label-title">個人經歷</span>
@@ -122,7 +112,6 @@
             </div>
           </div>
 
-          <!-- 操作按鈕 -->
           <div class="actions-row">
             <button id="saveBtn" type="button" class="btn primary">儲存</button>
             <button id="exportBtn" type="button" class="btn outline">匯出 JSON</button>
