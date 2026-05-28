@@ -66,6 +66,22 @@
     menu.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
   }
 
+  // 🚀 定義全域 logout 函式
+  window.logout = function() {
+    // 1. 彈出確認視窗（選配，可以增加使用者體驗）
+    if (!confirm('確定要登出嗎？')) return;
+
+    // 2. 清除登入狀態
+    localStorage.removeItem('token');
+    localStorage.removeItem('user'); // 檢查你們存的是什麼 key，如果不確定就用 localStorage.clear();
+    
+    // 3. 提示並跳轉
+    alert('您已成功登出');
+    
+    // 4. 強制跳轉回首頁，且不帶任何使用者參數 (解決跳轉問題)
+    window.location.href = 'team.html'; 
+  };
+
   // 動態注入帳號選單樣式，避免每個頁面重複寫 CSS。
   function injectStyle(){
     if (document.getElementById('accountMenuStyle')) return;
