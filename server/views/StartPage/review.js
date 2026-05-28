@@ -6,25 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 依據用戶 ID 設定專屬的 localStorage Key
   const storageKey = `userReviews_${targetUserId}`;
 
-  // 2. 模擬後端資料庫裡的履歷資料
-  const mockDatabase = {
-    'default_user': {
-      title: '新履歷',
-      school: '政治大學 1',
-      name: '測試',
-      skills: ['科學實驗'],
-      experience: '擅長物理化學相關實驗等',
-      intro: '希望可以參加科學相關的競賽'
-    },
-    'user_02': {
-      title: '前端工程師履歷',
-      school: '某某大學 資管系',
-      name: '王小明',
-      skills: ['HTML', 'CSS', 'JavaScript'],
-      experience: '曾參與校內專案開發，負責前端切版與互動設計。',
-      intro: '熱愛寫程式，希望能找到志同道合的隊友一起參加黑客松！'
-    }
-  };
 
   // 載入資料防呆功能
   function loadResumeData() {
@@ -122,9 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-// --- 審查函數 (雙重 API 免費組合技版) ---
   async function checkIsBadContent(text) {
-    // 👇 記得把新的網址貼過來
     const YOUR_GOOGLE_GAS_URL = 'https://script.google.com/macros/s/AKfycbz4ifJzx6YFG7SroCncE5gcbXp17GyYeGbqJPXGWAeRIMazlifaeJT3ijeDZ5cVqnu-Lw/exec';
 
     try {
@@ -137,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return false; 
       }
 
-      // 如果抓到髒話，就會回傳 true 把它擋下來
       return data.flagged === true;
 
     } catch (error) {
