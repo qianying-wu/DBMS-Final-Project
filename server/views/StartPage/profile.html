@@ -10,7 +10,9 @@
 
 <body>
   <header class="topbar">
-    <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
+    <a class="logo-link" href="/team.html">
+      <img src="/logo.png" alt="競賽組隊 Logo" class="logo-img">
+    </a>
     <div class="actions">
       <button id="notifyBtn" class="icon-btn" aria-label="通知">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -27,160 +29,72 @@
         </svg>
       </button>
     </div>
+  </header>
 
-    <main class="layout profile-layout">
-      <section class="content profile-content">
-        <div id="resumeHome" class="resume-home">
-          <div class="profile-heading">
-            <div>
-              <h2 class="page-title">個人履歷</h2>
-              <p>建立不同用途的履歷，申請隊伍時可以選擇要附上的版本。</p>
-            </div>
+  <main class="layout profile-layout">
+    
+    <aside class="sidebar">
+      <div class="card user-card">
+        <div class="user-info">
+          <div id="userAvatar" class="avatar">👤</div>
+          <div>
+            <h3 id="profileUsername" class="user-name">載入中...</h3>
+            <p id="profileUserEmail" class="user-email">...</p>
           </div>
-
-         
-
-        <div id="resumeEditor" class="card editor-card" hidden>
-          <div class="editor-heading">
-            <div>
-              <div class="editor-title-row">
-                <h2 id="editorTitle" class="editor-title" contenteditable="true" spellcheck="false" aria-label="編輯履歷名稱">
-                  新增履歷</h2>
-                <button id="editorRenameBtn" class="rename-btn" type="button" aria-label="編輯履歷名稱">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden="true">
-                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="currentColor" />
-                    <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-                      fill="currentColor" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="editor-actions">
-              <button id="backToGallery" type="button" class="btn outline">返回列表</button>
-              <button id="viewResumeBtn" type="button" class="btn outline">查看制式履歷</button>
-            </div>
-          </div>
-
-          <form id="profileForm">
-
-            <!-- 姓名 -->
-            <div class="row">
-              <div class="field-label full">
-                <span class="label-title">姓名 <span class="required-star">*</span></span>
-                <input id="name" type="text" placeholder="你的名字" required>
-                <div class="field-error" id="error-name" aria-live="polite"></div>
-              </div>
-            </div>
-
-            <!-- 學校 / 系級 -->
-            <div class="row">
-              <div class="field-label">
-                <span class="label-title">學校 <span class="required-star">*</span></span>
-                <input id="school" type="text" placeholder="學校" required>
-                <div class="field-error" id="error-school" aria-live="polite"></div>
-              </div>
-              <div class="field-label">
-                <span class="label-title">系級</span>
-                <input id="grade" type="text" placeholder="系級">
-              </div>
-            </div>
-
-            <!-- 專長 -->
-            <div class="row">
-              <div class="field-label full">
-                <span class="label-title">專長</span>
-                <div class="tags" id="tags"></div>
-                <div class="tag-input">
-                  <input id="newTag" type="text" placeholder="新增專長">
-                  <button id="addTag" type="button" aria-label="新增專長">＋</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- 自我介紹 -->
-            <div class="row">
-              <div class="field-label full">
-                <span class="label-title">自我介紹 <span class="required-star">*</span></span>
-                <textarea id="intro" placeholder="一段短介紹" rows="3" required style="resize:none"></textarea>
-                <div class="field-error" id="error-intro" aria-live="polite"></div>
-              </div>
-            </div>
-
-            <!-- 個人經歷 -->
-            <div class="row">
-              <div class="field-label full">
-                <span class="label-title">個人經歷</span>
-                <textarea id="experience" placeholder="描述你的專案、比賽或經歷" rows="3" style="resize:none"></textarea>
-              </div>
-            </div>
-
-            <!-- 操作按鈕 -->
-            <div class="actions-row">
-              <button id="saveBtn" type="button" class="btn primary">儲存</button>
-              <button id="exportBtn" type="button" class="btn outline">匯出 JSON</button>
-              <button id="delResume" type="button" class="btn outline danger">刪除此履歷</button>
-            </div>
-
-          </form>
         </div>
-      </section>
-    </main>
+        <div class="user-actions">
+          <a id="teamBtn" class="btn outline" style="width:100%; text-align:center; text-decoration:none; display:block; box-sizing:border-box;">發起/尋找隊伍</a>
+        </div>
+      </div>
 
-    <script src="/notifications.js"></script>
-    <script src="/account-menu.js"></script>
-    <script src="/profile.js"></script>
-    <script>
-      (function () {
-        const qs = new URLSearchParams(location.search);
-        const userId = qs.get('userId') || 'unknown';
+      <div class="card side-card">
+        <div class="side-card-header">
+          <h4>我的隊伍</h4>
+        </div>
+        <ul id="myTeams" class="simple-list">
+          <li class="loading-item">載入中...</li>
+        </ul>
+      </div>
 
-        document.getElementById('goExpEditorBtn').addEventListener('click', () => {
-          location.href = getExpHref(false);
-        });
-        document.getElementById('goExpViewBtn').addEventListener('click', () => {
-          location.href = getExpHref(true);
-        });
+      <div class="card side-card">
+        <div class="side-card-header">
+          <h4>關注的競賽</h4>
+        </div>
+        <ul id="followed" class="simple-list">
+          <li class="loading-item">載入中...</li>
+        </ul>
+      </div>
+    </aside>
 
-        // 預覽最近 2 筆經歷
-        function renderExpPreview() {
-          const list = JSON.parse(localStorage.getItem('experiences:' + userId) || '[]');
-          const preview = document.getElementById('expPreview');
-          if (!list.length) {
-            preview.innerHTML = '<span class="empty-note" style="font-size:13px">尚未填寫任何經歷</span>';
-            return;
-          }
+    <section class="content profile-content">
+      
+      <div id="resumeHome" class="resume-home">
+        <div class="profile-heading">
+          <div>
+            <h2 class="page-title">個人履歷</h2>
+            <p>建立不同用途的履歷，申請隊伍時可以選擇要附上的版本。</p>
+          </div>
+        </div>
 
-          document.getElementById('goExpEditorBtn').addEventListener('click', () => {
-            location.href = getExpHref(false);
-          });
-          document.getElementById('goExpViewBtn').addEventListener('click', () => {
-            location.href = getExpHref(true);
-          });
+        <div id="resumeGallery" class="resume-gallery">
+          </div>
+      </div>
 
-          function renderExpPreview() {
-            const list = JSON.parse(localStorage.getItem('experiences:' + userId) || '[]');
-            const preview = document.getElementById('expPreview');
-            if (!list.length) {
-              preview.innerHTML = '<span class="empty-note" style="font-size:13px">尚未填寫任何經歷</span>';
-              return;
-            }
-            preview.innerHTML = list.slice(0, 2).map(item => `
-            <div class="exp-preview-chip">
-              <span class="exp-type-badge">${item.exp_type || '未分類'}</span>
-              <span class="exp-preview-name">${item.title || '未命名'}</span>
+      <div id="resumeEditor" class="card editor-card" hidden>
+        <div class="editor-heading">
+          <div>
+            <div class="editor-title-row">
+              <h2 id="editorTitle" class="editor-title" contenteditable="true" spellcheck="false" aria-label="編輯履歷名稱">新增履歷</h2>
+              <button id="editorRenameBtn" class="rename-btn" type="button" aria-label="編輯履歷名稱">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="currentColor" />
+                  <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor" />
+                </svg>
+              </button>
             </div>
-          `).join('') + (list.length > 2 ? `<span class="exp-more">＋ ${list.length - 2} 筆更多</span>` : '');
-          }
-
-          renderExpPreview();
-          window.addEventListener('storage', e => {
-            if (e.key === 'experiences:' + userId) renderExpPreview();
-          });
-        }
-      })();
-
-    </script>
-</body>
-
-</html>
+          </div>
+          <div class="editor-actions">
+            <button id="backToGallery" type="button" class="btn outline">返回列表</button>
+            <button id="viewResumeBtn" type="button" class="btn outline">查看制式履歷</button>
+          </div>
+        </div>
