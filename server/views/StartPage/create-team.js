@@ -151,105 +151,85 @@
   //   `).join('');
   // }
 
-  async function renderContestResults() {
-    const keyword = $('contestSearch').value.trim();
-    const resultContainer = $('searchResultList'); // 🚀 對齊你的結果清單容器
-    const hiddenInput = $('contestSelect');        // 🚀 對齊你的隱藏欄位
-  
-    // 如果使用者把關鍵字刪光了，就把搜尋結果清空並返回
-    if (!keyword) {
-      resultContainer.innerHTML = '';
-      hiddenInput.value = '';
+    // 監聽搜尋列表的點擊
+// 🚀 1. 核心搜尋與渲染函式
+async function renderContestResults() {
+  const keyword = $('contestSearch').value.trim();
+  const resultContainer = $('searchResultList'); 
+  const hiddenInput = $('contestSelect');        
+
+  // 🚀 防護：只要使用者開始重新輸入字，立刻把上次選錯的隱藏 ID 和 ✅ 標籤清空！
+  if (keyword) {
+    hiddenInput.value = '';
+    $('contestResults').innerHTML = ''; 
+  } else {
+    resultContainer.innerHTML = '';
+    hiddenInput.value = '';
+    $('contestResults').innerHTML = '';
+    return;
+  }
+
+  try {
+    const path = `/api/teams/contests/search?q=${encodeURIComponent(keyword)}`;
+    const resp = await fetch(path);
+    if (!resp.ok) throw new Error('搜尋伺服器回應錯誤');
+    
+    const contests = await resp.json();
+
+    if (contests.length === 0) {
+      resultContainer.innerHTML = '<div class="no-result" style="color: #666; padding: 10px;">找不到符合條件的比賽</div>';
       return;
     }
 
-    // 監聽搜尋列表的點擊
-$('searchResultList').addEventListener('click', (e) => {
-    // 找到被點擊的那一項 (假設組員生成的 class 是 search-item)
-    const item = e.target.closest('.search-item') || e.target.closest('div'); 
-    if (!item || !item.dataset.id) return;
+    // 渲染比賽卡片到搜尋清單 (加上統一的 class: contest-card)
+    resultContainer.innerHTML = contests.map(contest => `
+      <div class="contest-card" data-id="${contest.com_id}" data-name="${contest.com_name}" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+        <strong style="font-size: 1.1em; color: #333;">${contest.com_name}</strong>
+        <div style="font-size: 0.9em; color: #666; margin-top: 5px;">📆 比賽日期：${contest.com_date || '日期未定'}</div>
+        <div style="font-size: 0.9em; color: #888; margin-top: 3px;">📝 簡介：${contest.com_intro || '點擊查看詳情'}</div>
+      </div>
+    `).join('');
 
-    const id = item.dataset.id;
-    const name = item.dataset.name || item.innerText;
-
-    // 🚀 關鍵動作：把選中的 ID 存入隱藏欄位，送出時後端才抓得到 com_id
-    $('contestSelect').value = id;
-
-    // 視覺回饋：在畫面上顯示已選擇
-    $('contestResults').innerHTML = `
-        <div class="selected-tag" style="background:#f0f7ff; padding:10px; border:1px solid #1890ff; margin-top:10px;">
-            ✅ 已選擇比賽：<strong>${name}</strong>
-        </div>
-    `;
-    // 清空搜尋列表
-    $('searchResultList').innerHTML = '';
-    $('contestSearch').value = '';
-});
-  
-    try {
-      // 1. 向後端發送搜尋請求
-      const path = `/api/teams/contests/search?q=${encodeURIComponent(keyword)}`;
-      const resp = await fetch(path);
-      if (!resp.ok) throw new Error('搜尋伺服器回應錯誤');
-      
-      const contests = await resp.json();
-  
-      // 2. 如果找不到符合的比賽
-      if (contests.length === 0) {
-        resultContainer.innerHTML = '<div class="no-result" style="color: #666; padding: 10px;">找不到符合條件的比賽</div>';
-        hiddenInput.value = ''; // 清空隱藏欄位
-        return;
-      }
-  
-      // 3. 渲染比賽卡片到 <div id="searchResultList"> 裡面
-      resultContainer.innerHTML = contests.map(contest => `
-        <div class="contest-card" data-id="${contest.com_id}" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
-          <strong style="font-size: 1.1em; color: #333;">${contest.com_name}</strong>
-          <div style="font-size: 0.9em; color: #666; margin-top: 5px;">📆 比賽日期：${contest.com_date || '日期未定'}</div>
-          <div style="font-size: 0.9em; color: #888; margin-top: 3px;">📝 簡介：${contest.com_intro || '點擊查看詳情'}</div>
-        </div>
-      `).join('');
-  
-      // 4. 🚀 關鍵核心：幫點擊卡片加上「選定比賽」的監聽器
-      const cards = resultContainer.querySelectorAll('.contest-card');
-      cards.forEach(card => {
-        card.addEventListener('click', () => {
-          // 先把所有卡片的亮起外框洗掉，再幫被點擊的那張加上藍色外框
-          cards.forEach(c => c.style.borderColor = '#ddd');
-          card.style.borderColor = '#007bff'; 
-          card.style.backgroundColor = '#f8f9fa';
-  
-          // 把被選中的 com_id 塞進隱藏欄位，這樣送出表單時才抓得到 ID！
-          const selectedId = card.dataset.id;
-          hiddenInput.value = selectedId;
-          selectedContestId = Number(selectedId); // 同步全域變數
-  
-          console.log(`🎯 已選定比賽 ID: ${selectedId}`);
-        });
-      });
-  
-    } catch (error) {
-      console.error('❌ 前端即時搜尋渲染失敗:', error);
-      resultContainer.innerHTML = '<div class="error" style="color: red; padding: 10px;">搜尋發生網路錯誤</div>';
-    }
+  } catch (error) {
+    console.error('❌ 前端即時搜尋渲染失敗:', error);
+    resultContainer.innerHTML = '<div class="error" style="color: red; padding: 10px;">搜尋發生網路錯誤</div>';
   }
+}
 
-    // 前端 JS
-  let debounceTimer;
-  $('contestSearch').addEventListener('input', () => {
-    selectedContestId = null;
-    clearTimeout(debounceTimer);
+// 🚀 2. 【事件獨立】將點擊事件統一交給 searchResultList 代理（只寫這一個，把舊的 card.forEach 刪掉！）
+$('searchResultList').addEventListener('click', (e) => {
+  // 精準抓取被點擊的比賽卡片
+  const card = e.target.closest('.contest-card'); 
+  if (!card || !card.dataset.id) return;
+
+  const id = card.dataset.id;
+  const name = card.dataset.name;
+
+  // 1. 將選中的 ID 存入隱藏欄位，送出表單時對齊 com_id
+  $('contestSelect').value = id;
+  if (window.hasOwnProperty('selectedContestId')) selectedContestId = Number(id); // 有全域變數就同步
+
+  // 2. 視覺回饋：漂亮地顯示選中標籤
+  $('contestResults').innerHTML = `
+      <div class="selected-tag" style="background:#f0f7ff; padding:10px; border:1px solid #1890ff; margin-top:10px; border-radius:4px;">
+          ✅ 已選擇比賽：<strong>${name}</strong>
+      </div>
+  `;
   
-    // 倒數 300 毫秒（0.3秒）後才真正觸發後端搜尋
-    debounceTimer = setTimeout(() => {
-      renderContestResults();
-    }, 300);  });
+  // 3. 清空搜尋列表與輸入框，讓重選流程完美結束
+  $('searchResultList').innerHTML = '';
+  $('contestSearch').value = '';
+});
 
-  $('contestResults').addEventListener('click', event => {
-    const option = event.target.closest('[data-contest]');
-    if (!option) return;
-    selectContest(option.dataset.contest);
-  });
+// 🚀 3. 輸入框 Debounce 倒數計時（修正重複宣告與括號問題）
+$('contestSearch').addEventListener('input', () => {
+  if (window.hasOwnProperty('selectedContestId')) selectedContestId = null;
+  clearTimeout(window.debounceTimer);
+
+  window.debounceTimer = setTimeout(() => {
+    renderContestResults();
+  }, 300);
+});
 
   // $('addQuestion').addEventListener('click', () => {
   //   questions.push('');
