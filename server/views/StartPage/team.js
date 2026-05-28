@@ -92,6 +92,7 @@ function renderAuthAction() {
   }
 }
 
+// 他媽這誰寫的
 // 首頁允許瀏覽；一旦要查看詳情、收藏、建立隊伍等互動，就用這個彈窗提醒登入。
 function requireLogin(message = '這個功能需要登入後才能使用。') {
   if (isLoggedIn()) return true;
@@ -113,10 +114,8 @@ async function render() {
   if (!response.ok) throw new Error('無法取得後端隊伍資料');
   const { contests, teams } = await response.json();
 
-  // Only surface stored favorites when the page is viewed as a logged-in user.
-  // Guests should not see items pre-marked as "favorited" even if localStorage contains values.
-  const favs = isLoggedIn() ? Data.loadFavorites() : [];
-  const contestFavs = isLoggedIn() ? Data.loadContestFavorites() : [];
+  const favs = Data.loadFavorites();
+  const contestFavs = Data.loadContestFavorites();
   const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
   const selectedContest = Data.getSelectedContestId();
 
@@ -180,9 +179,8 @@ async function render() {
 
 // 點擊事件：切換某個隊伍的收藏狀態
 function toggleFavorite(id) {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    requireLogin('【系統提示】請先登入才能收藏比賽喔！');
+  if (!isLoggedIn) {
+    requireLogin('【系統提示】請先登入才能收藏隊伍喔！');
     return;
   }
   const favorites = Data.loadFavorites();
@@ -190,16 +188,13 @@ function toggleFavorite(id) {
   if (index >= 0) favorites.splice(index, 1);
   else favorites.push(id);
   Data.saveFavorites(favorites);
-  // Update sidebar favorites immediately for snappier UX, then re-render main content
-  if (isLoggedIn()) UI.renderSidebarTeams(Data.loadTeams());
   render();
 }
 
 // 點擊事件：切換某個比賽的收藏狀態
 function toggleContestFavorite(id) {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    requireLogin('【系統提示】請先登入才能收藏隊伍喔！');
+  if (!isLoggedIn) {
+    requireLogin('【系統提示】請先登入才能收藏比賽喔！');
     return;
   }
   const favs = Data.loadContestFavorites();
@@ -207,8 +202,6 @@ function toggleContestFavorite(id) {
   if (index >= 0) favs.splice(index, 1);
   else favs.push(Number(id));
   Data.saveContestFavorites(favs);
-  // Refresh followed/contest lists on the sidebar immediately, then re-render main content
-  if (isLoggedIn()) UI.renderFollowedContests(Data.loadContests(), Data.loadContestFavorites());
   render();
 }
 
@@ -342,11 +335,7 @@ teamsGrid && teamsGrid.addEventListener('click', event => {
   if (!btn) return;
   const teamId = btn.dataset.id || btn.dataset.team;
   if (!teamId) return;
-  if (btn.classList.contains('fav-btn')) {
-    if (!requireLogin('請先登入才能收藏隊伍。')) return;
-    toggleFavorite(Number(teamId));
-    return;
-  }
+  if (btn.classList.contains('fav-btn')) { toggleFavorite(Number(teamId)); return; }
   if (btn.classList.contains('manage-btn')) { openRequestsForTeam(Number(teamId)); return; }
   openTeamDetail(Number(teamId));
 });
@@ -375,13 +364,10 @@ const openCreateTeamPage = () => {
   location.href = getCreateTeamHref();
 };
 
-//如果頁面上還有另一個按鈕 openCreate，也順便一起保護起來：
-if (openCreate) { // 乾這裡的邏輯是反的
+if (openCreate) {
   openCreate.addEventListener('click', (e) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    if (!isLoggedIn) {
       requireLogin('【系統提示】請先登入才能創建隊伍喔！');
-      return;
     }
     openCreateTeamPage();
   });
@@ -448,7 +434,6 @@ contestsGrid && contestsGrid.addEventListener('click', event => {
   const favBtn = event.target.closest('[data-contest-fav]');
   if (favBtn) {
     event.stopPropagation();
-    if (!requireLogin('請先登入才能收藏比賽。')) return;
     toggleContestFavorite(Number(favBtn.dataset.contestFav));
     return;
   }
@@ -580,14 +565,30 @@ function runGlobalSearch() {
   let html = '';
 
   if (currentGlobalTab === 'comp') {
-    const results = contests.filter(contest => contest.name.toLowerCase().includes(q) || (contest.info && contest.info.toLowerCase().includes(q)));
+    const results = contests.filter(contest =>
+      (contest.com_name && contest.com_name.toLowerCase().includes(q)) ||
+      (contest.com_intro && contest.com_intro.toLowerCase().includes(q))
+    );
+
     html = results.map(contest => `
-      <div class="search-list-item" onclick="document.querySelector('#contestsList [data-cid=\\'${contest.id}\\']')?.click(); window.closeGlobalSearch();">
-        <strong style="color:#4f3827;">競賽：${Data.escapeHtml(contest.name)}</strong>
-        <span style="font-size:12px;color:#8a735e;margin-left:8px;">(${Data.escapeHtml(contest.date)})</span>
-        <p style="margin:4px 0 0;font-size:13px;color:#666;">${Data.escapeHtml(contest.info)}</p>
+      <div class="search-list-item" onclick="document.querySelector('#contestsList [data-cid=\\'${contest.com_id}\\']')?.click(); window.closeGlobalSearch();">
+        <strong style="color:#4f3827;">競賽：${Data.escapeHtml(contest.com_name ? contest.com_name.trim() : '')}</strong>
+        <span style="font-size:12px;color:#8a735e;margin-left:8px;">(${Data.escapeHtml(contest.com_date)})</span>
+        <p style="margin:4px 0 0;font-size:13px;color:#666;">${Data.escapeHtml(contest.com_intro ? contest.com_intro.trim() : '暫無簡介')}</p>
       </div>
     `).join('');
+    // const results = contests.filter(contest =>
+    //   contest.name.toLowerCase().includes(q)
+    //   || (contest.info && contest.info.toLowerCase().includes(q)));
+
+    // html = results.map(contest => `
+    //   <div class="search-list-item" onclick="document.querySelector('#contestsList [data-cid=\\'${contest.id}\\']')?.click(); window.closeGlobalSearch();">
+    //     <strong style="color:#4f3827;">競賽：${Data.escapeHtml(contest.name)}</strong>
+    //     <span style="font-size:12px;color:#8a735e;margin-left:8px;">(${Data.escapeHtml(contest.date)})</span>
+    //     <p style="margin:4px 0 0;font-size:13px;color:#666;">${Data.escapeHtml(contest.info)}</p>
+    //   </div>
+    // `).join('');
+
   } else if (currentGlobalTab === 'team') {
     const results = teams.filter(team => team.name.toLowerCase().includes(q) || (team.desc && team.desc.toLowerCase().includes(q)));
     html = results.map(team => `
@@ -597,6 +598,7 @@ function runGlobalSearch() {
         <p style="margin:4px 0 0;font-size:13px;color:#666;">${Data.escapeHtml(team.desc)}</p>
       </div>
     `).join('');
+
   } else if (currentGlobalTab === 'user') {
     const results = mockUsers.filter(user => user.toLowerCase().includes(q));
     html = results.map(user => `
