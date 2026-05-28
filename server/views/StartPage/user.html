@@ -90,7 +90,7 @@
       const qs = new URLSearchParams(location.search);
       const id = qs.get('userId') || 'unknown';
       document.getElementById('info').textContent = 'userId: ' + id;
-      document.getElementById('homeLink').href = '/user.html?userId=' + encodeURIComponent(id);
+      document.getElementById('homeLink').href = '/team.html?userId=' + encodeURIComponent(id);
       document.getElementById('profileLink').href = '/profile.html?userId=' + encodeURIComponent(id);
       document.getElementById('teamLink').href = '/team.html?userId=' + encodeURIComponent(id);
       document.getElementById('teamBtn').href = '/team.html?userId=' + encodeURIComponent(id);
