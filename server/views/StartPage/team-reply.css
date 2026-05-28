@@ -1,0 +1,50 @@
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{font-family:Arial,'Noto Sans TC',sans-serif;margin:0;background:#faf7f2;color:#333}
+
+/* 頁首 Topbar */
+.topbar{height:64px;background:#fff;border-bottom:1px solid #e6ddd3;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:10}
+.logo-link{text-decoration:none}
+.logo-img{height:40px;width:auto;display:block;object-fit:contain}
+.actions{display:flex;gap:10px;align-items:center}
+.icon-btn,.avatar-btn{background:transparent;border:1px solid transparent;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:18px;transition:all 0.4s ease}
+.icon-btn:hover,.avatar-btn:hover{background:#f5f0ea}
+.avatar-btn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}
+.icon-btn svg, .avatar-btn svg{display:block;color:#7b6a59}
+.icon-btn:hover svg, .avatar-btn:hover svg{color:#4f3827}
+
+/* 版面佈局 */
+.review-layout{max-width:800px;margin:0 auto;padding:28px 20px 42px}
+.main-panel{background:#fff;border:1px solid #d8c7b6;border-radius:8px;padding:30px;box-shadow:0 12px 28px rgba(70,52,36,.06)}
+.page-heading{border-bottom:1px solid #eadfd2;margin-bottom:24px;padding-bottom:20px}
+.page-heading h1{margin:4px 0 8px;color:#4f3827;font-size:30px}
+.page-heading p{margin:0;color:#7b6a59;line-height:1.6}
+.eyebrow{color:#a17851;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+
+/* 列表與卡片設計 */
+.applications-list{display:flex;flex-direction:column;gap:16px}
+.application-card{border:1px solid #eadfd2;border-radius:10px;padding:20px;background:#fffdf9;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;transition:box-shadow 0.3s ease}
+.application-card:hover{box-shadow:0 4px 12px rgba(70,52,36,.08);border-color:#d7b67f}
+
+.applicant-info{flex:1}
+.applicant-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.applicant-name{font-size:18px;font-weight:700;color:#3f342c;margin:0}
+.apply-target{font-size:13px;color:#a17851;background:#f5f0ea;padding:4px 8px;border-radius:6px;font-weight:700}
+.applicant-message{color:#555;font-size:14px;line-height:1.6;margin:0;background:#fff;padding:12px;border:1px solid #eee;border-radius:8px;margin-top:10px}
+
+/* 按鈕群組 */
+.action-group{display:flex;flex-direction:column;gap:8px;min-width:100px}
+.btn{padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;transition:all 0.3s ease;text-align:center;font-size:14px}
+.btn.primary{background:#d7b67f;color:#fff}
+.btn.primary:hover{background:#c9a06a}
+.btn.outline{background:#fff;border:1px solid #ddd;color:#333}
+.btn.outline:hover{background:#fff0f0;border-color:#e0a0a0;color:#c0392b}
+
+/* 狀態提示 */
+.empty-state, .loading-state{text-align:center;color:#8a735e;padding:40px 20px;font-size:15px;background:#fcfaf7;border-radius:8px;border:1px dashed #d8c7b6}
+
+@media (max-width: 600px){
+  .application-card{flex-direction:column}
+  .action-group{flex-direction:row;width:100%}
+  .action-group .btn{flex:1}
+}
