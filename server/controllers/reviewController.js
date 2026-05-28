@@ -1,17 +1,6 @@
 import pool from '../models/db.js';
 import { checkContent } from '../util/wordfilter.js'; // 匯入工具
 
-//dotenv.config();
-
-// 建立資料庫連線池（建議之後把這段抽出來放 db.js，大家共用）
-// const pool = mysql.createPool({
-//     host: process.env.DB_HOST || 'localhost',
-//     port: process.env.DB_PORT, 
-//     user: process.env.DB_USER,
-//     password: process.env.DB_PASSWORD,
-//     database: process.env.DB_NAME,
-// });
-
 export const submitReview = async (req, res) => {
     // 1. 從 req.body 拿資料 (這就是 postman 傳來的東西)
     const {com_id, userWrite_id, userRec_id, star, rev_content } = req.body;

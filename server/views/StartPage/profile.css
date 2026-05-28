@@ -49,18 +49,19 @@
 .editor-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .card{background:#fff;padding:18px;border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,0.06)}
 /* consistent form rows: align labels and inputs */
-.row{display:flex;gap:14px;align-items:flex-start;margin-bottom:12px}
-.row label{flex:1;display:flex;flex-direction:column;font-size:14px;align-items:flex-start}
-.row label.full{flex:1}
-.field-label{display:flex;flex-direction:column;gap:6px}
-.field-label .label-title{font-weight:700;color:#3f342c;margin-bottom:4px}
+.row{display:flex;gap:14px;align-items:flex-start;margin-bottom:24px}
+.row:last-of-type{margin-bottom:0}
+.field-label{flex:1;display:flex;flex-direction:column;gap:8px;margin-bottom:0;font-size:14px;color:#3b3228;font-weight:600}
+
+.field-label.full{flex:1}
+.field-label .label-title{margin-bottom:0;font-weight:700;color:#3f342c;font-size:14px}
 .field-label input, .field-label textarea{font-size:15px;color:#2f2f2f;line-height:1.4}
 
 /* make non-title label text slightly bolder for consistency */
 .row label{color:#3b3228;font-weight:600}
 input[type=text], textarea{padding:12px;border-radius:8px;border:1px solid #eee;background:#fff;box-shadow:none;width:100%;font-size:15px;font-family:inherit}
 input[type=text]:focus, textarea:focus{outline:none;border-color:#d7b78e;box-shadow:0 0 0 4px rgba(215,183,142,0.06)}
-textarea{min-height:84px}
+textarea{min-height:84px;margin-bottom:0}
 .photo-row{display:flex;gap:10px;align-items:flex-start}
 .photo-editor{display:flex;flex-direction:column;gap:8px}
 .photo-preview{width:120px;height:120px;border-radius:8px;border:1px dashed #ddd;display:flex;align-items:center;justify-content:center;color:#aaa;overflow:hidden;position:relative;background:#fff;cursor:grab;touch-action:none;user-select:none}
@@ -72,12 +73,10 @@ textarea{min-height:84px}
 .photo-controls{display:grid;grid-template-columns:auto minmax(96px,1fr) auto;gap:8px;align-items:center;font-size:13px}
 .photo-controls input[type=range]{width:100%}
 .btn.small{padding:7px 10px}
-.tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:0}
 .tag{background:#f0d8b3;padding:6px 8px;border-radius:6px;color:#6b4f3a}
 .tag .remove{margin-left:6px;cursor:pointer}
-.tag-input{display:flex;gap:6px;margin-top:6px}
-.btn{padding:10px 14px;border-radius:8px;border:none;cursor:pointer}
-.tag-input{display:flex;gap:8px;margin-top:8px;align-items:center}
+.tag-input{display:flex;gap:8px;margin-top:4px;align-items:center}
 .btn{padding:10px 14px;border-radius:8px;border:none;cursor:pointer}
 .actions-row{display:flex;gap:10px;margin-top:18px}
 .actions-row{display:flex;gap:12px;margin-top:16px;align-items:center}
@@ -124,8 +123,8 @@ textarea{min-height:84px}
 .required-star{color:#d9534f;margin-left:6px;font-weight:700}
 
 /* keep label text and star on one line */
-.label-title{display:inline-block;white-space:nowrap;font-weight:700;color:#3f342c;margin-bottom:6px}
-.field-label > .label-title {margin-bottom:6px}
+.label-title{display:inline-block;white-space:nowrap;font-weight:700;color:#3f342c;margin-bottom:0}
+.field-label .label-title{margin-bottom:0 !important}
 .field-label .required-star{margin-left:6px}
 
 /* inline field error */
@@ -270,3 +269,352 @@ textarea{min-height:84px}
 .tag-input button#addTag{background:#f7f1ea;border:1px solid #e6d6c2;padding:9px 12px;border-radius:8px;color:#a17851;cursor:pointer}
 .editor-title{font-size:22px;line-height:1.1;padding:6px 8px;border-radius:6px}
 .editor-title:focus{background:#fff7ec;box-shadow:0 0 0 3px rgba(245,130,40,0.08);outline:none}
+
+/* =====================================================
+   PRODUCT-LEVEL RESUME EDITOR UI
+   (paste at bottom of profile.css)
+===================================================== */
+
+/* ---------- Global rhythm ---------- */
+
+.profile-layout{
+  max-width: 1180px;
+  padding: 32px 24px 60px;
+}
+
+.card{
+  border-radius: 24px;
+  border: 1px solid #ece6df;
+  box-shadow:
+    0 2px 6px rgba(0,0,0,.03),
+    0 12px 32px rgba(0,0,0,.05);
+}
+
+/* ---------- Editor card ---------- */
+
+.editor-card{
+  max-width: 860px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 36px;
+}
+
+/* ---------- Header ---------- */
+
+.editor-heading{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:20px;
+  margin-bottom:36px;
+}
+
+.eyebrow{
+  font-size:13px;
+  font-weight:700;
+  color:#a78b6d;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.editor-title{
+  font-size:34px;
+  font-weight:800;
+  color:#2f2f2f;
+  line-height:1.2;
+  margin-top:8px;
+  padding:6px 10px;
+  border-radius:12px;
+  transition:.2s ease;
+}
+
+.editor-title:focus{
+  outline:none;
+  background:#faf6f1;
+  box-shadow:0 0 0 4px rgba(210,180,140,.12);
+}
+
+/* ---------- Top buttons ---------- */
+
+.editor-actions{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+/* ---------- Form rhythm ---------- */
+
+#profileForm{
+  display:flex;
+  flex-direction:column;
+  gap:22px;
+}
+
+.row{
+  display:flex;
+  gap:20px;
+  align-items:flex-start;
+  margin:0;
+}
+
+/* ---------- Fields ---------- */
+
+.field-label{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin:0;
+}
+
+.field-label.full{
+  width:100%;
+}
+
+/* ---------- Labels ---------- */
+
+.label-title{
+  font-size:14px;
+  font-weight:700;
+  color:#332d28;
+  letter-spacing:.01em;
+}
+
+.required-star{
+  color:#d45d5d;
+  margin-left:4px;
+}
+
+/* ---------- Inputs ---------- */
+
+input[type=text],
+textarea{
+  width:100%;
+  border:1px solid #e7dfd5;
+  border-radius:16px;
+  background:#fff;
+  font-size:15px;
+  font-family:inherit;
+  color:#2f2f2f;
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease,
+    background .2s ease;
+}
+
+/* unified height */
+input[type=text]{
+  height:54px;
+  padding:0 18px;
+}
+
+/* textarea better spacing */
+textarea{
+  min-height:120px;
+  padding:16px 18px;
+  line-height:1.7;
+  resize:vertical;
+}
+
+input[type=text]::placeholder,
+textarea::placeholder{
+  color:#b1a79b;
+}
+
+/* focus state */
+
+input[type=text]:focus,
+textarea:focus{
+  outline:none;
+  border-color:#d7b78e;
+  background:#fffdfa;
+  box-shadow:0 0 0 4px rgba(215,183,142,.14);
+}
+
+/* ---------- Error ---------- */
+
+.field-error{
+  font-size:13px;
+  color:#d9534f;
+  min-height:18px;
+}
+
+/* ---------- Tags ---------- */
+
+.tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.tag{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:#fbf6ef;
+  border:1px solid #efe1cf;
+  color:#5d4937;
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:14px;
+  font-weight:600;
+}
+
+.tag .remove{
+  opacity:.65;
+  transition:.2s ease;
+}
+
+.tag .remove:hover{
+  opacity:1;
+}
+
+/* input + button */
+.tag-input{
+  display:flex;
+  gap:12px;
+}
+
+.tag-input input{
+  flex:1;
+}
+
+#newTag{
+  height:54px;
+  padding:0 18px;
+  border-radius:16px;
+  border:1px solid #e7dfd5;
+}
+
+#addTag{
+  width:54px;
+  height:54px;
+  border:none;
+  border-radius:16px;
+  background:#f4ede5;
+  color:#8a6a47;
+  font-size:22px;
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+#addTag:hover{
+  background:#ead9c4;
+  transform:translateY(-1px);
+}
+
+/* ---------- Buttons ---------- */
+
+.btn{
+  height:48px;
+  padding:0 18px;
+  border-radius:14px;
+  border:none;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  transition:
+    transform .15s ease,
+    background .2s ease,
+    border-color .2s ease,
+    box-shadow .2s ease;
+}
+
+.btn:hover{
+  transform:translateY(-1px);
+}
+
+/* primary */
+.btn.primary{
+  background:linear-gradient(
+    135deg,
+    #d4b188,
+    #bf9465
+  );
+  color:#fff;
+  box-shadow:0 8px 18px rgba(191,148,101,.18);
+}
+
+.btn.primary:hover{
+  box-shadow:0 12px 22px rgba(191,148,101,.28);
+}
+
+/* outline */
+.btn.outline{
+  background:#fff;
+  border:1px solid #e6ddd4;
+  color:#5c4a39;
+}
+
+.btn.outline:hover{
+  background:#faf7f3;
+}
+
+/* danger */
+.btn.danger{
+  color:#b64d45;
+}
+
+/* ---------- Bottom actions ---------- */
+
+.actions-row{
+  display:flex;
+  gap:12px;
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid #f2ece5;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 768px){
+
+  .editor-card{
+    padding:24px;
+    border-radius:20px;
+  }
+
+  .editor-heading{
+    flex-direction:column;
+    margin-bottom:28px;
+  }
+
+  .row{
+    flex-direction:column;
+    gap:16px;
+  }
+
+  .editor-actions{
+    width:100%;
+  }
+
+  .editor-actions .btn{
+    flex:1;
+  }
+
+  .actions-row{
+    flex-direction:column;
+  }
+
+  .actions-row .btn{
+    width:100%;
+  }
+
+  .editor-title{
+    font-size:28px;
+  }
+}
+
+/* editor rename button always visible */
+#editorRenameBtn{
+  opacity:1 !important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.editor-title-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}

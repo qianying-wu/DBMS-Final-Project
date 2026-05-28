@@ -86,7 +86,7 @@ export function renderContestCategoryList(contests, selectedContest, expandedCon
         </button>
         <div class="contest-category-panel">
           ${category.contests.map(contest => `
-            <button class="contest-child ${Number(selectedContest) === Number(contest.id) ? 'active' : ''}" type="button" data-cid="${contest.id}">
+            <button class="contest-child ${Number(selectedContest) === Number(contest.id) ? 'active' : ''}" type="button" data-cid="${contest.id}" aria-label="前往 ${escapeHtml(contest.name)} 詳細">
               <strong>${escapeHtml(contest.name)}</strong>
               <span>${escapeHtml(contest.date || '日期未定')}</span>
             </button>

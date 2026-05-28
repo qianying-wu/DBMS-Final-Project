@@ -1,38 +1,35 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>個人履歷</title>
-    <link rel="stylesheet" href="/profile.css">
-  </head>
-  <body>
-    <!-- 頁首：提供返回組隊頁、通知與帳號選單入口。 -->
-    <header class="topbar">
-      <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
-      <div class="actions">
-         <!--右上的通知和個人icon圖示-->
-       <button id="notifyBtn" class="icon-btn" aria-label="通知">
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-       fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-  </svg>
-</button>
-<button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-       fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="8" r="4"/>
-    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-  </svg>
-</button>
-      </div>
-    </header>
 
-    <!-- 主要內容：上方是履歷列表，下方 hidden 區塊是履歷編輯器。 -->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>個人履歷</title>
+  <link rel="stylesheet" href="/profile.css">
+</head>
+
+<body>
+  <header class="topbar">
+    <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
+    <div class="actions">
+      <button id="notifyBtn" class="icon-btn" aria-label="通知">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+      </button>
+      <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg>
+      </button>
+    </div>
+
     <main class="layout profile-layout">
       <section class="content profile-content">
-        <!-- 履歷列表首頁：由 profile.js 動態產生履歷卡片。 -->
         <div id="resumeHome" class="resume-home">
           <div class="profile-heading">
             <div>
@@ -41,7 +38,6 @@
             </div>
           </div>
 
-          <!-- ★ 經驗履歷入口區塊 ★ -->
           <div class="exp-entry-section">
             <div class="exp-entry-heading">
               <div>
@@ -55,21 +51,20 @@
             </div>
             <div id="expPreview" class="exp-preview"></div>
           </div>
-
-          <div id="resumeGallery" class="resume-gallery"></div>
         </div>
 
-        <!-- 履歷編輯區：使用者選擇或新增履歷後才顯示。 -->
         <div id="resumeEditor" class="card editor-card" hidden>
           <div class="editor-heading">
             <div>
-              <span class="eyebrow">履歷編輯</span>
-              <div style="display:flex;align-items:center;gap:8px">
-                <h2 id="editorTitle" class="editor-title" contenteditable="true" spellcheck="false" aria-label="編輯履歷名稱">新增履歷</h2>
+              <div class="editor-title-row">
+                <h2 id="editorTitle" class="editor-title" contenteditable="true" spellcheck="false" aria-label="編輯履歷名稱">
+                  新增履歷</h2>
                 <button id="editorRenameBtn" class="rename-btn" type="button" aria-label="編輯履歷名稱">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true">
                     <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="currentColor" />
-                    <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor" />
+                    <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                      fill="currentColor" />
                   </svg>
                 </button>
               </div>
@@ -81,76 +76,77 @@
           </div>
 
           <form id="profileForm">
-            <!-- 基本資料（已移除照片上傳） -->
+
+            <!-- 姓名 -->
             <div class="row">
-                <label class="field-label"><span class="label-title">姓名 <span class="required-star">*</span></span>
-                  <input id="name" type="text" placeholder="你的名字" required>
-                  <div class="field-error" id="error-name" aria-live="polite"></div>
-                </label>
-              <!-- 照片欄位已移除 -->
+              <div class="field-label full">
+                <span class="label-title">姓名 <span class="required-star">*</span></span>
+                <input id="name" type="text" placeholder="你的名字" required>
+                <div class="field-error" id="error-name" aria-live="polite"></div>
+              </div>
             </div>
 
-            <!-- 學籍資料。 -->
+            <!-- 學校 / 系級 -->
             <div class="row">
-                <label class="field-label"><span class="label-title">學校 <span class="required-star">*</span></span>
-                  <input id="school" type="text" placeholder="學校" required>
-                  <div class="field-error" id="error-school" aria-live="polite"></div>
-                </label>
-                <label class="field-label">系級
-                  <input id="grade" type="text" placeholder="系級">
-                </label>
+              <div class="field-label">
+                <span class="label-title">學校 <span class="required-star">*</span></span>
+                <input id="school" type="text" placeholder="學校" required>
+                <div class="field-error" id="error-school" aria-live="polite"></div>
+              </div>
+              <div class="field-label">
+                <span class="label-title">系級</span>
+                <input id="grade" type="text" placeholder="系級">
+              </div>
             </div>
 
-            <!-- 專長標籤，可新增與移除。 -->
+            <!-- 專長 -->
             <div class="row">
-              <label class="field-label full">專長
+              <div class="field-label full">
+                <span class="label-title">專長</span>
                 <div class="tags" id="tags"></div>
                 <div class="tag-input">
-                  <input id="newTag" placeholder="新增專長">
+                  <input id="newTag" type="text" placeholder="新增專長">
                   <button id="addTag" type="button" aria-label="新增專長">＋</button>
                 </div>
-              </label>
+              </div>
             </div>
 
-            <!-- 經歷與自我介紹。 -->
+            <!-- 自我介紹 -->
             <div class="row">
-              <label class="field-label full">個人經歷<textarea id="experience" placeholder="描述你的專案、比賽或經歷" rows="6"></textarea></label>
-            </div>
-
-            <div class="row">
-              <label class="field-label full"><span class="label-title">自我介紹 <span class="required-star">*</span></span>
-                <textarea id="intro" placeholder="一段短介紹" rows="4" required></textarea>
+              <div class="field-label full">
+                <span class="label-title">自我介紹 <span class="required-star">*</span></span>
+                <textarea id="intro" placeholder="一段短介紹" rows="3" required style="resize:none"></textarea>
                 <div class="field-error" id="error-intro" aria-live="polite"></div>
-              </label>
+              </div>
             </div>
 
-            <!-- 表單操作按鈕。 -->
+            <!-- 個人經歷 -->
+            <div class="row">
+              <div class="field-label full">
+                <span class="label-title">個人經歷</span>
+                <textarea id="experience" placeholder="描述你的專案、比賽或經歷" rows="3" style="resize:none"></textarea>
+              </div>
+            </div>
+
+            <!-- 操作按鈕 -->
             <div class="actions-row">
               <button id="saveBtn" type="button" class="btn primary">儲存</button>
               <button id="exportBtn" type="button" class="btn outline">匯出 JSON</button>
               <button id="delResume" type="button" class="btn outline danger">刪除此履歷</button>
             </div>
+
           </form>
         </div>
       </section>
     </main>
 
-    <!-- 共用通知、帳號選單與本頁履歷邏輯。 -->
     <script src="/notifications.js"></script>
     <script src="/account-menu.js"></script>
     <script src="/profile.js"></script>
-    <!-- ★ 經驗履歷入口初始化 ★ -->
     <script>
       (function () {
         const qs = new URLSearchParams(location.search);
         const userId = qs.get('userId') || 'unknown';
-
-        function getExpHref(view) {
-          const base = location.protocol === 'file:' ? 'experience.html' : '/experience.html';
-          const viewBase = location.protocol === 'file:' ? 'experience-view.html' : '/experience-view.html';
-          const suffix = userId !== 'unknown' ? '?userId=' + encodeURIComponent(userId) : '';
-          return view ? viewBase + suffix : base + suffix;
-        }
 
         document.getElementById('goExpEditorBtn').addEventListener('click', () => {
           location.href = getExpHref(false);
@@ -167,19 +163,37 @@
             preview.innerHTML = '<span class="empty-note" style="font-size:13px">尚未填寫任何經歷</span>';
             return;
           }
-          preview.innerHTML = list.slice(0, 2).map(item => `
+
+          document.getElementById('goExpEditorBtn').addEventListener('click', () => {
+            location.href = getExpHref(false);
+          });
+          document.getElementById('goExpViewBtn').addEventListener('click', () => {
+            location.href = getExpHref(true);
+          });
+
+          function renderExpPreview() {
+            const list = JSON.parse(localStorage.getItem('experiences:' + userId) || '[]');
+            const preview = document.getElementById('expPreview');
+            if (!list.length) {
+              preview.innerHTML = '<span class="empty-note" style="font-size:13px">尚未填寫任何經歷</span>';
+              return;
+            }
+            preview.innerHTML = list.slice(0, 2).map(item => `
             <div class="exp-preview-chip">
               <span class="exp-type-badge">${item.exp_type || '未分類'}</span>
               <span class="exp-preview-name">${item.title || '未命名'}</span>
             </div>
           `).join('') + (list.length > 2 ? `<span class="exp-more">＋ ${list.length - 2} 筆更多</span>` : '');
-        }
+          }
 
-        renderExpPreview();
-        window.addEventListener('storage', e => {
-          if (e.key === 'experiences:' + userId) renderExpPreview();
-        });
+          renderExpPreview();
+          window.addEventListener('storage', e => {
+            if (e.key === 'experiences:' + userId) renderExpPreview();
+          });
+        }
       })();
+
     </script>
-  </body>
+</body>
+
 </html>
