@@ -1,17 +1,17 @@
-(function(){
+(function () {
   // 將目前網址上的 userId 附加到導頁連結。
-  function withUser(path){
+  function withUser(path) {
     const userId = new URLSearchParams(location.search).get('userId');
     return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
   }
 
   // 只用網址上的 userId 判斷是否登入，避免讀到舊 localStorage 後誤開個人資料。
-  function isLoggedIn(){
+  function isLoggedIn() {
     const userId = new URLSearchParams(location.search).get('userId');
     return Boolean(userId && userId !== 'unknown');
   }
 
-  function askLogin(){
+  function askLogin() {
     const loginPromptModal = document.getElementById('loginPromptModal');
     const loginPromptMessage = document.getElementById('loginPromptMessage');
     if (loginPromptMessage) loginPromptMessage.textContent = '這個功能需要先登入，是否前往登入頁？';
@@ -30,7 +30,7 @@
         location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
       };
 
-      function cleanup(){
+      function cleanup() {
         document.getElementById('loginPromptCancel')?.removeEventListener('click', onCancel);
         document.getElementById('loginPromptLogin')?.removeEventListener('click', onLogin);
       }
@@ -44,12 +44,12 @@
   }
 
   // 關閉已存在的帳號選單。
-  function closeMenu(){
+  function closeMenu() {
     document.getElementById('accountMenu')?.remove();
   }
 
   // 在頭像按鈕下方建立帳號選單。
-  function openMenu(button){
+  function openMenu(button) {
     closeMenu();
     const menu = document.createElement('div');
     menu.id = 'accountMenu';
@@ -67,30 +67,30 @@
   }
 
   // 🚀 定義全域 logout 函式
-  window.logout = function() {
+  window.logout = function () {
     // 1. 彈出確認視窗（選配，可以增加使用者體驗）
     if (!confirm('確定要登出嗎？')) return;
 
     // 2. 清除登入狀態
     localStorage.removeItem('token');
-    localStorage.removeItem('user'); // 檢查你們存的是什麼 key，如果不確定就用 localStorage.clear();
+    localStorage.removeItem('userId'); // 檢查你們存的是什麼 key，如果不確定就用 localStorage.clear();
 
     // 🚀 新增：把畫面上所有的紅色愛心變回灰色/空心
     // 假設你的愛心標籤是 <i class="fav-btn active"> 或 <div class="fav-btn red">
     const activeHearts = document.querySelectorAll('.fav-btn.active, .fav-btn.red');
     activeHearts.forEach(heart => {
-        heart.classList.remove('active', 'red');
+      heart.classList.remove('active', 'red');
     });
-    
+
     // 3. 提示並跳轉
     alert('您已成功登出');
-    
+
     // 4. 強制跳轉回首頁，且不帶任何使用者參數 (解決跳轉問題)
-    window.location.href = 'team.html'; 
+    window.location.href = 'team.html';
   };
 
   // 動態注入帳號選單樣式，避免每個頁面重複寫 CSS。
-  function injectStyle(){
+  function injectStyle() {
     if (document.getElementById('accountMenuStyle')) return;
     const style = document.createElement('style');
     style.id = 'accountMenuStyle';
@@ -104,7 +104,7 @@
   }
 
   // 綁定頭像按鈕與選單關閉事件。
-  function bind(){
+  function bind() {
     injectStyle();
 
     document.addEventListener('click', event => {

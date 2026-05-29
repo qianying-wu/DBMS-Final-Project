@@ -2,13 +2,14 @@
 import pool from '../models/db.js';
 
 export const saveResume = async (req, res) => {
-    // 🌟 還記得之前的 Token 嗎？後端驗證完 Token 後，會把 user_id 塞在 req.user 裡面
+    // 還記得之前的 Token 嗎？後端驗證完 Token 後，會把 user_id 塞在 req.user 裡面
     const userId = req.user.user_id; // 從 JWT Token 辨識是誰在要資料
 
     // 從前端的 body 裡面拿到這些對齊好的欄位
     const {
         resume_id,
         resume_name,
+        user_pv_name,
         user_school,
         department_grade,
         user_intro,
@@ -24,19 +25,36 @@ export const saveResume = async (req, res) => {
         // --- 步驟 1：寫入或更新 resumes 主表 ---
         if (currentResumeId) {
             // 情況 A：如果是修改舊履歷
+            // 🎯 使用 COALESCE(?, 欄位名)，如果第一個參數傳進來是 NULL，MySQL 就會自動採用原本欄位裡的值！
             const updateSql = `
                 UPDATE Resumes
-                SET resume_name = ?, user_school = ?, department_grade = ?, user_intro = ?
+                SET 
+                    resume_name      = COALESCE(?, resume_name),
+                    user_pv_name     = COALESCE(?, user_pv_name),
+                    user_school      = COALESCE(?, user_school),
+                    department_grade = COALESCE(?, department_grade),
+                    user_intro       = COALESCE(?, user_intro)
                 WHERE resume_id = ? AND user_id = ?
             `;
-            await connection.query(updateSql, [resume_name, user_school, department_grade, user_intro, currentResumeId, userId]);
+
+            // ⚠️ 這裡要特別小心：如果前端沒傳某些欄位，變數會是 undefined。
+            // 必須用「變數 || null」把它轉成 MySQL 看得懂的 NULL，COALESCE 機制才會啟動！
+            await connection.query(updateSql, [
+                resume_name || null,
+                user_pv_name || null,
+                user_school || null,
+                department_grade || null,
+                user_intro || null,
+                currentResumeId,
+                userId
+            ]);
         } else {
             // 情況 B：如果是建立全新履歷
             const insertSql = `
-                INSERT INTO Resumes (user_id, resume_name, user_school, department_grade, user_intro) 
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO Resumes (user_id, resume_name, user_pv_name, user_school, department_grade, user_intro) 
+                VALUES (?, ?, ?, ?, ?, ?)
             `;
-            const [result] = await connection.query(insertSql, [userId, resume_name, user_school, department_grade, user_intro]);
+            const [result] = await connection.query(insertSql, [userId, resume_name, user_pv_name, user_school, department_grade, user_intro]);
             currentResumeId = result.insertId; // 🌟 撈出這份新履歷在資料庫裡自動生成的 ID！
         }
         // --- 步驟 2：清除舊的標籤連線 ---
@@ -51,16 +69,13 @@ export const saveResume = async (req, res) => {
                 // 3.1 檢查標籤在 tags 總表裡存在了沒
                 const [existingTag] = await connection.query('SELECT tag_id FROM Person_tags WHERE tag_name = ?', [tagName]);
                 let currentTagId;
-
                 if (existingTag.length > 0) {
                     currentTagId = existingTag[0].tag_id;
                 } else {
                     // 如果是世界上第一次出現的新標籤（例如：'Express'），就新增進總表
                     const [newTagResult] = await connection.query('INSERT INTO Person_tags (tag_name) VALUES (?)', [tagName]);
                     currentTagId = newTagResult.insertId;
-                }
-
-                // 4.1 把這份履歷的 ID 跟標籤的 ID 綁定，寫入中介表
+                }// 4.1 把這份履歷的 ID 跟標籤的 ID 綁定，寫入中介表
                 await connection.query('INSERT INTO Resume_tags (resume_id, tag_id) VALUES (?, ?)', [currentResumeId, currentTagId]);
             }
         }
@@ -80,7 +95,7 @@ export const saveResume = async (req, res) => {
         connection.release();
     }
 };
-
+// ======================================================================
 // 拿資料
 export const loadResumes = async (req, res) => {
     console.log("============== [DEBUG 開始] ==============");
@@ -95,6 +110,7 @@ export const loadResumes = async (req, res) => {
             SELECT 
                 r.resume_id,
                 r.resume_name,
+                r.user_pv_name,
                 r.user_school,
                 r.department_grade,
                 r.user_intro,
@@ -114,10 +130,12 @@ export const loadResumes = async (req, res) => {
         const formattedResumes = rows.map(row => ({
             id: row.resume_id,
             name: row.resume_name,
+            user_pv_name: row.user_pv_name,
             createdAt: row.created_at || null,
             updatedAt: row.updated_at || null,
             data: {
-                name: row.resume_name,
+                resume_name: row.resume_name || '未命名履歷',
+                name: row.user_pv_name || '匿名',
                 school: row.user_school,
                 grade: row.department_grade,
                 intro: row.user_intro
@@ -132,8 +150,7 @@ export const loadResumes = async (req, res) => {
     }
 };
 
-
-
+// ======================================================================
 //刪 PV
 export const deleteResume = async (req, res) => {
     const userId = req.user.user_id;
