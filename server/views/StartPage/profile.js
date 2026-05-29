@@ -697,3 +697,4 @@
     console.error('profile.js initialization failed:', err);
   }
 })();
+

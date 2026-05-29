@@ -131,56 +131,13 @@
     <script src="/account-menu.js"></script>
     <script src="/profile.js"></script>
     <script>
-      (function () {
+      document.addEventListener('DOMContentLoaded', () => {
         const qs = new URLSearchParams(location.search);
         const userId = qs.get('userId') || 'unknown';
-
-        document.getElementById('goExpEditorBtn').addEventListener('click', () => {
-          location.href = getExpHref(false);
-        });
-        document.getElementById('goExpViewBtn').addEventListener('click', () => {
-          location.href = getExpHref(true);
-        });
-
-        // 預覽最近 2 筆經歷
-        function renderExpPreview() {
-          const list = JSON.parse(localStorage.getItem('experiences:' + userId) || '[]');
-          const preview = document.getElementById('expPreview');
-          if (!list.length) {
-            preview.innerHTML = '<span class="empty-note" style="font-size:13px">尚未填寫任何經歷</span>';
-            return;
-          }
-
-          document.getElementById('goExpEditorBtn').addEventListener('click', () => {
-            location.href = getExpHref(false);
-          });
-          document.getElementById('goExpViewBtn').addEventListener('click', () => {
-            location.href = getExpHref(true);
-          });
-
-          function renderExpPreview() {
-            const list = JSON.parse(localStorage.getItem('experiences:' + userId) || '[]');
-            const preview = document.getElementById('expPreview');
-            if (!list.length) {
-              preview.innerHTML = '<span class="empty-note" style="font-size:13px">尚未填寫任何經歷</span>';
-              return;
-            }
-            preview.innerHTML = list.slice(0, 2).map(item => `
-            <div class="exp-preview-chip">
-              <span class="exp-type-badge">${item.exp_type || '未分類'}</span>
-              <span class="exp-preview-name">${item.title || '未命名'}</span>
-            </div>
-          `).join('') + (list.length > 2 ? `<span class="exp-more">＋ ${list.length - 2} 筆更多</span>` : '');
-          }
-
-          renderExpPreview();
-          window.addEventListener('storage', e => {
-            if (e.key === 'experiences:' + userId) renderExpPreview();
-          });
-        }
-      })();
-
-    </script>
+      });
+    </script> 
 </body>
 
 </html>
+
+    
