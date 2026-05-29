@@ -134,20 +134,7 @@
           </div>
         </div>
       `;
-        //   const card = document.createElement('article');
-        //   card.className = `resume-card${String(p.id) === String(activeId) ? ' open' : ''}`;
-        //   card.dataset.id = p.id; // 每張卡片都帶上自己的 ID，點擊時可以知道是哪一份履歷
-        //   card.innerHTML = `
-        //   <div class="resume-cover"><span class="resume-ribbon">開啟</span></div>
-        //   <div class="resume-body">
-        //     <h3 class="resume-title" contenteditable="true" spellcheck="false">${escapeHtml(p.name || '未命名履歷')}</h3>
-        //     <span class="resume-time">${formatDateTime(p.updatedAt || p.createdAt)}</span>
-        //     <div class="resume-card-actions">
-        //       <button class="icon-action view-resume" type="button" aria-label="查看履歷">查看</button>
-        //       <button class="icon-action edit-resume" type="button" aria-label="編輯履歷">...</button>
-        //     </div>
-        //   </div>
-        // `;
+        
 
         //  點擊標題可以直接編輯名稱，失焦後自動儲存變更並更新畫面。
         const title = card.querySelector('.resume-title');
@@ -697,3 +684,4 @@
     console.error('profile.js initialization failed:', err);
   }
 })();
+
