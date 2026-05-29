@@ -1,6 +1,7 @@
 // 取得 DOM 元素的簡寫工具函式，方便後續快速抓取 ID
 const $ = id => document.getElementById(id);
 
+// 🚀 修正 1：只保留一個全域變數，存放後端撈回來的「全部比賽原始資料」
 let contests = [];
 
 // 將字串轉成安全 HTML，避免資料庫文字影響頁面結構。
@@ -23,19 +24,25 @@ function withUserParam(path) {
 // 從後端讀取資料庫 Competition 表的全部比賽。
 async function loadContests() {
   try {
-    const res = await fetch('/competitions');
+    const res = await fetch('/api/contests/competitions');
     if (!res.ok) throw new Error('無法取得比賽資料');
-    const data = await res.json();
-    contests = data.competitions || [];
+    const result = await res.json();
+    
+    // 🚀 修正 2：拿掉 const，直接把資料指定給全域變數 contests！
+    contests = result.competitions || result;
+    console.log('成功載入比賽資料：', contests);
+    
+    return contests; // 確保後續的 .then(applyFilters) 沒拿到空東西
   } catch (err) {
-    console.error(err);
+    console.error('讀取比賽失敗:', err);
     contests = [];
+    return [];
   }
 }
 
 // 依照比賽名稱與說明做簡單分類，維持原本頁面上的分類篩選體驗。
 function inferCategory(contest) {
-  const text = `${contest.name || ''} ${contest.info || ''}`.toLowerCase();
+  const text = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase();
   if (text.includes('ai') || text.includes('資料') || text.includes('機器') || text.includes('智慧')) return 'AI';
   if (text.includes('設計') || text.includes('創意') || text.includes('黑客松')) return 'Design';
   if (text.includes('商業') || text.includes('創業') || text.includes('金融')) return 'Business';
@@ -51,31 +58,22 @@ function categoryLabel(category) {
   }[category] || category;
 }
 
-// 產生目前比賽列表中每個分類的數量
-function computeCategoryCounts(list) {
-  const counts = {};
-  (list || []).forEach(c => {
-    const key = inferCategory(c) || 'Other';
-    counts[key] = (counts[key] || 0) + 1;
-  });
-  return counts;
-}
 
-// 核心渲染函式：負責將資料庫比賽轉換成 HTML 卡片並呈現在畫面上。
-function renderContests(data) {
+// 核心渲染函式：負責將比賽資料陣列轉換成 HTML 卡片。
+function renderContests(dataList = []) {
   const grid = $('contestsGrid');
   if (!grid) return;
 
-  grid.innerHTML = data.length ? data.map(contest => {
+  grid.innerHTML = dataList.length ? dataList.map(contest => {
     const category = inferCategory(contest);
     return `
-      <article class="contest-card" data-id="${contest.id}">
+      <article class="contest-card" data-id="${contest.com_id}">
         <div class="card-tag">${categoryLabel(category)}</div>
-        <h3>${escapeHtml(contest.name)}</h3>
+        <h3>${escapeHtml(contest.com_name)}</h3>
         <p class="category">分類：${categoryLabel(category)}</p>
-        <p class="desc">${escapeHtml(contest.info || '尚未填寫比賽說明')}</p>
+        <p class="desc">${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
         <div class="card-footer">
-          <span>${escapeHtml(contest.date || '日期未定')}</span>
+          <span>${escapeHtml(contest.com_date || '日期未定')}</span>
           <span class="more-link">查看更多 →</span>
         </div>
       </article>
@@ -83,21 +81,27 @@ function renderContests(data) {
   }).join('') : '<div class="empty-note">目前資料庫沒有可瀏覽的比賽。</div>';
 }
 
-// 依照搜尋關鍵字與分類篩選重新顯示比賽。
+// 🚀 修正 3：把原本被你封印的篩選功能復活！並且對齊全域變數 contests
 function applyFilters() {
   const q = $('contestSearch')?.value.trim().toLowerCase() || '';
   const category = $('categoryFilter')?.value || 'all';
+  
+  // 根據搜尋關鍵字與下拉選單分類，去過濾全域變數 contests
   const filtered = contests.filter(contest => {
-    const matchedText = `${contest.name || ''} ${contest.info || ''}`.toLowerCase().includes(q);
+    const matchedText = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase().includes(q);
     const matchedCategory = category === 'all' || inferCategory(contest) === category;
     return matchedText && matchedCategory;
   });
+  
+  // 將篩選後的乾淨資料餵給渲染函式
   renderContests(filtered);
 }
 
+// 監聽搜尋與分類
 $('contestSearch')?.addEventListener('input', applyFilters);
 $('categoryFilter')?.addEventListener('change', applyFilters);
 
+// 點擊卡片跳轉詳情
 $('contestsGrid')?.addEventListener('click', event => {
   const card = event.target.closest('[data-id]');
   if (!card) return;
@@ -107,6 +111,9 @@ $('contestsGrid')?.addEventListener('click', event => {
 const homeLink = $('homeLink');
 if (homeLink) homeLink.href = withUserParam('/team.html');
 
-// 頁面初始載入時，先讀取資料庫，再顯示所有比賽，並建立分類下拉的動態選單。
-// 頁面初始載入時，先讀取資料庫，再顯示所有比賽。
-loadContests().then(applyFilters);
+
+// 頁面初始載入時，先從後端讀取資料庫，再執行篩選渲染。
+document.addEventListener('DOMContentLoaded', () => {
+  loadContests().then(applyFilters);
+});
+

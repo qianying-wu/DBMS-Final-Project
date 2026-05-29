@@ -3,7 +3,6 @@ import passport from 'passport';
 import * as teamController from '../controllers/teamController.js';
 import { requireLogin } from '../middleware/auth-middleware.js';  
 
-import { getAllData } from '../controllers/teamController.js';
 const router = express.Router();
 
 // 公開 API（不需要登入）

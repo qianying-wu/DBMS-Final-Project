@@ -37,20 +37,6 @@
             </div>
           </div>
 
-          <div class="exp-entry-section">
-            <div class="exp-entry-heading">
-              <div>
-                <h3 class="exp-entry-title">📋 經驗履歷</h3>
-                <p class="exp-entry-desc">記錄實習、競賽、專案等經歷，申請隊伍時對方可點擊查看。</p>
-              </div>
-              <div class="exp-entry-btns">
-                <button id="goExpEditorBtn" class="btn outline">編輯經驗</button>
-                <button id="goExpViewBtn" class="btn outline">查看</button>
-              </div>
-            </div>
-            <div id="expPreview" class="exp-preview"></div>
-          </div>
-
           <div id="resumeGallery" class="resume-gallery"></div>
         </div>
 
@@ -142,44 +128,11 @@
     <script src="/account-menu.js"></script>
     <script src="/profile.js"></script>
     <script>
-      (function () {
+      document.addEventListener('DOMContentLoaded', () => {
         const qs = new URLSearchParams(location.search);
         const userId = qs.get('userId') || 'unknown';
 
-        function getExpHref(view) {
-          const base = location.protocol === 'file:' ? 'experience.html' : '/experience.html';
-          const viewBase = location.protocol === 'file:' ? 'experience-view.html' : '/experience-view.html';
-          const suffix = userId !== 'unknown' ? '?userId=' + encodeURIComponent(userId) : '';
-          return view ? viewBase + suffix : base + suffix;
-        }
-
-        document.getElementById('goExpEditorBtn').addEventListener('click', () => {
-          location.href = getExpHref(false);
-        });
-        document.getElementById('goExpViewBtn').addEventListener('click', () => {
-          location.href = getExpHref(true);
-        });
-
-        function renderExpPreview() {
-          const list = JSON.parse(localStorage.getItem('experiences:' + userId) || '[]');
-          const preview = document.getElementById('expPreview');
-          if (!list.length) {
-            preview.innerHTML = '<span class="empty-note" style="font-size:13px">尚未填寫任何經歷</span>';
-            return;
-          }
-          preview.innerHTML = list.slice(0, 2).map(item => `
-            <div class="exp-preview-chip">
-              <span class="exp-type-badge">${item.exp_type || '未分類'}</span>
-              <span class="exp-preview-name">${item.title || '未命名'}</span>
-            </div>
-          `).join('') + (list.length > 2 ? `<span class="exp-more">＋ ${list.length - 2} 筆更多</span>` : '');
-        }
-/*dammmm*/
-        renderExpPreview();
-        window.addEventListener('storage', e => {
-          if (e.key === 'experiences:' + userId) renderExpPreview();
-        });
-      })();
+       
     </script>
   </body>
 </html>
