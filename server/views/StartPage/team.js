@@ -174,20 +174,6 @@ async function render() {
   }
 }
 
-// 點擊事件：切換某個隊伍的收藏狀態
-function toggleFavorite(id) {
-  if (!isLoggedIn) {
-    requireLogin('【系統提示】請先登入才能收藏隊伍喔！');
-    return;
-  }
-  const favorites = Data.loadFavorites();
-  const index = favorites.indexOf(id);
-  if (index >= 0) favorites.splice(index, 1);
-  else favorites.push(id);
-  Data.saveFavorites(favorites);
-  render();
-}
-
 // 點擊事件：切換某個比賽的收藏狀態
 function toggleContestFavorite(id) {
   if (!isLoggedIn) {
