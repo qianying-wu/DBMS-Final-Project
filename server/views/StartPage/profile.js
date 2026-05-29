@@ -14,9 +14,9 @@
     const addTag = $('addTag');
     const newTag = $('newTag');
     const tagsWrap = $('tags');
-    const photoPreview = $('photoPreview');
-    const myTeamsBox = $('myTeams');
-    const followedBox = $('followed');
+    // const photoPreview = $('photoPreview');
+    // const myTeamsBox = $('myTeams');
+    // const followedBox = $('followed');
 
     // 照片功能已移除，使用預設頭像（不儲存圖片）
     let photoState = { src: null };
@@ -25,7 +25,7 @@
       const token = localStorage.getItem('token');
       return token ? { 'Authorization': `${token}` } : {};
     }
-
+    // ================================== 以下是與後端 API 互動的函式 ==========================
     // 載入：從資料庫獲取所有履歷
     async function loadProfiles() {
       try {
@@ -79,7 +79,7 @@
         return false;
       }
     }
-
+    // ================================== 以下是與後端 API 互動的函式 ==========================
     // function saveProfiles(p){ localStorage.setItem('profiles', JSON.stringify(p)); }
     // function setActiveProfileId(id){ localStorage.setItem('activeProfileId', String(id)); }
     // function getActiveProfileId(){ return localStorage.getItem('activeProfileId') || null; }
@@ -134,7 +134,7 @@
           </div>
         </div>
       `;
-        
+
 
         //  點擊標題可以直接編輯名稱，失焦後自動儲存變更並更新畫面。
         const title = card.querySelector('.resume-title');
@@ -215,54 +215,54 @@
     }
 
     // 渲染左側狀態欄（包含同步外部的「我的隊伍」與「關注的比賽」）
-    function renderSyncedSidebar() {
-      const uId = getUserIdFromUrl();
-      
-      const savedName = localStorage.getItem('userName');
-      if ($('profileUsername') && savedName) {
-        $('profileUsername').textContent = savedName;
-      }
-      if ($('profileUserEmail')) {
-        $('profileUserEmail').textContent = uId !== 'unknown' ? '已驗證參賽者' : '訪客身分';
-      }
+    // function renderSyncedSidebar() {
+    //   const uId = getUserIdFromUrl();
 
-      if (myTeamsBox) {
-        const teams = JSON.parse(localStorage.getItem('myTeams') || '[]');
-        if (!teams.length) {
-          myTeamsBox.innerHTML = '<li class="empty-item">尚未加入任何隊伍</li>';
-        } else {
-          myTeamsBox.innerHTML = teams.map(t => `
-            <li onclick="window.location.href='${getTeamHref()}'">
-              <span class="team-dot"></span>
-              <div class="list-content">
-                <strong>${escapeHtml(t.name)}</strong>
-                <span>角色: ${escapeHtml(t.role || '隊員')}</span>
-              </div>
-            </li>
-          `).join('');
-        }
-      }
+    //   const savedName = localStorage.getItem('userName');
+    //   if ($('profileUsername') && savedName) {
+    //     $('profileUsername').textContent = savedName;
+    //   }
+    //   if ($('profileUserEmail')) {
+    //     $('profileUserEmail').textContent = uId !== 'unknown' ? '已驗證參賽者' : '訪客身分';
+    //   }
 
-      if (followedBox) {
-        const favs = JSON.parse(localStorage.getItem('favorites') || '[]');
-        const contests = JSON.parse(localStorage.getItem('contests') || '[]');
-        const myFavContests = contests.filter(c => favs.includes(c.id));
+    //   if (myTeamsBox) {
+    //     const teams = JSON.parse(localStorage.getItem('myTeams') || '[]');
+    //     if (!teams.length) {
+    //       myTeamsBox.innerHTML = '<li class="empty-item">尚未加入任何隊伍</li>';
+    //     } else {
+    //       myTeamsBox.innerHTML = teams.map(t => `
+    //         <li onclick="window.location.href='${getTeamHref()}'">
+    //           <span class="team-dot"></span>
+    //           <div class="list-content">
+    //             <strong>${escapeHtml(t.name)}</strong>
+    //             <span>角色: ${escapeHtml(t.role || '隊員')}</span>
+    //           </div>
+    //         </li>
+    //       `).join('');
+    //     }
+    //   }
 
-        if (!myFavContests.length) {
-          followedBox.innerHTML = '<li class="empty-item">尚未關注任何比賽</li>';
-        } else {
-          followedBox.innerHTML = myFavContests.map(c => `
-            <li onclick="window.location.href='${getTeamHref()}'">
-              <span class="contest-dot"></span>
-              <div class="list-content">
-                <strong>${escapeHtml(c.name)}</strong>
-                <span>時間: ${escapeHtml(c.date)}</span>
-              </div>
-            </li>
-          `).join('');
-        }
-      }
-    }
+    //   if (followedBox) {
+    //     const favs = JSON.parse(localStorage.getItem('favorites') || '[]');
+    //     const contests = JSON.parse(localStorage.getItem('contests') || '[]');
+    //     const myFavContests = contests.filter(c => favs.includes(c.id));
+
+    //     if (!myFavContests.length) {
+    //       followedBox.innerHTML = '<li class="empty-item">尚未關注任何比賽</li>';
+    //     } else {
+    //       followedBox.innerHTML = myFavContests.map(c => `
+    //         <li onclick="window.location.href='${getTeamHref()}'">
+    //           <span class="contest-dot"></span>
+    //           <div class="list-content">
+    //             <strong>${escapeHtml(c.name)}</strong>
+    //             <span>時間: ${escapeHtml(c.date)}</span>
+    //           </div>
+    //         </li>
+    //       `).join('');
+    //     }
+    //   }
+    // }
 
 
     // 從履歷資料還原照片與照片調整設定。
@@ -314,37 +314,37 @@
       notifyBtn.textContent = unread ? `🔔 ${unread}` : '🔔';
     }
 
-    function showNotifications() {
-      const existing = document.getElementById('notificationModal');
-      if (existing) existing.remove();
-      const notifications = loadNotifications();
-      const myNotifications = notifications.filter(item => Number(item.userId) === 9999);
-      const modal = document.createElement('div');
-      modal.id = 'notificationModal';
-      modal.className = 'modal notification-modal';
-      modal.innerHTML = `
-      <div class="modal-card notification-card">
-        <h3>通知</h3>
-        <div class="notification-list">
-          ${myNotifications.length ? myNotifications.map(item => `
-            <div class="notification-item ${item.read ? '' : 'unread'}">
-              <strong>${escapeHtml(item.message)}</strong>
-              <span>${formatDateTime(item.createdAt)}</span>
-            </div>
-          `).join('') : '<div class="empty-note">目前沒有通知</div>'}
-        </div>
-        <div class="modal-actions">
-          <button id="closeNotificationModal" class="btn outline">關閉</button>
-        </div>
-      </div>
-    `;
-      document.body.appendChild(modal);
-      notifications.forEach(item => { if (Number(item.userId) === 9999) item.read = true; });
-      saveNotifications(notifications);
-      updateNotificationBadge();
-      modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-      document.getElementById('closeNotificationModal').addEventListener('click', () => modal.remove());
-    }
+    // function showNotifications() {
+    //   const existing = document.getElementById('notificationModal');
+    //   if (existing) existing.remove();
+    //   const notifications = loadNotifications();
+    //   const myNotifications = notifications.filter(item => Number(item.userId) === 9999);
+    //   const modal = document.createElement('div');
+    //   modal.id = 'notificationModal';
+    //   modal.className = 'modal notification-modal';
+    //   modal.innerHTML = `
+    //   <div class="modal-card notification-card">
+    //     <h3>通知</h3>
+    //     <div class="notification-list">
+    //       ${myNotifications.length ? myNotifications.map(item => `
+    //         <div class="notification-item ${item.read ? '' : 'unread'}">
+    //           <strong>${escapeHtml(item.message)}</strong>
+    //           <span>${formatDateTime(item.createdAt)}</span>
+    //         </div>
+    //       `).join('') : '<div class="empty-note">目前沒有通知</div>'}
+    //     </div>
+    //     <div class="modal-actions">
+    //       <button id="closeNotificationModal" class="btn outline">關閉</button>
+    //     </div>
+    //   </div>
+    // `;
+    //   document.body.appendChild(modal);
+    //   notifications.forEach(item => { if (Number(item.userId) === 9999) item.read = true; });
+    //   saveNotifications(notifications);
+    //   updateNotificationBadge();
+    //   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    //   document.getElementById('closeNotificationModal').addEventListener('click', () => modal.remove());
+    // }
 
     function getTeamHref() {
       const userId = localStorage.getItem("userId");
@@ -353,59 +353,59 @@
       return userId ? `${teamPath}?userId=${encodeURIComponent(userId)}` : teamPath;
     }
 
-    // 讀取隊伍資料，並移除展示用預設隊伍。
-    function loadTeams() {
-      const defaultNames = ['AI 聯合隊', '機器人挑戰隊', '資料探勘小隊'];
-      const teams = JSON.parse(localStorage.getItem('teams') || '[]').filter(team => !defaultNames.includes(team.name));
-      localStorage.setItem('teams', JSON.stringify(teams));
-      return teams;
-    }
+    // // 讀取隊伍資料，並移除展示用預設隊伍。
+    // function loadTeams() {
+    //   const defaultNames = ['AI 聯合隊', '機器人挑戰隊', '資料探勘小隊'];
+    //   const teams = JSON.parse(localStorage.getItem('teams') || '[]').filter(team => !defaultNames.includes(team.name));
+    //   localStorage.setItem('teams', JSON.stringify(teams));
+    //   return teams;
+    // }
 
-    // 讀取比賽資料，並補上預設比賽清單。
-    function loadContests() {
-      const existing = JSON.parse(localStorage.getItem('contests') || '[]');
-      const merged = [...existing];
-      seed.forEach(contest => {
-        if (!merged.some(item => Number(item.id) === Number(contest.id))) merged.push(contest);
-      });
-      localStorage.setItem('contests', JSON.stringify(merged));
-      return merged;
-    }
+    // // 讀取比賽資料，並補上預設比賽清單。
+    // function loadContests() {
+    //   const existing = JSON.parse(localStorage.getItem('contests') || '[]');
+    //   const merged = [...existing];
+    //   seed.forEach(contest => {
+    //     if (!merged.some(item => Number(item.id) === Number(contest.id))) merged.push(contest);
+    //   });
+    //   localStorage.setItem('contests', JSON.stringify(merged));
+    //   return merged;
+    // }
 
     // 讓履歷首頁側欄同步顯示已加入隊伍與收藏隊伍。
-    function renderSyncedSidebar() {
-      if (!myTeamsBox || !followedBox) return;
-      const allTeams = loadTeams();
-      const contests = loadContests();
-      const userId = new URLSearchParams(window.location.search).get('userId');
-      const currentUserId = userId && userId !== 'unknown' ? userId : '9999';
-      const legacyJoined = JSON.parse(localStorage.getItem('myTeams') || '[]');
-      if (legacyJoined.length) {
-        const migrated = legacyJoined.map(item => item.id ?? item).filter(id => allTeams.some(team => Number(team.id) === Number(id)));
-        localStorage.setItem(`myTeams:${currentUserId}`, JSON.stringify(migrated));
-        localStorage.removeItem('myTeams');
-      }
-      const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${currentUserId}`) || '[]');
-      const joinedTeams = joinedIds.map(id => allTeams.find(team => Number(team.id) === Number(id))).filter(Boolean);
-      const favoriteIds = JSON.parse(localStorage.getItem('favorites') || '[]');
-      const favoriteTeams = favoriteIds.map(id => allTeams.find(team => Number(team.id) === Number(id))).filter(Boolean);
+    // function renderSyncedSidebar() {
+    //   if (!myTeamsBox || !followedBox) return;
+    //   const allTeams = loadTeams();
+    //   const contests = loadContests();
+    //   const userId = new URLSearchParams(window.location.search).get('userId');
+    //   const currentUserId = userId && userId !== 'unknown' ? userId : '9999';
+    //   const legacyJoined = JSON.parse(localStorage.getItem('myTeams') || '[]');
+    //   if (legacyJoined.length) {
+    //     const migrated = legacyJoined.map(item => item.id ?? item).filter(id => allTeams.some(team => Number(team.id) === Number(id)));
+    //     localStorage.setItem(`myTeams:${currentUserId}`, JSON.stringify(migrated));
+    //     localStorage.removeItem('myTeams');
+    //   }
+    //   const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${currentUserId}`) || '[]');
+    //   const joinedTeams = joinedIds.map(id => allTeams.find(team => Number(team.id) === Number(id))).filter(Boolean);
+    //   const favoriteIds = JSON.parse(localStorage.getItem('favorites') || '[]');
+    //   const favoriteTeams = favoriteIds.map(id => allTeams.find(team => Number(team.id) === Number(id))).filter(Boolean);
 
-      myTeamsBox.innerHTML = joinedTeams.length ? joinedTeams.map(team => {
-        const contest = contests.find(item => Number(item.id) === Number(team.contestId));
-        return `<div class="sync-item">
-        <strong>${escapeHtml(team.name)}</strong>
-        <span>${contest ? escapeHtml(contest.name) : '未指定比賽'}</span>
-      </div>`;
-      }).join('') : '尚未加入隊伍';
+    //   myTeamsBox.innerHTML = joinedTeams.length ? joinedTeams.map(team => {
+    //     const contest = contests.find(item => Number(item.id) === Number(team.contestId));
+    //     return `<div class="sync-item">
+    //     <strong>${escapeHtml(team.name)}</strong>
+    //     <span>${contest ? escapeHtml(contest.name) : '未指定比賽'}</span>
+    //   </div>`;
+    //   }).join('') : '尚未加入隊伍';
 
-      followedBox.innerHTML = favoriteTeams.length ? favoriteTeams.map(team => {
-        const contest = contests.find(item => Number(item.id) === Number(team.contestId));
-        return `<div class="sync-item">
-        <strong>${escapeHtml(team.name)}</strong>
-        <span>${contest ? `關注比賽：${escapeHtml(contest.name)}` : '已收藏隊伍'}</span>
-      </div>`;
-      }).join('') : '無';
-    }
+    //   followedBox.innerHTML = favoriteTeams.length ? favoriteTeams.map(team => {
+    //     const contest = contests.find(item => Number(item.id) === Number(team.contestId));
+    //     return `<div class="sync-item">
+    //     <strong>${escapeHtml(team.name)}</strong>
+    //     <span>${contest ? `關注比賽：${escapeHtml(contest.name)}` : '已收藏隊伍'}</span>
+    //   </div>`;
+    //   }).join('') : '無';
+    // }
 
     // 依照目前使用者與履歷 ID 組成履歷查看頁連結。
     function getResumeViewHref(id) {
@@ -431,14 +431,13 @@
       const data = profile ? profile.data : {};
       if (profile && !activeId) setActiveProfileId(profile.id);
       editorTitle.textContent = profile?.name || '新增履歷';
-      $('name').value = data.name || '';
-      $('school').value = data.school || '';
-      $('grade').value = data.grade || '';
-      $('experience').value = data.experience || '';
-      $('intro').value = data.intro || '';
+      $('name').value = profile?.name || '';
+      $('school').value = profile?.school || '';
+      $('grade').value = profile?.grade || '';
+      // $('experience').value = profile?.experience || '';
+      $('bio').value = profile?.intro || '';
       const tags = data.tags || []; renderTags(tags);
       window._tags = tags;
-      // setPhotoFromData(data);
     }
 
     // 編輯器標題可 inline 編輯；變更時同步到當前履歷名稱
@@ -485,7 +484,7 @@
       resumeHome.hidden = false;
       resumeEditor.hidden = true;
       await renderResumeGallery();
-      renderSyncedSidebar();
+      // renderSyncedSidebar();
     }
 
     // 顯示履歷編輯器。
@@ -636,33 +635,49 @@
     });
 
     // 即時同步姓名欄位：主姓名輸入變更時，同步更新目前履歷資料。
-    $('name').addEventListener('input', async (e) => {
-      const v = e.target.value;
-      const activeId = getActiveProfileId();
-      if (!activeId) return;
-      const ps = await loadProfiles();
-      const idx = ps.findIndex(p => String(p.id) === String(activeId));
-      if (idx >= 0) { ps[idx].data = { ...(ps[idx].data || {}), name: v }; ps[idx].updatedAt = new Date().toISOString(); saveProfiles(ps); }
-    });
+    // $('name').addEventListener('input', async (e) => {
+    //   const v = e.target.value;
+    //   const activeId = getActiveProfileId();
+    //   if (!activeId) return;
+    //   const ps = await loadProfiles();
+    //   const idx = ps.findIndex(p => String(p.id) === String(activeId));
+    //   if (idx >= 0) { ps[idx].data = { ...(ps[idx].data || {}), name: v }; ps[idx].updatedAt = new Date().toISOString(); saveProfiles(ps); }
+    // });
 
     saveBtn.addEventListener('click', async () => {
       // Inline validation on save: show errors and focus first empty
       const clearErrors2 = () => { $('error-name').textContent = ''; $('error-school').textContent = ''; $('error-intro').textContent = ''; };
       clearErrors2();
-      // const nameVal2 = $('name').value.trim();
-      // const schoolVal2 = $('school').value.trim();
-      // const introVal2 = $('intro').value.trim();
-      // const invalids2 = [];
 
       const nameVal = $('name').value.trim();
       const schoolVal = $('school').value.trim();
       const gradeVal = $('grade').value.trim();
-      const introVal = $('intro').value.trim();
+      const introVal = $('bio').value.trim();
 
-      if (!nameVal) { $('error-name').textContent = '姓名為必填'; invalids.push($('name')); }
-      if (!schoolVal) { $('error-school').textContent = '學校為必填'; invalids.push($('school')); }
-      if (!introVal) { $('error-intro').textContent = '請簡短介紹自己'; invalids.push($('intro')); }
-      if (invalids.length) { invalids[0].focus(); return; }
+      // if (!nameVal) { $('error-name').textContent = '姓名為必填'; invalids.push($('name')); }
+      // if (!schoolVal) { $('error-school').textContent = '學校為必填'; invalids.push($('school')); }
+      // if (!introVal) { $('error-intro').textContent = '請簡短介紹自己'; invalids.push($('intro')); }
+      // if (invalids.length) { invalids[0].focus(); return; }
+      const errorInputs = [];
+
+      if (!nameVal) {
+        $('error-name').textContent = '姓名為必填';
+        errorInputs.push($('name'));
+      }
+      if (!schoolVal) {
+        $('error-school').textContent = '學校為必填';
+        errorInputs.push($('school'));
+      }
+      if (!introVal) {
+        $('error-intro').textContent = '請簡短介紹自己';
+        errorInputs.push($('bio'));
+      }
+
+      // 如果有欄位沒填，把游標焦點移到第一個漏填的欄位並中斷執行
+      if (errorInputs.length) {
+        errorInputs[0].focus();
+        return;
+      }
 
       const activeResumeId = getActiveProfileId();
       const payload = {
