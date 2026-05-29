@@ -197,71 +197,13 @@
     }
 
 
-    // 將純文字進行 HTML 轉義，防止 XSS 攻擊
-    function escapeHtml(str) {
-      if (!str) return '';
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-    }
-
-    // 取得當前網址列的 userId，用來保持登入與選單同步
-    function getUserIdFromUrl() {
-      return new URLSearchParams(window.location.search).get('userId') || localStorage.getItem('userId') || 'unknown';
-    }
-
-    function getTeamHref() {
-      const id = getUserIdFromUrl();
-      const base = '/team.html';
-      return id !== 'unknown' ? `${base}?userId=${encodeURIComponent(id)}` : base;
-    }
-
-    // 渲染左側狀態欄（包含同步外部的「我的隊伍」與「關注的比賽」）
-    function renderSyncedSidebar() {
-      const uId = getUserIdFromUrl();
-      
-      const savedName = localStorage.getItem('userName');
-      if ($('profileUsername') && savedName) {
-        $('profileUsername').textContent = savedName;
-      }
-      if ($('profileUserEmail')) {
-        $('profileUserEmail').textContent = uId !== 'unknown' ? '已驗證參賽者' : '訪客身分';
-      }
-
-      if (myTeamsBox) {
-        const teams = JSON.parse(localStorage.getItem('myTeams') || '[]');
-        if (!teams.length) {
-          myTeamsBox.innerHTML = '<li class="empty-item">尚未加入任何隊伍</li>';
-        } else {
-          myTeamsBox.innerHTML = teams.map(t => `
-            <li onclick="window.location.href='${getTeamHref()}'">
-              <span class="team-dot"></span>
-              <div class="list-content">
-                <strong>${escapeHtml(t.name)}</strong>
-                <span>角色: ${escapeHtml(t.role || '隊員')}</span>
-              </div>
-            </li>
-          `).join('');
-        }
-      }
-
-      if (followedBox) {
-        const favs = JSON.parse(localStorage.getItem('favorites') || '[]');
-        const contests = JSON.parse(localStorage.getItem('contests') || '[]');
-        const myFavContests = contests.filter(c => favs.includes(c.id));
-
-        if (!myFavContests.length) {
-          followedBox.innerHTML = '<li class="empty-item">尚未關注任何比賽</li>';
-        } else {
-          followedBox.innerHTML = myFavContests.map(c => `
-            <li onclick="window.location.href='${getTeamHref()}'">
-              <span class="contest-dot"></span>
-              <div class="list-content">
-                <strong>${escapeHtml(c.name)}</strong>
-                <span>時間: ${escapeHtml(c.date)}</span>
-              </div>
-            </li>
-          `).join('');
-        }
-      }
+    // 根據目前照片狀態更新預覽區。
+    function renderPhoto() {
+      // No-op if photo preview element was removed from DOM
+      if (!photoPreview) return;
+      // Ensure default styling (no user-supplied photo)
+      if (photoPreview.classList) photoPreview.classList.remove('has-photo');
+      try { const img = photoPreview.querySelector && photoPreview.querySelector('img'); if (img) img.remove(); } catch (e) { /* ignore */ }
     }
 
 
@@ -742,3 +684,4 @@
     console.error('profile.js initialization failed:', err);
   }
 })();
+
