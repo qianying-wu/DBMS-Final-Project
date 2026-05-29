@@ -20,7 +20,7 @@ export function withUserParam(path) {
 // 🚀 轉正版：從真實後端資料庫讀取全部隊伍
 export async function loadTeams() {
   try {
-    const res = await fetch('/api/teams/all'); 
+    const res = await fetch('/api/teams/all');
     if (!res.ok) throw new Error('無法取得資料庫隊伍資料');
 
     const result = await res.json();
@@ -49,21 +49,22 @@ export async function loadTeams() {
 // 🚀 轉正版：從真實後端資料庫讀取全部比賽
 export async function loadContests() {
   try {
-    const res = await fetch('/api/contests/competitions'); 
+    const res = await fetch('/api/contests/competitions');
     if (!res.ok) throw new Error('無法取得資料庫比賽資料');
-    
+
     const result = await res.json();
-    const dbContests = result.competitions || result; 
+    const dbContests = result.competitions || result;
 
     console.log('📦 資料庫原始比賽資料：', dbContests);
 
     // 🛠️ 變數對齊：完全對接你之前在 contest.html 內寫的變數
     const mappedContests = dbContests.map(contest => ({
-      id: contest.com_id,                             
-      name: contest.com_name,                       
-      com_date: contest.com_date || '日期未定',     
-      com_intro: contest.com_intro || '尚未填寫說明', 
-      officialUrl: contest.com_link || '#'    
+      id: contest.com_id,
+      name: contest.com_name,
+      com_date: contest.com_date || '日期未定',
+      com_intro: contest.com_intro || '尚未填寫說明',
+      officialUrl: contest.com_link || '#',
+      com_category: contest.comType || '未分類'
     }));
 
     return mappedContests;

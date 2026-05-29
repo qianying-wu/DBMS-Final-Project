@@ -25,8 +25,8 @@ const loginPromptCancel = $('loginPromptCancel');
 // localStorage.setItem("token", token);
 //localStorage.setItem("current_user_id", response.userId); // 把當前登入者的 ID 存起來 
 
-const token = localStorage.getItem("token");
-const currentUserId = localStorage.getItem("userId");
+// const token = localStorage.getItem("token");
+// const currentUserId = localStorage.getItem("userId");
 
 // 初始化狀態變數
 let currentPreferences = isLoggedIn() ? (window.AppPreferences?.getFallbackPreferences(Data.currentUserId) || []) : [];
@@ -133,7 +133,7 @@ async function render() {
 
   // 呼叫 UI 模組渲染各個區塊
   if (isLoggedIn()) UI.renderRecommendations(contests, currentPreferences);
-  else ;
+  else;
   UI.renderContestOverview(contests, teams, selectedContest, contestFavs);
   expandedContestCategory = UI.renderContestCategoryList(contests, selectedContest, expandedContestCategory);
 
@@ -144,6 +144,7 @@ async function render() {
     const isOwner = String(team.owner) === String(Data.currentUserId) || (String(Data.currentUserId) === String(Data.ME.id) && Number(team.owner) === Number(Data.ME.id));
     const pending = reqs.filter(request => request.teamId === team.id && request.status === 'pending').length;
     const contest = contests.find(item => Number(item.id) === Number(team.contestId));
+
 
     // 建立隊伍卡片 DOM 並附加到 teamsGrid 容器中
     const card = document.createElement('div');
