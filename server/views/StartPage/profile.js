@@ -26,72 +26,176 @@
       return token ? { 'Authorization': `${token}` } : {};
     }
 
-    // 載入：【修正防禦】優先使用本機暫存，若 API 失敗不阻斷畫面渲染
+    // 載入：從資料庫獲取所有履歷
     async function loadProfiles() {
-      // 先拿到本機既有的資料作為保底
-      let localData = [];
-      try {
-        localData = JSON.parse(localStorage.getItem('profiles') || '[]');
-      } catch(e) {
-        localData = [];
-      }
-
       try {
         const path = '/api/pv/loadPV';
-        // 設定 3 秒超時，防止請求無休止卡死網頁
-        const controller = new AbController ? new AbortController() : null;
-        const timeoutId = controller ? setTimeout(() => controller.abort(), 3000) : null;
-        
-        const response = await fetch(path, { 
-          headers: { ...getAuthHeader() },
-          signal: controller ? controller.signal : undefined 
-        });
-        if (timeoutId) clearTimeout(timeoutId);
+        const response = await fetch(path, { headers: { ...getAuthHeader() } });
+        if (!response.ok) throw new Error('無法取得履歷資料');
 
-        if (response.ok) {
-          const existProfiles = await response.json();
-          if (Array.isArray(existProfiles)) {
-            localStorage.setItem('profiles', JSON.stringify(existProfiles));
-            return existProfiles;
-          }
-        }
-        return localData;
+        const existProfiles = await response.json();
+        return existProfiles
       } catch (err) {
-        console.warn('無法連線到後端伺服器 API，將直接展示本機快取履歷。', err);
-        return localData;
+        console.error(err);
+        alert('讀取資料庫失敗');
+        return [];
       }
     }
 
-    async function saveProfiles(p) {
-      localStorage.setItem('profiles', JSON.stringify(p));
+    // 儲存：將特定履歷資料推送到資料庫
+    async function saveProfileToDB(profilePayload) {
       try {
-        const path = '/api/pv/savePV';
-        await fetch(path, {
+        path = '/api/pv/savePV';
+        const res = await fetch(path, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-          body: JSON.stringify(p)
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+          },
+          body: JSON.stringify(profilePayload)
         });
+        if (!res.ok) throw new Error('儲存失敗');
+        const result = await res.json();
+        return result;
       } catch (err) {
-        console.error('同步至伺服器失敗:', err);
+        console.error(err);
+        alert('儲存到資料庫失敗');
+        throw err;
       }
     }
 
-    function setActiveProfileId(id) { localStorage.setItem('activeProfileId', String(id)); }
+    // 刪除：通知資料庫移除特定 ID 的履歷
+    async function deleteProfile(card_id) {
+      try {
+        const res = await fetch(`/api/pv/deletePV/${card_id}`, {
+          method: 'DELETE',
+          headers: { ...getAuthHeader() }
+        });
+        if (!res.ok) throw new Error('刪除失敗');
+        return true;
+      } catch (err) {
+        console.error(err);
+        alert('刪除履歷失敗');
+        return false;
+      }
+    }
 
-    function getActiveProfileId() { return localStorage.getItem('activeProfileId') || null; }
+    // function saveProfiles(p){ localStorage.setItem('profiles', JSON.stringify(p)); }
+    // function setActiveProfileId(id){ localStorage.setItem('activeProfileId', String(id)); }
+    // function getActiveProfileId(){ return localStorage.getItem('activeProfileId') || null; }
+    let activeResumeId = null; // 這就是全域紀錄本變數
+
+    function setActiveProfileId(id) {
+      activeResumeId = id ? String(id) : null;
+    }
+
+    function getActiveProfileId() {
+      return activeResumeId;
+    }
+
 
     // 將專長標籤渲染成可移除的 tag。
     function renderTags(tags) {
-      if (!tagsWrap) return;
       tagsWrap.innerHTML = '';
-      if (!Array.isArray(tags)) return;
       tags.forEach((t, i) => {
-        const el = document.createElement('span');
-        el.className = 'tag';
-        el.innerHTML = `${escapeHtml(t)}<span class="remove" data-idx="${i}">&times;</span>`;
-        tagsWrap.appendChild(el);
+        const el = document.createElement('span'); el.className = 'tag'; el.textContent = t;
+        const rem = document.createElement('span'); rem.className = 'remove'; rem.textContent = '✕'; rem.onclick = () => { tags.splice(i, 1); renderTags(tags); };
+        el.appendChild(rem); tagsWrap.appendChild(el);
       });
     }
+
+    // 渲染履歷卡片列表，以及新增履歷卡片。
+    async function renderResumeGallery() {
+      const ps = await loadProfiles();
+      resumeGallery.innerHTML = '';
+      //  const activeId = localStorage.getItem("userId");
+      const activeId = getActiveProfileId();
+
+      ps.forEach(p => {
+        const card = document.createElement('article');
+        card.className = `resume-card${String(p.id) === String(activeId) ? ' open' : ''}`;
+        card.dataset.id = p.id;
+        card.innerHTML = `
+        <div class="resume-cover"><span class="resume-ribbon">開啟</span></div>
+        <div class="resume-body">
+            <div style="display:flex;align-items:center;gap:8px;grid-column:1 / -1">
+            <h3 class="resume-title" contenteditable="true" spellcheck="false">${escapeHtml(p.name || '未命名履歷')}</h3>
+            <button class="rename-btn" type="button" aria-label="重命名">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="currentColor" />
+                <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
+          <span class="resume-time">${formatDateTime(p.updatedAt || p.createdAt)}</span>
+          <div class="resume-card-actions">
+            <button class="icon-action view-resume" type="button" aria-label="查看履歷">查看</button>
+            <button class="icon-action edit-resume" type="button" aria-label="編輯履歷">...</button>
+          </div>
+        </div>
+      `;
+        
+
+        //  點擊標題可以直接編輯名稱，失焦後自動儲存變更並更新畫面。
+        const title = card.querySelector('.resume-title');
+        const renameBtn = card.querySelector('.rename-btn');
+        title.addEventListener('click', event => event.stopPropagation());
+        title.addEventListener('input', async () => {
+          const next = await loadProfiles();
+          const idx = next.findIndex(item => String(item.id) === String(p.id));
+          if (idx >= 0) {
+            p.name = title.textContent.trim() || '未命名履歷';
+            p.updatedAt = new Date().toISOString();
+
+            // 若此為目前開啟的履歷，同步編輯器標題
+            const openId = document.querySelector('.resume-card.open')?.dataset.id;
+            if (String(p.id) === String(openId)) editorTitle.textContent = p.name;
+          }
+        });
+        if (renameBtn) {
+          renameBtn.addEventListener('click', event => {
+            event.stopPropagation();
+            // focus the title for editing and move caret to end
+            title.focus();
+            try {
+              const range = document.createRange();
+              range.selectNodeContents(title);
+              range.collapse(false);
+              const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+            } catch (err) { /* ignore selection errors */ }
+          });
+        }
+        title.addEventListener('blur', async () => {
+          try {
+            await saveProfileToDB({
+              resume_id: Number(p.id),
+              resume_name: p.name,
+              user_school: p.school,
+              department_grade: p.grade,
+              user_intro: p.intro,
+              tags: p.tags
+            });
+            await renderResumeGallery();
+          } catch (err) {
+            console.error('更新名稱失敗', err);
+          }
+        });
+
+        resumeGallery.appendChild(card);
+      });
+
+
+      const addCard = document.createElement('button');
+      addCard.id = 'addResume';
+      addCard.className = 'add-resume-card';
+      addCard.type = 'button';
+      addCard.innerHTML = `
+      <strong>＋ 新增履歷</strong>
+      <span>針對不同工作客製化履歷，申請隊伍時選擇要附上的版本。</span>
+      `;
+      resumeGallery.appendChild(addCard);
+    }
+
 
     // 將純文字進行 HTML 轉義，防止 XSS 攻擊
     function escapeHtml(str) {
@@ -160,261 +264,464 @@
       }
     }
 
-    // 主邏輯：載入並渲染履歷畫廊（✨ 修正結構對齊 profile.css）
-    async function load() {
-      renderSyncedSidebar();
-      if (!resumeGallery) return;
-      
-      resumeGallery.innerHTML = '<div class="loading-placeholder">正在從伺服器安全載入履歷...</div>';
-      const profiles = await loadProfiles();
-      resumeGallery.innerHTML = '';
 
-      // 1. 渲染已經儲存的履歷卡片
-      if (Array.isArray(profiles)) {
-        profiles.forEach((p, index) => {
-          const card = document.createElement('div');
-          // 第一張卡片顯示「開啟」絲帶
-          card.className = `resume-card ${index === 0 ? 'open' : ''}`;
-          card.innerHTML = `
-            <div class="resume-cover">
-              <div class="resume-ribbon">開啟</div>
-            </div>
-            <div class="resume-body">
-              <h3 class="resume-title">${escapeHtml(p.name)}</h3>
-              <span class="resume-time">${p.updatedAt || '2026/05/28 上午12:00'}</span>
-              <div class="resume-card-actions">
-                <button class="icon-action edit-btn" data-id="${p.id}" type="button">查看</button>
-                <button class="icon-action" type="button">···</button>
-              </div>
-            </div>
-          `;
-          resumeGallery.appendChild(card);
-        });
-      }
-
-      // 2. 渲染右側經典大橘色虛線「+ 新增履歷」按鈕
-      const createCard = document.createElement('div');
-      createCard.className = 'add-resume-card';
-      createCard.innerHTML = `
-        <strong>+ 新增履歷</strong>
-        <span>針對不同工作客製化履歷，申請隊伍時可以選擇要附上的版本。</span>
-      `;
-      createCard.addEventListener('click', () => openEditor(null));
-      resumeGallery.appendChild(createCard);
-
-      // 3. 綁定卡片點擊查看事件
-      resumeGallery.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          openEditor(Number(btn.dataset.id));
-        });
-      });
+    // 從履歷資料還原照片與照片調整設定。
+    function setPhotoFromData(data) {
+      // Ignore any stored photo; keep default avatar
+      photoState = { src: null };
+      renderPhoto();
     }
 
-    // 切換至編輯器介面
-    async function openEditor(id) {
-      if (resumeHome) resumeHome.hidden = true;
-      if (resumeEditor) resumeEditor.removeAttribute('hidden');
-
-      const profiles = await loadProfiles();
-      let current = null;
-
-      if (id !== null) {
-        current = profiles.find(p => p.id === id);
-        setActiveProfileId(id);
-      } else {
-        setActiveProfileId('');
-      }
-
-      if (current) {
-        if (editorTitle) editorTitle.textContent = current.name || '未命名履歷';
-        if ($('name')) $('name').value = current.data?.name || '';
-        if ($('school')) $('school').value = current.data?.school || '';
-        if ($('bio')) $('bio').value = current.data?.bio || '';
-        if ($('email')) $('email').value = current.data?.email || '';
-        if ($('github')) $('github').value = current.data?.github || '';
-        photoState.src = current.data?.photo || null;
-        renderTags(current.data?.tags || []);
-        if (delResume) delResume.style.display = 'inline-block';
-        if (exportBtn) exportBtn.removeAttribute('hidden');
-      } else {
-        if (editorTitle) editorTitle.textContent = '新增專屬履歷';
-        const form = $('profileForm');
-        if (form) form.reset();
-        photoState.src = null;
-        renderTags([]);
-        if (delResume) delResume.style.display = 'none';
-        if (exportBtn) exportBtn.setAttribute('hidden', 'true');
-      }
-
-      if (photoPreview) {
-        photoPreview.style.backgroundImage = photoState.src ? `url(${photoState.src})` : 'none';
-        photoPreview.textContent = photoState.src ? '' : '無相片';
-      }
+    // 將使用者輸入轉成安全文字，避免插入 HTML 時破壞畫面。
+    function escapeHtml(value) {
+      return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-   // 綁定「返回列表」按鈕點擊事件（新增 e.preventDefault() 防止任何表單或網頁重新整理）
-    if (backToGallery) {
-      backToGallery.addEventListener('click', (e) => {
-        if (e) e.preventDefault(); // 阻斷一切網頁原生提交/刷新行為
-        
-        if (resumeHome) resumeHome.hidden = false;       // 秀出列表主首頁
-        if (resumeEditor) resumeEditor.setAttribute('hidden', 'true'); // 隱藏編輯器
-        
-        load(); // 重新載入最新履歷列表
-      });
+    // 將 ISO 時間字串轉成台灣常用的日期時間格式。
+    function formatDateTime(value) {
+      const date = value ? new Date(value) : new Date();
+      if (Number.isNaN(date.getTime())) return '時間未記錄';
+      return date.toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     }
 
-    if (addTag) {
-      addTag.addEventListener('click', () => {
-        if (!newTag) return;
-        const val = newTag.value.trim();
-        if (!val) return;
-        const tags = Array.from(tagsWrap ? tagsWrap.querySelectorAll('.tag') : []).map(el => el.textContent.replace('×', '').trim());
-        if (!tags.includes(val)) {
-          tags.push(val);
-          renderTags(tags);
-        }
-        newTag.value = '';
-      });
+    // 補齊舊履歷缺少的欄位，讓後續渲染可以使用一致格式。
+    // function normalizeProfiles(){
+    //   const ps = loadProfiles().map((profile, index) => ({
+    //     ...profile,
+    //     id: profile.id || Date.now() + index,
+    //     name: profile.name || profile.data?.name || `履歷 ${index + 1}`,
+    //     createdAt: profile.createdAt || profile.updatedAt || new Date().toISOString(),
+    //     updatedAt: profile.updatedAt || profile.createdAt || new Date().toISOString(),
+    //     data: profile.data || {}
+    //   }));
+    //   saveProfiles(ps);
+    //   return ps;
+    // }
+
+    // 以下通知功能是備援：若共用 notifications.js 未載入，仍可顯示基本通知。
+    function loadNotifications() {
+      return JSON.parse(localStorage.getItem('notifications') || '[]');
     }
 
-    if (tagsWrap) {
-      tagsWrap.addEventListener('click', e => {
-        if (e.target.classList.contains('remove')) {
-          const idx = Number(e.target.dataset.idx);
-          const tags = Array.from(tagsWrap.querySelectorAll('.tag')).map(el => el.textContent.replace('×', '').trim());
-          tags.splice(idx, 1);
-          renderTags(tags);
-        }
-      });
-    }
-
-    if (saveBtn) {
-      saveBtn.addEventListener('click', async () => {
-        const titleStr = editorTitle ? editorTitle.textContent.trim() : '未命名履歷';
-        if (!titleStr) { alert('請輸入履歷名稱！'); return; }
-
-        const pId = getActiveProfileId();
-        let profiles = await loadProfiles();
-
-        const tags = Array.from(tagsWrap ? tagsWrap.querySelectorAll('.tag') : []).map(el => el.textContent.replace('×', '').trim());
-        const dataObj = {
-          name: $('name') ? $('name').value.trim() : '',
-          school: $('school') ? $('school').value.trim() : '',
-          bio: $('bio') ? $('bio').value.trim() : '',
-          email: $('email') ? $('email').value.trim() : '',
-          github: $('github') ? $('github').value.trim() : '',
-          tags: tags,
-          photo: photoState.src
-        };
-
-        const nowTime = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' + new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: true });
-
-        if (pId) {
-          const idx = profiles.findIndex(p => p.id === Number(pId));
-          if (idx !== -1) {
-            profiles[idx].name = titleStr;
-            profiles[idx].data = dataObj;
-            profiles[idx].updatedAt = nowTime;
-          }
-        } else {
-          profiles.push({
-            id: Date.now(),
-            name: titleStr,
-            data: dataObj,
-            updatedAt: nowTime
-          });
-        }
-
-        await saveProfiles(profiles);
-        alert('🎉 履歷變更已成功同步！');
-        if (backToGallery) backToGallery.click();
-      });
-    }
-
-    if (delResume) {
-      delResume.addEventListener('click', async () => {
-        const pId = getActiveProfileId();
-        if (!pId) return;
-        if (!confirm('確定要永久刪除此份履歷版本嗎？')) return;
-
-        let profiles = await loadProfiles();
-        profiles = profiles.filter(p => p.id !== Number(pId));
-        await saveProfiles(profiles);
-
-        alert('已成功移除該版本');
-        if (backToGallery) backToGallery.click();
-      });
-    }
-
-    if (exportBtn) {
-      exportBtn.addEventListener('click', () => {
-        const titleStr = editorTitle ? editorTitle.textContent.trim() : 'resume';
-        const tags = Array.from(tagsWrap ? tagsWrap.querySelectorAll('.tag') : []).map(el => el.textContent.replace('×', '').trim());
-        const dataObj = {
-          name: $('name') ? $('name').value.trim() : '',
-          school: $('school') ? $('school').value.trim() : '',
-          bio: $('bio') ? $('bio').value.trim() : '',
-          email: $('email') ? $('email').value.trim() : '',
-          github: $('github') ? $('github').value.trim() : '',
-          tags: tags
-        };
-        const blob = new Blob([JSON.stringify(dataObj, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${titleStr}.json`;
-        a.click();
-      });
-    }
-
-    if (viewResumeBtn) {
-      viewResumeBtn.addEventListener('click', () => {
-        const pId = getActiveProfileId() || 'new';
-        window.open(`/resume-view.html?id=${pId}&userId=${encodeURIComponent(getUserIdFromUrl())}`, '_blank');
-      });
+    function saveNotifications(notifications) {
+      localStorage.setItem('notifications', JSON.stringify(notifications));
     }
 
     function updateNotificationBadge() {
-      const b = $('notificationBadge');
-      if (!b) return;
-      const list = JSON.parse(localStorage.getItem('notifications') || '[]');
-      const unread = list.filter(n => !n.read).length;
-      if (unread > 0) {
-        b.textContent = unread;
-        b.classList.remove('hide');
-      } else {
-        b.classList.add('hide');
+      const notifyBtn = document.getElementById('notifyBtn');
+      if (!notifyBtn) return;
+      const unread = loadNotifications().filter(item => Number(item.userId) === 9999 && !item.read).length;
+      notifyBtn.textContent = unread ? `🔔 ${unread}` : '🔔';
+    }
+
+    function showNotifications() {
+      const existing = document.getElementById('notificationModal');
+      if (existing) existing.remove();
+      const notifications = loadNotifications();
+      const myNotifications = notifications.filter(item => Number(item.userId) === 9999);
+      const modal = document.createElement('div');
+      modal.id = 'notificationModal';
+      modal.className = 'modal notification-modal';
+      modal.innerHTML = `
+      <div class="modal-card notification-card">
+        <h3>通知</h3>
+        <div class="notification-list">
+          ${myNotifications.length ? myNotifications.map(item => `
+            <div class="notification-item ${item.read ? '' : 'unread'}">
+              <strong>${escapeHtml(item.message)}</strong>
+              <span>${formatDateTime(item.createdAt)}</span>
+            </div>
+          `).join('') : '<div class="empty-note">目前沒有通知</div>'}
+        </div>
+        <div class="modal-actions">
+          <button id="closeNotificationModal" class="btn outline">關閉</button>
+        </div>
+      </div>
+    `;
+      document.body.appendChild(modal);
+      notifications.forEach(item => { if (Number(item.userId) === 9999) item.read = true; });
+      saveNotifications(notifications);
+      updateNotificationBadge();
+      modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+      document.getElementById('closeNotificationModal').addEventListener('click', () => modal.remove());
+    }
+
+    function getTeamHref() {
+      const userId = localStorage.getItem("userId");
+      // new URLSearchParams(window.location.search).get('userId');
+      const teamPath = window.location.protocol === 'file:' ? 'team.html' : '/team.html';
+      return userId ? `${teamPath}?userId=${encodeURIComponent(userId)}` : teamPath;
+    }
+
+    // 讀取隊伍資料，並移除展示用預設隊伍。
+    function loadTeams() {
+      const defaultNames = ['AI 聯合隊', '機器人挑戰隊', '資料探勘小隊'];
+      const teams = JSON.parse(localStorage.getItem('teams') || '[]').filter(team => !defaultNames.includes(team.name));
+      localStorage.setItem('teams', JSON.stringify(teams));
+      return teams;
+    }
+
+    // 讀取比賽資料，並補上預設比賽清單。
+    function loadContests() {
+      const existing = JSON.parse(localStorage.getItem('contests') || '[]');
+      const merged = [...existing];
+      seed.forEach(contest => {
+        if (!merged.some(item => Number(item.id) === Number(contest.id))) merged.push(contest);
+      });
+      localStorage.setItem('contests', JSON.stringify(merged));
+      return merged;
+    }
+
+    // 讓履歷首頁側欄同步顯示已加入隊伍與收藏隊伍。
+    function renderSyncedSidebar() {
+      if (!myTeamsBox || !followedBox) return;
+      const allTeams = loadTeams();
+      const contests = loadContests();
+      const userId = new URLSearchParams(window.location.search).get('userId');
+      const currentUserId = userId && userId !== 'unknown' ? userId : '9999';
+      const legacyJoined = JSON.parse(localStorage.getItem('myTeams') || '[]');
+      if (legacyJoined.length) {
+        const migrated = legacyJoined.map(item => item.id ?? item).filter(id => allTeams.some(team => Number(team.id) === Number(id)));
+        localStorage.setItem(`myTeams:${currentUserId}`, JSON.stringify(migrated));
+        localStorage.removeItem('myTeams');
+      }
+      const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${currentUserId}`) || '[]');
+      const joinedTeams = joinedIds.map(id => allTeams.find(team => Number(team.id) === Number(id))).filter(Boolean);
+      const favoriteIds = JSON.parse(localStorage.getItem('favorites') || '[]');
+      const favoriteTeams = favoriteIds.map(id => allTeams.find(team => Number(team.id) === Number(id))).filter(Boolean);
+
+      myTeamsBox.innerHTML = joinedTeams.length ? joinedTeams.map(team => {
+        const contest = contests.find(item => Number(item.id) === Number(team.contestId));
+        return `<div class="sync-item">
+        <strong>${escapeHtml(team.name)}</strong>
+        <span>${contest ? escapeHtml(contest.name) : '未指定比賽'}</span>
+      </div>`;
+      }).join('') : '尚未加入隊伍';
+
+      followedBox.innerHTML = favoriteTeams.length ? favoriteTeams.map(team => {
+        const contest = contests.find(item => Number(item.id) === Number(team.contestId));
+        return `<div class="sync-item">
+        <strong>${escapeHtml(team.name)}</strong>
+        <span>${contest ? `關注比賽：${escapeHtml(contest.name)}` : '已收藏隊伍'}</span>
+      </div>`;
+      }).join('') : '無';
+    }
+
+    // 依照目前使用者與履歷 ID 組成履歷查看頁連結。
+    function getResumeViewHref(id) {
+      const userId = new URLSearchParams(window.location.search).get('userId');
+      const params = new URLSearchParams();
+      if (userId) params.set('userId', userId);
+      params.set('resumeId', id);
+      return `/resume-view.html?${params.toString()}`;
+    }
+
+    // 載入指定履歷並切換到編輯畫面。
+    function loadProfile(id) {
+      setActiveProfileId(id);
+      loadEditorData();
+      showEditor();
+    }
+
+    // 將目前選取履歷的資料填入表單。
+    async function loadEditorData() {
+      const activeId = getActiveProfileId();
+      const ps = await loadProfiles();
+      const profile = ps.find(x => String(x.id) === String(activeId)) || ps[0] || null;
+      const data = profile ? profile.data : {};
+      if (profile && !activeId) setActiveProfileId(profile.id);
+      editorTitle.textContent = profile?.name || '新增履歷';
+      $('name').value = data.name || '';
+      $('school').value = data.school || '';
+      $('grade').value = data.grade || '';
+      $('experience').value = data.experience || '';
+      $('intro').value = data.intro || '';
+      const tags = data.tags || []; renderTags(tags);
+      window._tags = tags;
+      // setPhotoFromData(data);
+    }
+
+    // 編輯器標題可 inline 編輯；變更時同步到當前履歷名稱
+    if (editorTitle) {
+      editorTitle.addEventListener('input', () => {
+        const activeId = getActiveProfileId();
+        if (!activeId) return;
+        const ps = loadProfiles();
+        const idx = ps.findIndex(p => String(p.id) === String(activeId));
+        if (idx >= 0) {
+          const v = editorTitle.textContent.trim() || '未命名履歷';
+          ps[idx].name = v;
+          ps[idx].updatedAt = new Date().toISOString();
+          saveProfiles(ps);
+          // also update gallery render title in-place
+          const card = document.querySelector(`.resume-card[data-id="${activeId}"]`);
+          if (card) {
+            const t = card.querySelector('.resume-title');
+            if (t) t.textContent = v;
+          }
+        }
+      });
+
+      // make sure clicking title in editor doesn't accidentally navigate
+      editorTitle.addEventListener('click', e => e.stopPropagation());
+      // editor header rename button focuses the title for quick editing
+      const editorRenameBtn = document.getElementById('editorRenameBtn');
+      if (editorRenameBtn) {
+        editorRenameBtn.addEventListener('click', e => {
+          e.preventDefault(); e.stopPropagation();
+          try {
+            editorTitle.focus();
+            const range = document.createRange();
+            range.selectNodeContents(editorTitle);
+            range.collapse(false);
+            const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+          } catch (err) { /* ignore */ }
+        });
       }
     }
 
-    function showNotifications(e) {
-      e.stopPropagation();
-      const b = $('notificationBadge');
-      if (b) b.classList.add('hide');
-      const list = JSON.parse(localStorage.getItem('notifications') || '[]');
-      if (!list.length) { alert('目前沒有任何組隊或系統通知。'); return; }
-      alert('【系統最新通知】\n' + list.map(n => `🔔 [${n.time || '剛剛'}] ${n.text}`).join('\n'));
-      localStorage.setItem('notifications', JSON.stringify(list.map(n => ({ ...n, read: true }))));
+    // 顯示履歷列表首頁。
+    async function showGallery() {
+      resumeHome.hidden = false;
+      resumeEditor.hidden = true;
+      await renderResumeGallery();
+      renderSyncedSidebar();
     }
 
+    // 顯示履歷編輯器。
+    async function showEditor() {
+      resumeHome.hidden = true;
+      resumeEditor.hidden = false;
+      await renderResumeGallery();
+    }
+
+    // 頁面初次載入時先讀資料，再顯示列表。
+    async function load() {
+      await loadEditorData();
+      await showGallery();
+    }
+
+    addTag.addEventListener('click', () => {
+      const v = newTag.value.trim(); if (!v) return; window._tags = window._tags || []; window._tags.push(v); newTag.value = ''; renderTags(window._tags);
+    });
+
+    resumeGallery.addEventListener('click', event => {
+      const addCard = event.target.closest('#addResume');
+      const viewButton = event.target.closest('.view-resume');
+      const card = event.target.closest('.resume-card');
+
+      if (addCard) {
+        createResume();
+        return;
+      }
+
+      if (viewButton && card) {
+        event.stopPropagation();
+        window.location.href = getResumeViewHref(card.dataset.id);
+        return;
+      }
+
+      if (card && !event.target.closest('.resume-title')) loadProfile(card.dataset.id);
+    });
+
+    //=======???======
+
+    //===============
+    // ======= 修正後：真正與後端 DB 連線的新增履歷 =======
+    async function createResume() {
+      try {
+        // 1. 先準備一份要送給後端的全新空履歷格式
+        const newProfilePayload = {
+          resume_id: undefined,        // 🌟 傳 undefined，後端看到就知道這是「全新建立」
+          resume_name: '新履歷',
+          user_school: '',
+          department_grade: '',
+          user_intro: '',
+          tags: []                     // 一開始沒有標籤，傳空陣列
+        };
+
+        // 2. 發送給後端，請資料庫執行 INSERT INTO Resumes...
+        // saveProfileToDB 就是我們之前對齊過後端的那支 fetch 函式
+        const result = await saveProfileToDB(newProfilePayload);
+
+        // 3. 後端成功寫入後，會回傳 { ok: true, resumeId: 15 }
+        // 我們要把後端資料庫幫我們生成的「真正 ID」拿回來！
+        const trueId = result.resumeId;
+
+        // 4. 把這個真正的 ID 鎖定為目前正在編輯的履歷
+        setActiveProfileId(trueId);
+
+        // 5. 重新跟後端拉取最新列表（這樣快取 cachedProfiles 才會拿到最新有這份新履歷的資料）
+        await loadProfiles();
+
+        // 6. 把這份新履歷的空白欄位填入右邊編輯器，並切換到編輯畫面
+        await loadEditorData();
+        showEditor();
+
+      } catch (err) {
+        console.error('建立履歷失敗，原因：', err);
+        alert('無法建立新履歷，請檢查網路或資料庫連線');
+      }
+    }
+
+    backToGallery.addEventListener('click', showGallery);
+
+
+    viewResumeBtn.addEventListener('click', () => {
+      const activeId = localStorage.getItem("userId");
+      if (!activeId) { alert('請先新增或選擇一份履歷'); return; }
+      window.location.href = getResumeViewHref(activeId);
+    });
+
+    // 刪除按鈕目前選取的履歷，並更新畫面。
+    // 刪除按鈕：利用 card.dataset.id 抓出當前開啟的履歷並刪除
+    delResume.addEventListener('click', async () => {
+      // 1. 抓出畫面上目前被打開、蓋著「開啟」緞帶的那張履歷卡片
+      const activeCard = document.querySelector('.resume-card.open');
+
+      // 2. 防呆：萬一使用者還沒點任何卡片就按刪除，提示他
+      if (!activeCard) {
+        alert('沒有選中的履歷');
+        return;
+      }
+
+      // 🌟 3. 精髓在這一行！直接從這張卡片的 HTML 號碼牌（data-id）把履歷 ID 挖出來！
+      const resumeIdToDelete = activeCard.dataset.id;
+
+      // 4. 跳出確認視窗，問使用者是不是真的要刪除
+      if (!confirm('確定要刪除這份履歷嗎？')) return;
+
+      try {
+        // 5. 呼叫刪除 API，把剛剛挖到的「真．履歷 ID」傳給後端
+        const success = await deleteProfile(resumeIdToDelete);
+
+        if (success) {
+          // 🌟 6. 刪除成功後，清除全域的選取狀態（因為那份履歷已經在地球上消失了）
+          setActiveProfileId(null);
+
+          // 7. 重新向後端重新整理列表，那張卡片就會從畫面上消失
+          await renderResumeGallery();
+
+          // 8. 讓右邊的編輯器表單恢復空白（或是抓剩下第一份的資料）
+          await loadEditorData();
+
+          alert('履歷已成功刪除！');
+        }
+      } catch (err) {
+        console.error('刪除過程中發生錯誤：', err);
+        alert('刪除失敗，請檢查資料庫連線');
+      }
+    });
+
+    exportBtn.addEventListener('click', () => {
+      // Inline validation: clear old errors
+      const clearErrors = () => { $('error-name').textContent = ''; $('error-school').textContent = ''; $('error-intro').textContent = ''; };
+      clearErrors();
+      const nameVal = $('name').value.trim();
+      const schoolVal = $('school').value.trim();
+      const introVal = $('intro').value.trim();
+      const invalids = [];
+      if (!nameVal) { $('error-name').textContent = '姓名為必填'; invalids.push($('name')); }
+      if (!schoolVal) { $('error-school').textContent = '學校為必填'; invalids.push($('school')); }
+      if (!introVal) { $('error-intro').textContent = '請簡短介紹自己'; invalids.push($('intro')); }
+      if (invalids.length) { invalids[0].focus(); return; }
+      const data = {
+        name: nameVal, school: schoolVal, grade: $('grade').value,
+        experience: $('experience').value, intro: introVal, tags: window._tags || [],
+      };
+      const s = JSON.stringify(data, null, 2);
+      const blob = new Blob([s], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'profile.json'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    // 即時同步姓名欄位：主姓名輸入變更時，同步更新目前履歷資料。
+    $('name').addEventListener('input', async (e) => {
+      const v = e.target.value;
+      const activeId = getActiveProfileId();
+      if (!activeId) return;
+      const ps = await loadProfiles();
+      const idx = ps.findIndex(p => String(p.id) === String(activeId));
+      if (idx >= 0) { ps[idx].data = { ...(ps[idx].data || {}), name: v }; ps[idx].updatedAt = new Date().toISOString(); saveProfiles(ps); }
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      // Inline validation on save: show errors and focus first empty
+      const clearErrors2 = () => { $('error-name').textContent = ''; $('error-school').textContent = ''; $('error-intro').textContent = ''; };
+      clearErrors2();
+      // const nameVal2 = $('name').value.trim();
+      // const schoolVal2 = $('school').value.trim();
+      // const introVal2 = $('intro').value.trim();
+      // const invalids2 = [];
+
+      const nameVal = $('name').value.trim();
+      const schoolVal = $('school').value.trim();
+      const gradeVal = $('grade').value.trim();
+      const introVal = $('intro').value.trim();
+
+      if (!nameVal) { $('error-name').textContent = '姓名為必填'; invalids.push($('name')); }
+      if (!schoolVal) { $('error-school').textContent = '學校為必填'; invalids.push($('school')); }
+      if (!introVal) { $('error-intro').textContent = '請簡短介紹自己'; invalids.push($('intro')); }
+      if (invalids.length) { invalids[0].focus(); return; }
+
+      const activeResumeId = getActiveProfileId();
+      const payload = {
+        resume_id: activeResumeId ? Number(activeResumeId) : undefined,
+        resume_name: nameVal,
+        user_school: schoolVal,
+        department_grade: gradeVal,
+        user_intro: introVal,
+        tags: window._tags || []
+      };
+
+      try {
+        // 4. 送去給我們之前接好後端的 saveProfileToDB 函式
+        const result = await saveProfileToDB(payload);
+
+        // 5. 🌟 關鍵：如果是「第一次存全新履歷」，後端會產生一個新 ID
+        // 我們要把這個新 ID 抓回來，更新前端的紀錄本，不然下次再按儲存就會變成重複新增了！
+        if (result && result.resumeId) {
+          setActiveProfileId(result.resumeId);
+        }
+
+        // 6. 儲存成功後，重新跟後端拉取最新資料更新快取
+        await loadProfiles();
+        // 7. 重新刷洗左邊的履歷卡片列表（這樣卡片上的更新時間、名字才會同步變更）
+        await renderResumeGallery();
+
+        alert('已成功儲存至資料庫！');
+
+      } catch (err) {
+        console.error('儲存按鈕執行失敗：', err);
+        alert('儲存失敗，請確認後端伺服器與資料庫是否正常連線');
+      }
+    });
+
+    // Photo upload and editing removed; photoPreview kept only for display.
+
+    // 右上角按鈕的防禦性綁定，避免缺少共用模組時整頁失效。
     try {
-      const notifyBtn = $('notifyBtn');
-      const teamBtn = $('teamBtn');
+      console.log('profile.js loaded - binding top-right buttons');
+      const notifyBtn = document.getElementById('notifyBtn');
+      const avatarBtn = document.getElementById('avatarBtn');
+      const teamBtn = document.getElementById('teamBtn');
       if (notifyBtn && !window.AppNotifications) notifyBtn.addEventListener('click', showNotifications);
       if (teamBtn) {
         const teamHref = getTeamHref();
         teamBtn.setAttribute('href', teamHref);
+        teamBtn.addEventListener('click', event => {
+          event.preventDefault();
+          window.location.href = teamHref;
+        });
+        teamBtn.setAttribute('data-href', teamHref);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error binding top-right buttons:', err);
+      // 若綁定失敗，至少保留組隊按鈕的基本導頁能力。
+      const teamBtn = document.getElementById('teamBtn');
+      if (teamBtn) teamBtn.setAttribute('href', 'team.html');
     }
-
-    const logoLink = document.querySelector('.logo-link');
-    if (logoLink) {
-      logoLink.setAttribute('href', getTeamHref());
-    }
-
+    document.querySelector('.logo-link')?.setAttribute('href', new URLSearchParams(window.location.search).get('userId') ? `/team.html?userId=${encodeURIComponent(new URLSearchParams(window.location.search).get('userId'))}` : '/team.html');
     window.addEventListener('storage', e => {
       if (['myTeams', 'favorites', 'teams', 'contests'].includes(e.key)) renderSyncedSidebar();
       if (e.key === 'notifications' && !window.AppNotifications) updateNotificationBadge();
@@ -422,11 +729,16 @@
 
     load();
     if (!window.AppNotifications) updateNotificationBadge();
-  }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
+  }
+  // 確保 DOM 完成後才初始化，並記錄啟動錯誤方便除錯。
+  try {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  } catch (err) {
+    console.error('profile.js initialization failed:', err);
   }
 })();
