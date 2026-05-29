@@ -57,6 +57,7 @@
     menu.innerHTML = `
       <a href="${withUser('/profile.html')}">我的履歷</a>
       <a href="${withUser('/account-info.html')}">帳號資訊</a>
+      <a href="${withUser('/myTeam.html')}">隊伍管理</a>
       <a href="${withUser('/history.html')}">歷史紀錄</a>
       <button onclick="logout()" class="logout-btn">登出</button>
     `;
@@ -86,7 +87,7 @@
     alert('您已成功登出');
     
     // 4. 強制跳轉回首頁，且不帶任何使用者參數 (解決跳轉問題)
-    window.location.href = 'team.html'; 
+    window.location.href = 'contests.html'; 
   };
 
   // 動態注入帳號選單樣式，避免每個頁面重複寫 CSS。
