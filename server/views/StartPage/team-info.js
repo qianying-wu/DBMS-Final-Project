@@ -1,4 +1,4 @@
-import { currentUserId, withUserParam, escapeHtml } from './team-data.js';
+// import { currentUserId, withUserParam, escapeHtml } from './team-data.js';
 
 // 使用立即執行函式 (IIFE) 包裝，避免內部的變數污染到全域環境
 (function(){

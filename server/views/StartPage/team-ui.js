@@ -9,38 +9,93 @@ function formatDate(value) {
 }
 
 // 渲染側邊欄區塊：包含「我加入的隊伍」、「我收藏的隊伍」以及「我管理的隊伍」
-export function renderSidebarTeams(teams) {
+export async function renderSidebarTeams() {
   const myJoinedTeams = document.getElementById('myJoinedTeams');
   const myOwnedTeams = document.getElementById('myOwnedTeams');
   const myFavsEl = document.getElementById('myFavs');
+  
   if (!myJoinedTeams || !myOwnedTeams) return;
 
-  // 1. 處理並渲染「我加入的隊伍」
-  const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${currentUserId}`) || '[]');
-  const joined = joinedIds.map(id => teams.find(team => Number(team.id) === Number(id))).filter(Boolean);
-  myJoinedTeams.innerHTML = joined.length ? `<ul class="managed-list">${joined.map(team => `<li><span>${escapeHtml(team.name)}</span></li>`).join('')}</ul>` : '尚未加入隊伍';
+  const token = localStorage.getItem('token');
+  const userId = localStorage.getItem('userId'); // 或是由全域 ME.id 取得
 
-  // 2. 處理並渲染「我的收藏 (隊伍)」
-  const favs = loadFavorites();
-  const favEls = favs.map(id => {
-    const team = teams.find(item => item.id === id);
-    return team ? `<li><strong>${escapeHtml(team.name)}</strong></li>` : null;
-  }).filter(Boolean);
-  if (myFavsEl) myFavsEl.innerHTML = favEls.length ? `<ul class="fav-list">${favEls.join('')}</ul>` : '尚無收藏隊伍';
-
-  // 3. 處理並渲染「我建立的隊伍」
-  const owned = teams.filter(team => String(team.owner) === String(currentUserId) || (String(currentUserId) === String(ME.id) && Number(team.owner) === Number(ME.id)));
-  if (!owned.length) {
-    myOwnedTeams.textContent = '尚未建立隊伍';
+  if (!token || !userId) {
+    myJoinedTeams.textContent = '請先登入';
+    myOwnedTeams.textContent = '請先登入';
     return;
   }
 
-  // 渲染建立的隊伍，並顯示目前有多少待處理的「加入請求 (pending)」
-  const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
-  myOwnedTeams.innerHTML = `<ul class="managed-list">${owned.map(team => {
-    const pending = reqs.filter(request => request.teamId === team.id && request.status === 'pending').length;
-    return `<li><span>${escapeHtml(team.name)}</span><span class="pending-count">${pending}</span> <button class="btn outline manage-btn" data-team="${team.id}">管理</button></li>`;
-  }).join('')}</ul>`;
+  try {
+    // 1. 處理並渲染「我加入的隊伍」(從資料庫撈取 Membership 狀態為通過的)
+    const joinedRes = await fetch(`/api/teams/my-joined?userId=${userId}`, {
+      headers: { 'Authorization': ` ${token}` }
+    });
+
+    if (!joinedRes.ok) throw new Error(`伺服器回應錯誤碼: ${joinedRes.status}`);
+    const joinedData = await joinedRes.json();
+
+    if (joinedData.success && joinedData.data.length > 0) {
+      myJoinedTeams.innerHTML = `
+        <ul class="managed-list">
+          ${joinedData.data.map(team => `<li><span>${escapeHtml(team.team_name)}</span></li>`).join('')}
+        </ul>`;
+    } else {
+      myJoinedTeams.textContent = '尚未加入隊伍';
+    }
+
+    // 2. 處理並渲染「我的收藏 (隊伍)」(從資料庫 user_favorites_com 撈取)
+    if (myFavsEl) {
+      myFavsEl.innerHTML = '<div style="padding:5px; color:#666;">載入中...</div>';
+      
+      const favsRes = await fetch(`/api/teams/my-favorites?userId=${userId}`, {
+        headers: { 'Authorization': ` ${token}` }
+      });
+      
+      if (!favsRes.ok) throw new Error(`收藏伺服器回應錯誤: ${favsRes.status}`);
+      
+      const favsData = await favsRes.json();
+
+      if (favsData.success && favsData.data.length > 0) {
+        myFavsEl.innerHTML = `
+          <ul class="fav-list">
+            ${favsData.data.map(team => `
+              <li style="padding: 5px 0; border-bottom: 1px dotted #eee;">
+                <strong style="color: #333;">${escapeHtml(team.team_name)}</strong>
+              </li>
+            `).join('')}
+          </ul>`;
+      } else {
+        myFavsEl.textContent = '尚無收藏隊伍';
+      }
+    }
+
+    // 3. 處理並渲染「我建立的隊伍」與「待處理請求數 (pending)」
+    const ownedRes = await fetch(`/api/teams/my-owned?userId=${userId}`, {
+      headers: { 'Authorization': ` ${token}` }
+    });
+    const ownedData = await ownedRes.json();
+
+    if (ownedData.success && ownedData.data.length > 0) {
+      // <span class="pending-count">${team.pending_count || 0}</span> 
+
+      myOwnedTeams.innerHTML = `
+        <ul class="managed-list">
+          ${ownedData.data.map(team => `
+            <li>
+              <span>${escapeHtml(team.team_name)}</span>
+              <button class="btn outline manage-btn" data-team="${team.team_id}">管理</button>
+            </li>
+          `).join('')}
+        </ul>`;
+    } else {
+      myOwnedTeams.textContent = '尚未建立隊伍';
+    }
+
+  } catch (error) {
+    console.error('❌ 側邊欄聯動資料庫失敗:', error);
+    myJoinedTeams.textContent = '載入失敗';
+    myOwnedTeams.textContent = '載入失敗';
+  }
 }
 
 // 渲染主畫面中，目前所選比賽的詳細資訊標題區塊
@@ -73,27 +128,30 @@ export function renderContestCategoryList(contests, selectedContest, expandedCon
     }))
     .filter(category => category.contests.length);
 
-  // 保留使用者目前的展開狀態；空字串代表全部收合，不再自動打開第一個分類。
-  const currentExpanded = expandedContestCategory;
+// 🚀 關鍵：一打開網頁時不自動打開任何分類（將 currentExpanded 設為空或 null）
+  // 如果 expandedContestCategory 一開始是空的，isOpen 就絕對會是 false
+  const currentExpanded = expandedContestCategory || '';
 
   list.innerHTML = categories.map(category => {
-    const isOpen = category.key === currentExpanded;
+    // 只有當 key 完全符合目前使用者點擊的項目時，IsOpen 才會是 true
+    const isOpen = category.key === currentExpanded && currentExpanded !== '';
+    
     return `
-      <li class="contest-category ${isOpen ? 'open' : ''}">
-        <button class="contest-category-toggle" type="button" data-contest-category="${category.key}" aria-expanded="${isOpen}">
-          <span>${escapeHtml(category.label)}</span>
-          <span class="contest-category-count">${category.contests.length} 個</span>
-        </button>
-        <div class="contest-category-panel">
-          ${category.contests.map(contest => `
-            <button class="contest-child ${Number(selectedContest) === Number(contest.id) ? 'active' : ''}" type="button" data-cid="${contest.id}" aria-label="前往 ${escapeHtml(contest.name)} 詳細">
-              <strong>${escapeHtml(contest.name)}</strong>
-              <span>${escapeHtml(contest.date || '日期未定')}</span>
-            </button>
-          `).join('')}
-        </div>
-      </li>
-    `;
+    <li class="contest-category">
+      <button class="contest-category-toggle" type="button" data-contest-category="${category.key}" aria-expanded="false">
+        <span>${escapeHtml(category.label)}</span>
+        <span class="contest-category-count">${category.contests.length} 個</span>
+      </button>
+      <div class="contest-category-panel" style="max-height: 0;">
+        ${category.contests.map(contest => `
+          <button class="contest-child ${Number(selectedContest) === Number(contest.id) ? 'active' : ''}" type="button" data-cid="${contest.id}">
+            <strong>${escapeHtml(contest.name)}</strong>
+            <span>${escapeHtml(contest.date || '日期未定')}</span>
+          </button>
+        `).join('')}
+      </div>
+    </li>
+  `;
   }).join('');
   return currentExpanded;
 }

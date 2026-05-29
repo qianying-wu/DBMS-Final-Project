@@ -164,22 +164,150 @@ export const createTeam = async (req, res) => {
     await connection.execute(
       `INSERT INTO Membership (user_id, team_id, role, mem_status) 
          VALUES (?, ?, '建立人', '通過')`,
-      [Number(user_id), newTeamId]
+        [Number(user_id), newTeamId]
+      );
+  
+      await connection.commit();
+  
+      res.status(201).json({
+        success: true,
+        message: '隊伍建立成功！',
+        team_id: newTeamId
+      });
+  
+    } catch (error) {
+      await connection.rollback();
+      console.error('建立隊伍與 Membership 失敗:', error);
+      res.status(500).json({ success: false, message: '伺服器內部錯誤' });
+    } finally {
+      connection.release();
+    }
+  };
+
+// 取得「已加入的隊伍」---------邏輯：在 Membership 中狀態為 '通過'，且不論他是組員還是建立人（或者你想排除建立人，可改為 role = '組員'）
+export const getMyJoinedTeams = async (req, res) => {
+  const { userId } = req.query;
+
+  if (!userId) return res.status(400).json({ success: false, message: '缺少使用者 ID' });
+
+  try {
+    const [teams] = await pool.execute(
+      `SELECT t.team_id, t.team_name, t.current_member_count, t.num_limit
+       FROM Membership m
+       JOIN Team t ON m.team_id = t.team_id
+       WHERE m.user_id = ? AND m.mem_status = '通過'`,
+      [userId]
     );
 
-    await connection.commit();
-
-    res.status(201).json({
-      success: true,
-      message: '隊伍建立成功！',
-      team_id: newTeamId
-    });
-
+    res.status(200).json({ success: true, data: teams });
   } catch (error) {
-    await connection.rollback();
-    console.error('建立隊伍與 Membership 失敗:', error);
+    console.error('SQL 撈取已加入隊伍出錯:', error);
     res.status(500).json({ success: false, message: '伺服器內部錯誤' });
-  } finally {
-    connection.release();
   }
 };
+
+// 取得「我收藏的隊伍」
+export const getMyFavoriteTeams = async (req, res) => {
+    const { userId } = req.query;
+  
+    if (!userId) {
+      return res.status(400).json({ success: false, message: '缺少使用者 ID' });
+    }
+  
+    try {
+      // 🚀 雙表聯查：直接拿收藏的 team_id 串接 team 資料表
+      const [favTeams] = await pool.execute(
+        `SELECT t.team_id, t.team_name
+         FROM user_favorites_team f
+         JOIN Team t ON f.team_id = t.team_id
+         WHERE f.user_id = ? AND t.teamStatus = 'active'`,
+        [userId]
+      );
+  
+      res.status(200).json({ 
+        success: true, 
+        data: favTeams 
+      });
+    } catch (error) {
+      console.error('❌ SQL 撈取收藏隊伍出錯:', error);
+      res.status(500).json({ success: false, message: '伺服器資料庫錯誤' });
+    }
+};
+
+// 取得「我建立的隊伍」-------邏輯：在 Membership 中 role = '建立人' 的所有隊伍
+export const getMyOwnedTeams = async (req, res) => {
+  const { userId } = req.query;
+
+  if (!userId) return res.status(400).json({ success: false, message: '缺少使用者 ID' });
+
+  try {
+    const [teams] = await pool.execute(
+      `SELECT t.team_id, t.team_name, t.current_member_count, t.num_limit
+       FROM Membership m
+       JOIN Team t ON m.team_id = t.team_id
+       WHERE m.user_id = ? AND m.role = '建立人'`,
+      [userId]
+    );
+
+    res.status(200).json({ success: true, data: teams });
+  } catch (error) {
+    console.error('SQL 撈取建立隊伍出錯:', error);
+    res.status(500).json({ success: false, message: '伺服器內部錯誤' });
+  }
+};
+
+// 收藏 / 取消收藏
+export const toggleFavorite = async (req, res) => {
+    const { userId, teamId } = req.body;
+  
+    // 1. 基本安全檢查：確保前端有把這兩個重要的 ID 傳過來
+    if (!userId || !teamId) {
+      return res.status(400).json({ success: false, message: '缺少必要參數 userId 或 teamId' });
+    }
+  
+    try {
+      // 2. 🚀 精準查詢：[favRows] 加括號解構，確保拿到的是資料陣列
+      const [favRows] = await pool.execute(
+        'SELECT * FROM user_favorites_team WHERE user_id = ? AND team_id = ?',
+        [Number(userId), Number(teamId)]
+      );
+  
+      console.log(`[收藏除錯] 查詢 user_id: ${userId}, team_id: ${teamId} 找到的資料筆數: ${favRows.length}`);
+  
+      // 3. 核心偵測機制
+      if (favRows && favRows.length > 0) {
+        // 🎯 後端明確偵測到：這筆收藏「已經存在」了 -> 代表使用者現在點擊是要「取消收藏」
+        console.log('👉 狀態：已存在，執行 [取消收藏] DELETE 動作');
+        
+        await pool.execute(
+          'DELETE FROM user_favorites_team WHERE user_id = ? AND team_id = ?',
+          [Number(userId), Number(teamId)]
+        );
+        
+        return res.status(200).json({ 
+          success: true, 
+          action: 'unfavorite', 
+          message: '已成功從資料庫取消收藏！' 
+        });
+  
+      } else {
+        // 🎯 後端明確偵測到：這筆收藏「不存在」 -> 代表使用者現在點擊是要「新增收藏」
+        console.log('👉 狀態：不存在，執行 [新增收藏] INSERT 動作');
+        
+        await pool.execute(
+          'INSERT INTO user_favorites_team (user_id, team_id) VALUES (?, ?)',
+          [Number(userId), Number(teamId)]
+        );
+        
+        return res.status(201).json({ 
+          success: true, 
+          action: 'favorite', 
+          message: '已成功寫入資料庫收藏！' 
+        });
+      }
+  
+    } catch (error) {
+      console.error('❌ 後端偵測/切換收藏時發生 SQL 錯誤:', error);
+      res.status(500).json({ success: false, message: '伺服器內部錯誤，請檢查資料庫欄位' });
+    }
+  };

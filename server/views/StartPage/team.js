@@ -30,7 +30,7 @@ const loginPromptCancel = $('loginPromptCancel');
 
 // 初始化狀態變數
 let currentPreferences = isLoggedIn() ? (window.AppPreferences?.getFallbackPreferences(Data.currentUserId) || []) : [];
-let expandedContestCategory = localStorage.getItem('expandedContestCategory') || '';
+let expandedContestCategory = '';
 let currentAd = 0;
 const collapsedSideCards = new Set(JSON.parse(localStorage.getItem('collapsedSideCards') || '[]'));
 
@@ -172,20 +172,6 @@ async function render() {
     UI.renderSidebarTeams(teams);
     UI.renderFollowedContests(contests, contestFavs);
   }
-}
-
-// 點擊事件：切換某個隊伍的收藏狀態
-function toggleFavorite(id) {
-  if (!isLoggedIn) {
-    requireLogin('【系統提示】請先登入才能收藏隊伍喔！');
-    return;
-  }
-  const favorites = Data.loadFavorites();
-  const index = favorites.indexOf(id);
-  if (index >= 0) favorites.splice(index, 1);
-  else favorites.push(id);
-  Data.saveFavorites(favorites);
-  render();
 }
 
 // 點擊事件：切換某個比賽的收藏狀態
@@ -408,20 +394,49 @@ const avatarBtn = $('avatarBtn');
 
 // 監聽左側選單點擊：展開/折疊分類，或者選中特定比賽並更新網址跳轉
 document.addEventListener('click', event => {
+  
   const categoryButton = event.target.closest('[data-contest-category]');
   if (categoryButton) {
     const key = categoryButton.dataset.contestCategory;
+    
+    // 🚀 只在記憶體中切換狀態，移除所有 localStorage.setItem 與 removeItem
     expandedContestCategory = expandedContestCategory === key ? '' : key;
-    if (expandedContestCategory) localStorage.setItem('expandedContestCategory', expandedContestCategory);
-    else localStorage.removeItem('expandedContestCategory');
-    render();
+    // 🚀 找到被點擊的那個分類的 <li> 容器
+    const currentLi = categoryButton.closest('.contest-category');
+    const currentPanel = currentLi.querySelector('.contest-category-panel');
+    
+    // 🚀 檢查點擊的是不是已經打開的
+    const isAlreadyOpen = currentLi.classList.contains('open');
+
+    // 1. 先把「其他」已經打開的分類通通關掉（手風琴效果，若不需要可刪除這段）
+    document.querySelectorAll('.contest-category').forEach(li => {
+      if (li !== currentLi) {
+        li.classList.remove('open');
+        li.querySelector('.contest-category-panel').style.maxHeight = '0';
+      }
+    });
+
+    // 2. 切換當前點擊分類的 open 狀態與高度
+    if (isAlreadyOpen) {
+      currentLi.classList.remove('open');
+      currentPanel.style.maxHeight = '0'; // 收合
+    } else {
+      currentLi.classList.add('open');
+      // 🚀 關鍵核心：動態塞入它實際的內容高度（scrollHeight），動畫才會絕對精準滑順！
+      currentPanel.style.maxHeight = currentPanel.scrollHeight + 'px'; // 展開
+    }
+
+    // 🚀 【極重要】把原本的 render(); 註冊掉或刪掉！
+    // 這樣才不會因為重新刷新 innerHTML 而把剛做好的動畫打斷！
+    // render(); 
+
     return;
   }
+  
   const contestButton = event.target.closest('#contestsList [data-cid]');
   if (!contestButton) return;
   if (!requireLogin('查看比賽完整資訊需要先登入。')) return;
   const cid = Number(contestButton.dataset.cid);
-  // Data.setSelectedContestId(cid);
   location.href = Data.withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
 });
 
