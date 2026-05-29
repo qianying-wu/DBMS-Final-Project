@@ -27,6 +27,7 @@
         </svg>
       </button>
     </div>
+    </header>
 
     <main class="layout profile-layout">
       <section class="content profile-content">
@@ -36,8 +37,10 @@
               <h2 class="page-title">個人履歷</h2>
               <p>建立不同用途的履歷，申請隊伍時可以選擇要附上的版本。</p>
             </div>
+             </div>
+         <div id="resumeGallery" class="resume-gallery"></div> 
+     
           </div>
-
          
 
         <div id="resumeEditor" class="card editor-card" hidden>
@@ -130,12 +133,7 @@
     <script src="/notifications.js"></script>
     <script src="/account-menu.js"></script>
     <script src="/profile.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const qs = new URLSearchParams(location.search);
-        const userId = qs.get('userId') || 'unknown';
-      });
-    </script> 
+   
 </body>
 
 </html>
