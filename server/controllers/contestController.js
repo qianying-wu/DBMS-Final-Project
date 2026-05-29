@@ -5,7 +5,7 @@ export const getAllContests = async (req, res) => {
     try {
         // 📝 執行 SQL：從資料庫撈取比賽
         const [rows] = await pool.query('SELECT com_id, com_name, com_date, com_enroll_ddl, com_intro, com_link, com_location, com_reward, com_fee FROM Competition');
-        
+
         // 把撈出來的陣列用 JSON 格式回傳給前端
         return res.json(rows);
     } catch (error) {

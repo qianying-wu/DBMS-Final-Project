@@ -134,20 +134,7 @@
           </div>
         </div>
       `;
-        //   const card = document.createElement('article');
-        //   card.className = `resume-card${String(p.id) === String(activeId) ? ' open' : ''}`;
-        //   card.dataset.id = p.id; // 每張卡片都帶上自己的 ID，點擊時可以知道是哪一份履歷
-        //   card.innerHTML = `
-        //   <div class="resume-cover"><span class="resume-ribbon">開啟</span></div>
-        //   <div class="resume-body">
-        //     <h3 class="resume-title" contenteditable="true" spellcheck="false">${escapeHtml(p.name || '未命名履歷')}</h3>
-        //     <span class="resume-time">${formatDateTime(p.updatedAt || p.createdAt)}</span>
-        //     <div class="resume-card-actions">
-        //       <button class="icon-action view-resume" type="button" aria-label="查看履歷">查看</button>
-        //       <button class="icon-action edit-resume" type="button" aria-label="編輯履歷">...</button>
-        //     </div>
-        //   </div>
-        // `;
+        
 
         //  點擊標題可以直接編輯名稱，失焦後自動儲存變更並更新畫面。
         const title = card.querySelector('.resume-title');
@@ -210,13 +197,71 @@
     }
 
 
-    // 根據目前照片狀態更新預覽區。
-    function renderPhoto() {
-      // No-op if photo preview element was removed from DOM
-      if (!photoPreview) return;
-      // Ensure default styling (no user-supplied photo)
-      if (photoPreview.classList) photoPreview.classList.remove('has-photo');
-      try { const img = photoPreview.querySelector && photoPreview.querySelector('img'); if (img) img.remove(); } catch (e) { /* ignore */ }
+    // 將純文字進行 HTML 轉義，防止 XSS 攻擊
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    // 取得當前網址列的 userId，用來保持登入與選單同步
+    function getUserIdFromUrl() {
+      return new URLSearchParams(window.location.search).get('userId') || localStorage.getItem('userId') || 'unknown';
+    }
+
+    function getTeamHref() {
+      const id = getUserIdFromUrl();
+      const base = '/team.html';
+      return id !== 'unknown' ? `${base}?userId=${encodeURIComponent(id)}` : base;
+    }
+
+    // 渲染左側狀態欄（包含同步外部的「我的隊伍」與「關注的比賽」）
+    function renderSyncedSidebar() {
+      const uId = getUserIdFromUrl();
+      
+      const savedName = localStorage.getItem('userName');
+      if ($('profileUsername') && savedName) {
+        $('profileUsername').textContent = savedName;
+      }
+      if ($('profileUserEmail')) {
+        $('profileUserEmail').textContent = uId !== 'unknown' ? '已驗證參賽者' : '訪客身分';
+      }
+
+      if (myTeamsBox) {
+        const teams = JSON.parse(localStorage.getItem('myTeams') || '[]');
+        if (!teams.length) {
+          myTeamsBox.innerHTML = '<li class="empty-item">尚未加入任何隊伍</li>';
+        } else {
+          myTeamsBox.innerHTML = teams.map(t => `
+            <li onclick="window.location.href='${getTeamHref()}'">
+              <span class="team-dot"></span>
+              <div class="list-content">
+                <strong>${escapeHtml(t.name)}</strong>
+                <span>角色: ${escapeHtml(t.role || '隊員')}</span>
+              </div>
+            </li>
+          `).join('');
+        }
+      }
+
+      if (followedBox) {
+        const favs = JSON.parse(localStorage.getItem('favorites') || '[]');
+        const contests = JSON.parse(localStorage.getItem('contests') || '[]');
+        const myFavContests = contests.filter(c => favs.includes(c.id));
+
+        if (!myFavContests.length) {
+          followedBox.innerHTML = '<li class="empty-item">尚未關注任何比賽</li>';
+        } else {
+          followedBox.innerHTML = myFavContests.map(c => `
+            <li onclick="window.location.href='${getTeamHref()}'">
+              <span class="contest-dot"></span>
+              <div class="list-content">
+                <strong>${escapeHtml(c.name)}</strong>
+                <span>時間: ${escapeHtml(c.date)}</span>
+              </div>
+            </li>
+          `).join('');
+        }
+      }
     }
 
 

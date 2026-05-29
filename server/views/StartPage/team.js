@@ -25,8 +25,8 @@ const loginPromptCancel = $('loginPromptCancel');
 // localStorage.setItem("token", token);
 //localStorage.setItem("current_user_id", response.userId); // 把當前登入者的 ID 存起來 
 
-const token = localStorage.getItem("token");
-const currentUserId = localStorage.getItem("userId");
+// const token = localStorage.getItem("token");
+// const currentUserId = localStorage.getItem("userId");
 
 // 初始化狀態變數
 let currentPreferences = isLoggedIn() ? (window.AppPreferences?.getFallbackPreferences(Data.currentUserId) || []) : [];
@@ -94,6 +94,7 @@ function renderAuthAction() {
   }
 }
 
+// 他媽這誰寫的
 // 首頁允許瀏覽；一旦要查看詳情、收藏、建立隊伍等互動，就用這個彈窗提醒登入。
 function requireLogin(message = '這個功能需要登入後才能使用。') {
   if (isLoggedIn()) return true;
@@ -133,7 +134,7 @@ async function render() {
 
   // 呼叫 UI 模組渲染各個區塊
   if (isLoggedIn()) UI.renderRecommendations(contests, currentPreferences);
-  else ;
+  else;
   UI.renderContestOverview(contests, teams, selectedContest, contestFavs);
   expandedContestCategory = UI.renderContestCategoryList(contests, selectedContest, expandedContestCategory);
 
@@ -144,6 +145,7 @@ async function render() {
     const isOwner = String(team.owner) === String(Data.currentUserId) || (String(Data.currentUserId) === String(Data.ME.id) && Number(team.owner) === Number(Data.ME.id));
     const pending = reqs.filter(request => request.teamId === team.id && request.status === 'pending').length;
     const contest = contests.find(item => Number(item.id) === Number(team.contestId));
+
 
     // 建立隊伍卡片 DOM 並附加到 teamsGrid 容器中
     const card = document.createElement('div');
@@ -172,22 +174,10 @@ async function render() {
   }
 }
 
-
-// {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//       "Authorization": `JWT ${token}`,   // ← 這行是重點
-//     },
-//     body: JSON.stringify({ emp_no: "E002", name: "王小明" }),
-// }
-
-
 // 點擊事件：切換某個隊伍的收藏狀態
 function toggleFavorite(id) {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    requireLogin('【系統提示】請先登入才能收藏比賽喔！');
+  if (!isLoggedIn) {
+    requireLogin('【系統提示】請先登入才能收藏隊伍喔！');
     return;
   }
   const favorites = Data.loadFavorites();
@@ -195,16 +185,13 @@ function toggleFavorite(id) {
   if (index >= 0) favorites.splice(index, 1);
   else favorites.push(id);
   Data.saveFavorites(favorites);
-  // Update sidebar favorites immediately for snappier UX, then re-render main content
-  if (isLoggedIn()) UI.renderSidebarTeams(Data.loadTeams());
   render();
 }
 
 // 點擊事件：切換某個比賽的收藏狀態
 function toggleContestFavorite(id) {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    requireLogin('【系統提示】請先登入才能收藏隊伍喔！');
+  if (!isLoggedIn) {
+    requireLogin('【系統提示】請先登入才能收藏比賽喔！');
     return;
   }
   const favs = Data.loadContestFavorites();
@@ -212,8 +199,6 @@ function toggleContestFavorite(id) {
   if (index >= 0) favs.splice(index, 1);
   else favs.push(Number(id));
   Data.saveContestFavorites(favs);
-  // Refresh followed/contest lists on the sidebar immediately, then re-render main content
-  if (isLoggedIn()) UI.renderFollowedContests(Data.loadContests(), Data.loadContestFavorites());
   render();
 }
 
@@ -347,11 +332,7 @@ teamsGrid && teamsGrid.addEventListener('click', event => {
   if (!btn) return;
   const teamId = btn.dataset.id || btn.dataset.team;
   if (!teamId) return;
-  if (btn.classList.contains('fav-btn')) {
-    if (!requireLogin('請先登入才能收藏隊伍。')) return;
-    toggleFavorite(Number(teamId));
-    return;
-  }
+  if (btn.classList.contains('fav-btn')) { toggleFavorite(Number(teamId)); return; }
   if (btn.classList.contains('manage-btn')) { openRequestsForTeam(Number(teamId)); return; }
   openTeamDetail(Number(teamId));
 });
@@ -380,13 +361,10 @@ const openCreateTeamPage = () => {
   location.href = getCreateTeamHref();
 };
 
-//如果頁面上還有另一個按鈕 openCreate，也順便一起保護起來：
-if (openCreate) { // 乾這裡的邏輯是反的
+if (openCreate) {
   openCreate.addEventListener('click', (e) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    if (!isLoggedIn) {
       requireLogin('【系統提示】請先登入才能創建隊伍喔！');
-      return;
     }
     openCreateTeamPage();
   });
@@ -481,7 +459,6 @@ contestsGrid && contestsGrid.addEventListener('click', event => {
   const favBtn = event.target.closest('[data-contest-fav]');
   if (favBtn) {
     event.stopPropagation();
-    if (!requireLogin('請先登入才能收藏比賽。')) return;
     toggleContestFavorite(Number(favBtn.dataset.contestFav));
     return;
   }
