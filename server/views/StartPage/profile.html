@@ -28,7 +28,6 @@
       </button>
     </div>
   </header>
-  </header>
 
   <main class="layout profile-layout">
     <section class="content profile-content">
@@ -100,6 +99,10 @@
                 <button id="addTag" type="button" aria-label="新增專長">＋</button>
               </div>
             </div>
+            <div class="editor-actions">
+              <button id="backToGallery" type="button" class="btn outline">返回列表</button>
+              <button id="viewResumeBtn" type="button" class="btn outline">查看制式履歷</button>
+            </div>
           </div>
 
           <div class="row">
@@ -110,13 +113,18 @@
             </div>
           </div>
 
+          <form id="profileForm">
 
-          <div class="actions-row">
-            <button id="saveBtn" type="button" class="btn primary">儲存</button>
-            <button id="exportBtn" type="button" class="btn outline">匯出 JSON</button>
-            <button id="delResume" type="button" class="btn outline danger">刪除此履歷</button>
-          </div>
-        </form>
+
+
+            <!-- 操作按鈕 -->
+            <div class="actions-row">
+              <button id="saveBtn" type="button" class="btn primary">儲存</button>
+              <button id="exportBtn" type="button" class="btn outline">匯出 JSON</button>
+              <button id="delResume" type="button" class="btn outline danger">刪除此履歷</button>
+            </div>
+
+          </form>
       </div>
     </section>
   </main>
