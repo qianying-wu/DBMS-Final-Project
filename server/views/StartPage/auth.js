@@ -82,11 +82,11 @@
       url.searchParams.set('userId', userId);
       return url.pathname + url.search;
     }
-    return '/team.html?userId=' + encodeURIComponent(userId);
+    return '/contests.html?userId=' + encodeURIComponent(userId);
   }
 
   back.addEventListener('click', () => {
-    location.href = qs.get('redirect') || '/team.html';
+    location.href = qs.get('redirect') || '/contests.html';
   });
 
   // 點擊送出按鈕時，驗證欄位並發送 POST 請求給後端 API。

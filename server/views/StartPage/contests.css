@@ -76,7 +76,23 @@
 
 .contest-card h3 { margin: 0 0 10px; color: #4f3827; font-size: 18px; padding-right: 60px; line-height: 1.3;}
 .contest-card .category { color: #a17851; font-size: 13px; margin: 0 0 8px; font-weight: 700; }
-.contest-card .desc { color: #5b6570; font-size: 14px; line-height: 1.5; margin: 0 0 16px; flex: 1; }
+.contest-card .desc { 
+  color: #5b6570; 
+  font-size: 14px; 
+  line-height: 1.5; 
+  margin: 0 0 16px; 
+  flex: 1; 
+
+  /* 🚀 新增：限制最多顯示 3 行，多餘文字自動變省略號 (...) */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;          /* 你可以調整這個數字，決定要看得到幾行 */
+  -webkit-box-orient: vertical;  
+  overflow: hidden;               /* 隱藏超出範圍的文字 */
+  text-overflow: ellipsis;        /* 安全防護：文字溢出時顯示省略號 */
+  
+  /* 可選：配合 line-height 計算最大高度 (14px * 1.5 * 3行 = 63px)，確保撐開時的排版高度穩定 */
+  max-height: 63px;
+}
 
 .card-footer {
   display: flex;

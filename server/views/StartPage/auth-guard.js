@@ -35,7 +35,7 @@
       // localStorage.clear(); 
     
       // 3. 跳轉：導回首頁或登入頁
-      window.location.href = '/team.html'; 
+      window.location.href = '/contests.html'; 
     };
   
     // 確保一進頁面就執行同步

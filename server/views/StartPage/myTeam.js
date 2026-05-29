@@ -1,242 +1,222 @@
-import * as Data from './team-data.js';
+import * as Data from '../team-data.js';
 
 // DOM 元素選擇器輔助
 const $ = id => document.getElementById(id);
 
-// 核心狀態管理 (從主程式移入)
-const collapsedSideCards = new Set(JSON.parse(localStorage.getItem('collapsedSideCards') || '[]'));
+// 核心狀態管理
 let currentPreferences = [];
+let allContestsData = []; // 快取比賽資料，供隊伍卡片對照比賽名稱使用
+let activeTab = 'joined'; // 預設當前分頁：已加入
 
 /**
- * 👑 初始化右側邊欄的所有事件監聽
+ * 👑 1. 初始化管理控制台的所有事件監聽
  */
-export function initRightSidebar() {
-  const rightSidebar = document.querySelector('.sidebar.right');
-  if (!rightSidebar) return;
+export function initManageDashboard() {
+  const sidebarNav = document.querySelector('.manage-menu');
+  if (!sidebarNav) return;
 
-  // 1. 綁定卡片「展開 / 折疊」的點擊事件
-  rightSidebar.addEventListener('click', event => {
-    const toggle = event.target.closest('[data-card-toggle]');
-    if (!toggle) return;
-    const card = toggle.closest('[data-collapsible-card]');
-    if (!card) return;
-
-    const key = card.dataset.collapsibleCard;
-    card.classList.toggle('collapsed');
-    const isCollapsed = card.classList.contains('collapsed');
-    toggle.setAttribute('aria-expanded', String(!isCollapsed));
-    
-    if (isCollapsed) collapsedSideCards.add(key);
-    else collapsedSideCards.delete(key);
-    
-    localStorage.setItem('collapsedSideCards', JSON.stringify([...collapsedSideCards]));
-  });
-
-  // 2. 綁定「我加入的隊伍 / 我建立的隊伍」內部頁籤切換
-  const myJoinedTeams = $('myJoinedTeams');
-  const myOwnedTeams = $('myOwnedTeams');
-  
-  rightSidebar.addEventListener('click', event => {
-    const button = event.target.closest('[data-my-team-tab]');
+  // 綁定左側控制邊欄的「分類切換」點擊事件
+  sidebarNav.addEventListener('click', async event => {
+    const button = event.target.closest('[data-team-tab]');
     if (!button) return;
 
-    const tab = button.dataset.myTeamTab;
-    const targetPanel = tab === 'joined' ? myJoinedTeams : myOwnedTeams;
-    const isAlreadyOpen = button.classList.contains('active') && targetPanel && !targetPanel.hidden;
+    // 切換按鈕的 active 狀態
+    document.querySelectorAll('[data-team-tab]').forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+
+    // 更新右側主畫面的標題
+    const tab = button.dataset.teamTab;
+    activeTab = tab;
     
-    if (isAlreadyOpen) {
-      button.classList.remove('active');
-      if (targetPanel) targetPanel.hidden = true;
-      return;
+    const tabTitles = {
+      joined: '👥 已加入的隊伍',
+      owned: '👑 我建立的隊伍',
+      favorites: '♥ 我的收藏隊伍',
+      history: '🕒 歷史紀錄隊伍'
+    };
+    if ($('currentTabTitle')) {
+      $('currentTabTitle').textContent = tabTitles[tab] || '隊伍列表';
     }
-    
-    document.querySelectorAll('[data-my-team-tab]').forEach(item => item.classList.toggle('active', item === button));
-    if (myJoinedTeams) myJoinedTeams.hidden = tab !== 'joined';
-    if (myOwnedTeams) myOwnedTeams.hidden = tab !== 'owned';
+
+    // 重新驅動中央主畫面的資料撈取與字卡渲染
+    renderTeamsGridSection();
   });
-
-  // 3. 綁定側邊欄「我管理的隊伍」內部的管理按鈕監聽
-  if (myOwnedTeams) {
-    myOwnedTeams.addEventListener('click', event => {
-      const btn = event.target.closest('.manage-btn');
-      if (btn && window.AppReview?.openTeamRequests) {
-        window.AppReview.openTeamRequests(Number(btn.dataset.team));
-      }
-    });
-  }
-
-  // 4. 綁定「推薦比賽」點擊跳轉事件
-  const recommendedContests = $('recommendedContests');
-  if (recommendedContests) {
-    recommendedContests.addEventListener('click', event => {
-      const preferenceLink = event.target.closest('a');
-      if (preferenceLink && !isLoggedIn()) {
-        event.preventDefault();
-        if (typeof window.requireLogin === 'function') window.requireLogin('設定個人化標籤需要先登入。');
-        return;
-      }
-      
-      const card = event.target.closest('[data-cid]');
-      if (!card) return;
-      if (!isLoggedIn()) {
-        if (typeof window.requireLogin === 'function') window.requireLogin('查看推薦比賽詳情需要先登入。');
-        return;
-      }
-      
-      if (typeof Data.setSelectedContestId === 'function') {
-        Data.setSelectedContestId(Number(card.dataset.cid));
-      }
-      location.href = Data.withUserParam(`/contest.html?id=${encodeURIComponent(card.dataset.cid)}`);
-    });
-  }
-
-  // 5. 恢復使用者上次留下的卡片收合記憶
-  applySideCardCollapseState();
-
-  // 6. 如果登入，異步加載個性化推薦標籤
-  const userId = localStorage.getItem('userId'); // 🚀 修正：改從本地獲取可靠的 userId
-  if (isLoggedIn() && userId && window.AppPreferences?.loadUserPreferences) {
-    window.AppPreferences.loadUserPreferences(userId).then(preferences => {
-      currentPreferences = preferences;
-      const rightSide = document.getElementById('rightSide') || document.querySelector('.sidebar.right');
-      if (rightSide && rightSide.style.display !== 'none') {
-        fetchAndRenderRecommended();
-      }
-    });
-  }
 }
 
 /**
- * 👑 刷新並渲染右側所有需要接資料庫的區塊
+ * 👑 2. 驅動並渲染中央主畫面的隊伍字卡網格 (依照當前 activeTab)
  */
-export async function updateRightSidebar(globalContests = [], globalTeams = []) {
-  const rightSide = document.getElementById('rightSide') || document.querySelector('.sidebar.right');
-  if (!isLoggedIn() || (rightSide && rightSide.style.display === 'none')) {
-    return;
-  }
+export async function renderTeamsGridSection() {
+  const gridContainer = $('teamsGrid');
+  if (!gridContainer) return;
+
+  gridContainer.innerHTML = '<div class="loading-placeholder">動態資料加載中...</div>';
 
   const token = localStorage.getItem('token');
   const userId = localStorage.getItem('userId');
 
+  if (!isLoggedIn()) {
+    gridContainer.innerHTML = '<div class="empty-text">請先登入以管理您的隊伍。</div>';
+    return;
+  }
+
+  // 根據左側選單設定對應的後端 API 端點
+  let apiEndpoint = '';
+  switch (activeTab) {
+    case 'joined':
+      apiEndpoint = `/api/teams/my-joined?userId=${userId}`;
+      break;
+    case 'owned':
+      apiEndpoint = `/api/teams/my-owned?userId=${userId}`;
+      break;
+    case 'favorites':
+      apiEndpoint = `/api/teams/my-favorites?userId=${userId}`;
+      break;
+    case 'history':
+      apiEndpoint = `/api/teams/my-history?userId=${userId}`; // 確保後端有此路由，或先用 joined 模擬
+      break;
+    default:
+      apiEndpoint = `/api/teams/my-joined?userId=${userId}`;
+  }
+
   try {
-    const [joinedRes, ownedRes, favsRes] = await Promise.all([
-      fetch(`/api/teams/my-joined?userId=${userId}`, { headers: { 'Authorization': ` ${token}` } }),
-      fetch(`/api/teams/my-owned?userId=${userId}`, { headers: { 'Authorization': ` ${token}` } }),
-      fetch(`/api/teams/my-favorites?userId=${userId}`, { headers: { 'Authorization': ` ${token}` } })
-    ]);
+    const res = await fetch(apiEndpoint, { 
+      headers: { 'Authorization': `Bearer ${token}` } 
+    });
+    
+    if (!res.ok) throw new Error('API 回傳失敗');
+    const result = await res.json();
+    
+    // 取得隊伍陣列 (相容 success.data 或直接回傳陣列)
+    const teams = result.data || result.teams || (Array.isArray(result) ? result : []);
 
-    // 1. 渲染「已加入的隊伍」
-    const myJoinedTeamsEl = $('myJoinedTeams');
-    if (myJoinedTeamsEl && joinedRes.ok) {
-      const joinedData = await joinedRes.json();
-      if (joinedData.success && joinedData.data.length > 0) {
-        myJoinedTeamsEl.innerHTML = 
-        `<ul class="side-list">${joinedData.data.map(t => `
-            <li><a href="${Data.withUserParam(`/team-info.html?teamId=${t.team_id}`)}">${Data.escapeHtml(t.team_name)}</a></li>`
-        ).join('')}</ul>`;
-      } else {
-        myJoinedTeamsEl.textContent = '尚未加入隊伍';
-      }
+    if (teams.length === 0) {
+      gridContainer.innerHTML = `<div class="empty-text">目前在此分類下查無任何隊伍。</div>`;
+      return;
     }
 
-    // 2. 渲染「我建立的隊伍」
-    const myOwnedTeamsEl = $('myOwnedTeams');
-    if (myOwnedTeamsEl && ownedRes.ok) {
-      const ownedData = await ownedRes.json();
-      if (ownedData.success && ownedData.data.length > 0) {
-        myOwnedTeamsEl.innerHTML = `<ul class="side-list">${ownedData.data.map(t => `
-          <li style="display:flex;justify-content:space-between;align-items:center; margin-bottom: 4px;">
-            <a href="${Data.withUserParam(`/team-info.html?teamId=${t.team_id}`)}">${Data.escapeHtml(t.team_name)}</a>
-            <button class="btn outline manage-btn" style="padding:2px 6px;font-size:12px;" data-team="${t.team_id}">管理</button>
-          </li>`).join('')}</ul>`;
-      } else {
-        myOwnedTeamsEl.textContent = '尚未建立隊伍';
-      }
-    }
+    // 渲染「精緻的隊伍字卡框框」
+    gridContainer.innerHTML = teams.map(t => {
+      // 判斷角色標籤：如果當前分頁本來就是我建立的，或是資料中 owner_id 等於目前登入者
+      const isCreator = activeTab === 'owned' || String(t.owner_id) === String(userId);
+      const badgeHtml = isCreator 
+        ? `<span class="role-badge creator">我創立</span>` 
+        : `<span class="role-badge member">已加入</span>`;
 
-    // 3. 渲染「我的收藏隊伍」
-    const myFavsEl = $('myFavs');
-    if (myFavsEl && favsRes.ok) {
-      const favsData = await favsRes.json();
-      if (favsData.success && favsData.data.length > 0) {
-        myFavsEl.innerHTML = `<ul class="fav-list">${favsData.data.map(t => `<li><strong>${Data.escapeHtml(t.team_name)}</strong></li>`).join('')}</ul>`;
-      } else {
-        myFavsEl.textContent = '尚無收藏隊伍';
-      }
-    }
+      // 預留容錯欄位名 (後端欄位可能為 t.competition_name 或 t.com_name)
+      const contestName = t.competition_name || t.com_name || '未指定特定競賽';
+      const currentCount = t.current_members || t.member_count || 1;
+      const maxCount = t.max_members || 5;
 
-    // 4. 渲染「關注的比賽」(延用舊邏輯)
-    const contestFavs = JSON.parse(localStorage.getItem('favoriteContests') || '[]');
-    const followedEl = $('followed');
-    if (followedEl && globalContests.length > 0) {
-      const favContests = globalContests.filter(c => contestFavs.includes(Number(c.id || c.com_id)));
-      if (favContests.length > 0) {
-        followedEl.innerHTML = `<ul class="side-list">${favContests.map(c => `<li><a href="${Data.withUserParam(`/contest.html?id=${c.id || c.com_id}`)}">${Data.escapeHtml(c.name || c.com_name)}</a></li>`).join('')}</ul>`;
-      } else {
-        followedEl.textContent = '無';
-      }
-    }
+      return `
+        <div class="team-manage-card">
+            <div class="card-top">
+                ${badgeHtml}
+                <h3 class="team-title">${Data.escapeHtml(t.team_name)}</h3>
+            </div>
+            <div class="card-mid">
+                <div class="info-row">
+                  <span class="label">競賽項目：</span>
+                  <span class="val">${Data.escapeHtml(contestName)}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">目前人數：</span>
+                  <span class="val">${currentCount} / ${maxCount} 人</span>
+                </div>
+            </div>
+            <div class="card-bottom">
+                <button class="btn-manage-action" data-team-id="${t.team_id || t.id}">
+                  管理隊伍
+                </button>
+            </div>
+        </div>
+      `;
+    }).join('');
 
-    // 5. 渲染「推薦比賽」
-    if (globalContests.length > 0) {
-      renderRecommendationsUI(globalContests, currentPreferences);
-    } else {
-      fetchAndRenderRecommended();
-    }
+    // 綁定所有新生成卡片的「管理隊伍」按鈕點擊跳轉事件
+    gridContainer.querySelectorAll('.btn-manage-action').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const teamId = btn.dataset.teamId;
+        location.href = Data.withUserParam(`/team-info.html?teamId=${teamId}`);
+      });
+    });
 
   } catch (error) {
-    console.error('❌ 右側邊欄即時異步渲染失敗:', error);
+    console.error('❌ 中央管理字卡驅動失敗:', error);
+    gridContainer.innerHTML = '<div class="empty-text" style="color:red;">資料載入失敗，請確認伺服器連線。</div>';
   }
 }
 
 /**
- * 內部輔助：單獨為推薦比賽撈取資料庫
+ * 👑 3. 渲染下方的固定輔助區塊：關注比賽、專屬推薦
  */
-async function fetchAndRenderRecommended() {
+export async function loadSummaryContestsZone() {
+  const token = localStorage.getItem('token');
+  
+  // 1. 撈取關注的比賽 (由 localStorage 驅動對照，或後端 API)
+  const followedEl = $('followed');
+  const contestFavs = JSON.parse(localStorage.getItem('favoriteContests') || '[]');
+
   try {
+    // 預先拉取一次大賽庫以利後面推薦與關注對照
     const res = await fetch('/api/contests/competitions');
-    if (!res.ok) return;
-    const result = await res.json();
-    const contests = result.competitions || result;
-    renderRecommendationsUI(contests, currentPreferences);
+    if (res.ok) {
+      const result = await res.json();
+      allContestsData = result.competitions || result || [];
+    }
+
+    // 渲染關注比賽
+    if (followedEl && allContestsData.length > 0) {
+      const favContests = allContestsData.filter(c => contestFavs.includes(Number(c.id || c.com_id)));
+      if (favContests.length > 0) {
+        followedEl.innerHTML = favContests.map(c => `
+          <a href="${Data.withUserParam(`/contest.html?id=${c.id || c.com_id}`)}" class="contest-item-link">
+            <span>📌 ${Data.escapeHtml(c.name || c.com_name)}</span>
+            <span style="font-size:12px; color:#caa77a;">查看詳情 →</span>
+          </a>
+        `).join('');
+      } else {
+        followedEl.innerHTML = '<div class="empty-text">暫無關注的比賽</div>';
+      }
+    }
+
+    // 2. 撈取並渲染專屬推薦比賽
+    const userId = localStorage.getItem('userId');
+    if (isLoggedIn() && userId && window.AppPreferences?.loadUserPreferences) {
+      currentPreferences = await window.AppPreferences.loadUserPreferences(userId);
+    }
+    renderRecommendationsUI(allContestsData, currentPreferences);
+
   } catch (err) {
-    console.error('❌ 推薦區塊獨立拉取失敗:', err);
+    console.error('❌ 下方競賽摘要區載入失敗:', err);
   }
 }
 
 /**
- * 內部輔助：把組裝好的推薦卡片塞入 DOM
+ * 內部輔助：渲染推薦比賽垂直清單
  */
 function renderRecommendationsUI(contests, preferences) {
   const body = $('recommendedBody');
   if (!body) return;
   
   const tags = preferences.length ? preferences : ['熱門'];
+  // 篩選符合興趣標籤的前 3 個比賽
   const filtered = contests.filter(c => tags.some(t => (c.com_intro || '').includes(t))).slice(0, 3);
   
   if (filtered.length === 0) {
-    body.innerHTML = '<div class="box">暫無適合的推薦比賽</div>';
+    body.innerHTML = '<div class="empty-text">暫無適合的推薦比賽</div>';
     return;
   }
 
   body.innerHTML = filtered.map(c => `
-    <div class="recommend-item" data-cid="${c.com_id || c.id}" style="cursor:pointer; padding:8px 0; border-bottom:1px solid #eee;">
-      <strong style="font-size:14px;color:#4f3827;">${Data.escapeHtml(c.com_name || c.name)}</strong>
-      <p style="margin:4px 0 0; font-size:12px; color:#888;">${Data.escapeHtml((c.com_intro || '').substring(0, 30))}...</p>
-    </div>
+    <a href="${Data.withUserParam(`/contest.html?id=${c.com_id || c.id}`)}" class="contest-item-link" data-cid="${c.com_id || c.id}">
+      <div>
+        <span style="display:block;">✨ ${Data.escapeHtml(c.com_name || c.name)}</span>
+        <small style="font-size:11px; color:#99k; font-weight:400;">${Data.escapeHtml((c.com_intro || '').substring(0, 35))}...</small>
+      </div>
+      <span style="font-size:12px; color:#caa77a; flex-shrink:0; margin-left:10px;">推薦 →</span>
+    </a>
   `).join('');
-}
-
-/**
- * 內部輔助：套用折疊狀態
- */
-function applySideCardCollapseState() {
-  document.querySelectorAll('[data-collapsible-card]').forEach(card => {
-    const key = card.dataset.collapsibleCard;
-    const isCollapsed = collapsedSideCards.has(key);
-    card.classList.toggle('collapsed', isCollapsed);
-    card.querySelector('[data-card-toggle]')?.setAttribute('aria-expanded', String(!isCollapsed));
-  });
 }
 
 function isLoggedIn() {
@@ -244,8 +224,12 @@ function isLoggedIn() {
   return Boolean(token && token.trim() !== "");
 }
 
+const homeLink = $('homeLink');
+if (homeLink) homeLink.href = withUserParam('/contests.html');
+
 // ----------------------------------
 // --- 🚀 初始自動啟動流程 ---
 // ----------------------------------
-initRightSidebar();     // 1. 建立監聽器
-updateRightSidebar();   // 2. 🚀 新增：頁面一開，自動驅動撈取資料庫並把資料塞進側邊欄！
+initManageDashboard();       // 1. 綁定左側導覽選單控制監聽
+renderTeamsGridSection();    // 2. 頁面一開，預設抓取渲染「已加入的隊伍」字卡
+loadSummaryContestsZone();   // 3. 同步載入底部關注與推薦資訊

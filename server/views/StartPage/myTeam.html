@@ -1,69 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="header.css">
     <link rel="stylesheet" href="myTeam.css">
-    <title>我的隊伍</title>
+    <title>隊伍管理中心</title>
 </head>
 <body>
-    <!------- top bar --------->
     <header class="topbar">
-        <a id="homeLink" href="team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
+        <a id="homeLink" href="contests.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
         <div class="actions">
-            <!--右上的個人icon圖示-->
-          <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="8" r="4"/>
-              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-            </svg>
-          </button>
+            <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="8" r="4"/>
+                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+            </button>
         </div>
-      </header>
+    </header>
 
-    <!------- kv --------->
-    <div class="layout-single">
-        <div class="sidebar right">
-            <section class="side-card side-card-team" data-collapsible-card="teams">
-            <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">我的隊伍</button>
-            <div class="side-card-body">
-                <div class="team-tabs" role="tablist">
-                <button class="team-tab" data-my-team-tab="joined" type="button">已加入的隊伍</button>
-                <button class="team-tab" data-my-team-tab="owned" type="button">我建立的隊伍</button>
+    <div class="layout-manage">
+        
+        <aside class="manage-sidebar">
+            <div class="sidebar-title">隊伍管理中心</div>
+            <nav class="manage-menu" role="tablist">
+                <button class="menu-item active" data-team-tab="joined" type="button">
+                    <span class="menu-icon">👥</span> 已加入的隊伍
+                </button>
+                <button class="menu-item" data-team-tab="owned" type="button">
+                    <span class="menu-icon">👑</span> 我建立的隊伍
+                </button>
+                <button class="menu-item" data-team-tab="favorites" type="button">
+                    <span class="menu-icon">♥</span> 我的收藏隊伍
+                </button>
+                <button class="menu-item" data-team-tab="history" type="button">
+                    <span class="menu-icon">🕒</span> 歷史紀錄隊伍
+                </button>
+            </nav>
+        </aside>
+
+        <main class="manage-content">
+            
+            <section class="content-section">
+                <h2 id="currentTabTitle" class="section-main-title">已加入的隊伍</h2>
+                
+                <div id="teamsGrid" class="teams-management-grid">
+                    <div class="loading-placeholder">資料載入中...</div>
                 </div>
-                <div id="myJoinedTeams" class="box my-team-panel" hidden>尚未加入隊伍</div>
-                <div id="myOwnedTeams" class="box my-team-panel" hidden>尚未建立隊伍</div>
+            </section>
+
+            <div class="contests-summary-zone">
+                <section class="summary-box">
+                    <h3 class="sub-zone-title">📌 關注的比賽與動態</h3>
+                    <div id="followed" class="summary-list-vertical">
+                        <div class="empty-text">暫無關注的比賽</div>
+                    </div>
+                </section>
+
+                <section id="recommendedContests" class="summary-box">
+                    <h3 class="sub-zone-title">✨ 專屬推薦比賽</h3>
+                    <div id="recommendedBody" class="summary-list-vertical">
+                        </div>
+                </section>
             </div>
-            </section>
-    
-            <section class="side-card side-card-fav" data-collapsible-card="favorites">
-            <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">我的收藏隊伍</button>
-            <div class="side-card-body">
-                <div id="myFavs" class="box">尚無收藏隊伍</div>
-            </div>
-            </section>
-    
-            <section class="side-card side-card-follow" data-collapsible-card="followed">
-            <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">關注的比賽 / 訊息</button>
-            <div class="side-card-body">
-                <div id="followed" class="list box">無</div>
-            </div>
-            </section>
-    
-            <!-- 個人化推薦區：固定放在右側欄位最下方。 -->
-            <section id="recommendedContests" class="side-card side-card-recommend recommended-contests"
-            data-collapsible-card="recommendations">
-            <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">推薦比賽</button>
-            <div id="recommendedBody" class="side-card-body"></div>
-            </section>
-        </div>
+
+        </main>
     </div>
 
-
-
-    <!-- js -->
     <script src="account-menu.js"></script>
     <script type="module" src="myTeam.js"></script>
 </body>

@@ -390,7 +390,7 @@
       if (result.success) {
         alert('🎉 隊伍與成員身分同步建立成功！');
         // 🚀 順利解鎖跳轉功能
-        window.location.href = withUserParam('/team.html');
+        window.location.href = withUserParam('/contests.html');
       } else {
         alert('建立隊伍失敗：' + (result.message || '未知錯誤'));
       }
@@ -400,9 +400,9 @@
     }
   });
 
-  $('cancelBtn').addEventListener('click', () => { location.href = withUserParam('/team.html'); });
-  $('backBtn').addEventListener('click', () => { location.href = withUserParam('/team.html'); });
-  document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/team.html'));
+  $('cancelBtn').addEventListener('click', () => { location.href = withUserParam('/contests.html'); });
+  $('backBtn').addEventListener('click', () => { location.href = withUserParam('/contests.html'); });
+  document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/contests.html'));
 
   // 負責網頁載入啟動的監聽器，回呼函式要加上 async
   document.addEventListener('DOMContentLoaded', async () => {

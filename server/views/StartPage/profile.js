@@ -210,7 +210,7 @@
 
     function getTeamHref() {
       const id = getUserIdFromUrl();
-      const base = '/team.html';
+      const base = '/contests.html';
       return id !== 'unknown' ? `${base}?userId=${encodeURIComponent(id)}` : base;
     }
 
@@ -349,7 +349,7 @@
     function getTeamHref() {
       const userId = localStorage.getItem("userId");
       // new URLSearchParams(window.location.search).get('userId');
-      const teamPath = window.location.protocol === 'file:' ? 'team.html' : '/team.html';
+      const teamPath = window.location.protocol === 'file:' ? 'contests.html' : '/contests.html';
       return userId ? `${teamPath}?userId=${encodeURIComponent(userId)}` : teamPath;
     }
 
@@ -721,7 +721,6 @@
       const teamBtn = document.getElementById('teamBtn');
       if (teamBtn) teamBtn.setAttribute('href', 'team.html');
     }
-    document.querySelector('.logo-link')?.setAttribute('href', new URLSearchParams(window.location.search).get('userId') ? `/team.html?userId=${encodeURIComponent(new URLSearchParams(window.location.search).get('userId'))}` : '/team.html');
     window.addEventListener('storage', e => {
       if (['myTeams', 'favorites', 'teams', 'contests'].includes(e.key)) renderSyncedSidebar();
       if (e.key === 'notifications' && !window.AppNotifications) updateNotificationBadge();
@@ -741,4 +740,8 @@
   } catch (err) {
     console.error('profile.js initialization failed:', err);
   }
+
+  const homeLink = $('homeLink');
+  if (homeLink) homeLink.href = withUserParam('/contests.html');
+  
 })();

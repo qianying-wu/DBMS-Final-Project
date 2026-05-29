@@ -1,4 +1,5 @@
 (function(){
+
   // 將目前網址上的 userId 附加到導頁連結。
   function withUser(path){
     const userId = new URLSearchParams(location.search).get('userId');
@@ -58,7 +59,6 @@
       <a href="${withUser('/profile.html')}">我的履歷</a>
       <a href="${withUser('/account-info.html')}">帳號資訊</a>
       <a href="${withUser('/myTeam.html')}">隊伍管理</a>
-      <a href="${withUser('/history.html')}">歷史紀錄</a>
       <button onclick="logout()" class="logout-btn">登出</button>
     `;
     document.body.appendChild(menu);
@@ -74,7 +74,7 @@
 
     // 2. 清除登入狀態
     localStorage.removeItem('token');
-    localStorage.removeItem('user'); // 檢查你們存的是什麼 key，如果不確定就用 localStorage.clear();
+    localStorage.removeItem('userId'); // 檢查你們存的是什麼 key，如果不確定就用 localStorage.clear();
 
     // 🚀 新增：把畫面上所有的紅色愛心變回灰色/空心
     // 假設你的愛心標籤是 <i class="fav-btn active"> 或 <div class="fav-btn red">

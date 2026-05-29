@@ -168,7 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
       loadReviews();
     });
   }
-
+  const homeLink = $('homeLink');
+  if (homeLink) homeLink.href = withUserParam('/contests.html');
+  
   loadResumeData();
   loadReviews();
 });

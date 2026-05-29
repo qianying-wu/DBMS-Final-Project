@@ -1,5 +1,6 @@
 // 使用立即執行函式 (IIFE) 包裝，避免內部的變數污染到全域環境
 (function(){
+
   // DOM 元素選擇器簡寫
   const $ = id => document.getElementById(id);
   
@@ -238,7 +239,8 @@
     if (joinBtn) openTeamDetail(Number(joinBtn.dataset.id)); 
   });
 
-  document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/team.html'));
+  const homeLink = $('homeLink');
+  if (homeLink) homeLink.href = withUserParam('/contests.html');
 
   // 頁面載入後執行初始渲染
   render();

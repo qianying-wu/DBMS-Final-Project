@@ -296,4 +296,8 @@
     inferContestTags,
     scoreContest
   };
+
+  const homeLink = $('homeLink');
+  if (homeLink) homeLink.href = withUserParam('/contests.html');
+  
 })();

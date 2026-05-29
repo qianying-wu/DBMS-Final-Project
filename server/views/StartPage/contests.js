@@ -109,8 +109,7 @@ $('contestsGrid')?.addEventListener('click', event => {
 });
 
 const homeLink = $('homeLink');
-if (homeLink) homeLink.href = withUserParam('/team.html');
-
+if (homeLink) homeLink.href = withUserParam('/contests.html');
 
 // 頁面初始載入時，先從後端讀取資料庫，再執行篩選渲染。
 document.addEventListener('DOMContentLoaded', () => {
