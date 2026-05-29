@@ -11,7 +11,7 @@
 
   // --- 資料讀寫輔助函式區塊 ---
 
-  // 🚀 轉正版：從後端真實資料庫讀取全部比賽
+  // 🚀 從後端真實資料庫讀取全部比賽
   async function loadContests() {
     try {
       const res = await fetch('/api/contests/competitions'); 
@@ -20,29 +20,26 @@
       const result = await res.json();
       const dbContests = result.competitions || result; 
 
-      console.log('📦 資料庫原始比賽資料：', dbContests);
-
-      // 🛠️ 對齊修正：讓屬性名稱完美對應你的 render 渲染欄位
       const mappedContests = dbContests.map(contest => ({
         id: contest.com_id,                             
         name: contest.com_name,                       
-        com_date: contest.com_date || '日期未定',    // 👉 對齊 contest.com_date
-        com_enroll_ddl: contest.com_enroll_ddl || '報名截止未定', // 👉 對齊 contest.com_enroll_ddl
-        com_intro: contest.com_intro || '尚未填寫說明', // 👉 對齊 contest.com_intro
+        com_date: contest.com_date || '日期未定',    
+        com_enroll_ddl: contest.com_enroll_ddl || '報名截止未定', 
+        com_intro: contest.com_intro || '尚未填寫說明', 
         com_link: contest.com_link || '#',
-        com_location: contest.com_location || '地點未定', // 👉 對齊 contest.com_location
-        com_reward: contest.com_reward || '獎勵未定', // 👉 對齊 contest.com_reward
-        com_fee: contest.com_fee || '費用未定' // 👉 若你後端有提供比賽費用欄位，對齊它
+        com_location: contest.com_location || '地點未定', 
+        com_reward: contest.com_reward || '獎勵未定', 
+        com_fee: contest.com_fee || '費用未定' 
       }));
 
       return mappedContests;
     } catch (err) {
-      console.error('❌ 讀取比賽資料庫失敗，啟用空陣列防護:', err);
+      console.error('❌ 讀取比賽資料庫失敗:', err);
       return [];
     }
   }
 
-  // 🚀 轉正版：從後端真實資料庫讀取全部隊伍
+  // 🚀 從後端真實資料庫讀取全部隊伍
   async function loadTeams() {
     try {
       const res = await fetch('/api/teams/all'); 
@@ -51,31 +48,42 @@
       const result = await res.json();
       const dbTeams = result.data || result.teams || result;
 
-      console.log('📦 資料庫原始隊伍資料：', dbTeams);
-
-      // 🛠️ 對齊修正：讓屬性名稱完美對應你的 render 渲染與側邊欄 filter
       const mappedTeams = dbTeams.map(team => ({
-        id: team.team_id || team.id,                  // 👉 提供一個基本 id 做為輔助機制
-        team_id: team.team_id,                        // 👉 對齊 team.team_id
-        team_name: team.team_name,                    // 👉 對齊 team.team_name
-        com_id: team.com_id,                          // 👉 對齊 team.com_id
-        demand: team.team_intro || team.demand || '尚未填寫說明', // 👉 對齊 team.demand
-        current_member_count: team.current_member_count || 0,     // 👉 對齊 team.current_member_count
-        num_limit: team.num_limit || 0                // 👉 對齊 team.num_limit
+        id: team.team_id || team.id,                  
+        team_id: team.team_id,                        
+        team_name: team.team_name,                    
+        com_id: team.com_id,                          
+        demand: team.team_intro || team.demand || '尚未填寫說明', 
+        current_member_count: team.current_member_count || 0,     
+        num_limit: team.num_limit || 0                
       }));
 
       return mappedTeams;
     } catch (err) {
-      console.error('❌ 讀取隊伍資料庫失敗，啟用空陣列防護:', err);
+      console.error('❌ 讀取隊伍資料庫失敗:', err);
       return [];
     }
   }
 
-  // 基礎的 localStorage 存取操作 (收藏部分仍維持在 local)
-  function saveTeams(teams){ localStorage.setItem('teams', JSON.stringify(teams)); }
-  function loadFavorites(){ return JSON.parse(localStorage.getItem('favorites')||'[]'); }
-  function saveFavorites(favs){ localStorage.setItem('favorites', JSON.stringify(favs)); }
-  function loadContestFavorites(){ return JSON.parse(localStorage.getItem('favoriteContests')||'[]').map(Number); }
+  // 🚀【全新打造】重整網頁時，從資料庫撈取該使用者目前的「收藏隊伍 ID 清單」
+  async function loadDatabaseFavorites() {
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    if (!token || !userId) return []; // 未登入就回傳空陣列
+
+    try {
+      const res = await fetch(`/api/teams/my-favorites?userId=${userId}`, {
+        headers: { 'Authorization': ` ${token}` }
+      });
+      if (!res.ok) return [];
+      const result = await res.json();
+      // 🚀 將撈回來的收藏物件陣列，精簡轉換成只有 ID 的純數字陣列，方便用 .includes() 比對
+      return result.success ? result.data.map(item => Number(item.team_id)) : [];
+    } catch (err) {
+      console.error('❌ 載入資料庫收藏清單失敗:', err);
+      return [];
+    }
+  }
 
   // 取得目前頁面指定的「特定比賽」物件資料
   async function getContest() {
@@ -91,19 +99,13 @@
   }
 
   // --- 網址路徑處理區塊 ---
-
   function withUserParam(path){
     const userId = params.get('userId');
     return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
   }
 
-  function createTeamHref(){
-    return withUserParam(`/create-team.html?contestId=${encodeURIComponent(contestId)}`);
-  }
-
-  function teamInfoHref(id){
-    return withUserParam(`/team-info.html?teamId=${encodeURIComponent(id)}`);
-  }
+  function createTeamHref(){ return withUserParam(`/create-team.html?contestId=${encodeURIComponent(contestId)}`); }
+  function teamInfoHref(id){ return withUserParam(`/team-info.html?teamId=${encodeURIComponent(id)}`); }
 
   // --- 核心畫面渲染邏輯 ---
   async function render(){
@@ -111,21 +113,19 @@
     const contest = await getContest();
     const teams = await contestTeams();
     const allContests = await loadContests();
-    const allTeams = await loadTeams();
-    const favs = loadFavorites();
+    
+    // 🚀 核心修正：拋棄 LocalStorage，改從資料庫抓最即時的收藏隊伍 ID 陣列
+    const dbFavIds = await loadDatabaseFavorites(); 
 
-    // 2. 安全防護：萬一後端連不上，避免網頁噴錯
     if (!contest) {
       if ($('contestSummary')) $('contestSummary').innerHTML = '<h2>無法載入比賽資料</h2>';
       return;
     }
     
-    // 確保比賽的通知狀態同步
     window.AppNotifications?.ensureContestNotifications(allContests);
-    // 動態更新網頁標題
     document.title = `${contest.name} / 組隊`;
 
-    // 渲染比賽摘要（隊伍總數、日期、總招募缺額）
+    // 渲染比賽摘要
     $('contestSummary').innerHTML = `
       <h2>${contest.name}</h2>
       <div class="summary-grid">
@@ -134,7 +134,6 @@
         <div class="summary-item"><span>報名截止</span><strong>${contest.com_enroll_ddl}</strong></div>
         <div class="summary-item"><span>比賽費用</span><strong>${contest.com_fee}</strong></div>
         <div class="summary-item"><span>比賽獎金</span><strong>${contest.com_reward}</strong></div>
-
       </div>
     `;
 
@@ -142,15 +141,16 @@
     $('contestInfo').innerHTML = `
       <p>${contest.com_intro}</p>
       </br>
-      <p>比賽官網連結：<a href="${contest.com_link}" >${contest.com_link}</a></p>
+      <p>比賽官網連結：<a href="${contest.com_link}" target="_blank">${contest.com_link}</a></p>
     `;
 
     // 渲染屬於該比賽的「所有隊伍卡片」
     $('teamCards').innerHTML = teams.length ? teams.map(team => {
-      const isFav = favs.includes(team.team_id);
+      // 🚀 核心修正：精準比對資料庫陣列中有沒有包含目前的 team_id
+      const isFav = dbFavIds.includes(Number(team.team_id));
       const formattedDemand = team.demand
-      ? team.demand.replace(/(需求：)/g, '<br>$1')
-      : '尚未填寫說明';
+        ? team.demand.replace(/(需求：)/g, '<br>$1')
+        : '尚未填寫說明';
       return `
         <article class="team-card">
           <h4>${team.team_name}</h4>
@@ -163,48 +163,77 @@
         </article>
       `;
     }).join('') : '<div class="box">目前還沒有隊伍，先創建自己的隊伍吧。</div>';
-
-    // 渲染側邊欄：「我加入的隊伍」
-    const joinedIds = JSON.parse(localStorage.getItem(`myTeams:${currentUserId}`)||'[]');
-    const my = allTeams.filter(team => joinedIds.some(id => Number(id) === Number(team.team_id)) && Number(team.com_id) === Number(contest.id));
-    if ($('myTeams')) $('myTeams').textContent = my.length ? my.map(team => team.team_name).join('\n') : '尚未加入隊伍';
-
-    // 渲染側邊欄：「我收藏的隊伍」
-    const favoriteTeams = allTeams.filter(team => favs.includes(team.team_id));
-    if ($('myFavs')) $('myFavs').textContent = favoriteTeams.length ? favoriteTeams.map(team => team.team_name).join('\n') : '尚無收藏隊伍';
-
-    // 渲染側邊欄：「我關注的比賽」
-    const favoriteContests = loadContestFavorites().map(id => allContests.find(item => Number(item.id) === Number(id))).filter(Boolean);
-    if ($('followed')) $('followed').textContent = favoriteContests.length ? favoriteContests.map(item => `${item.name}\n${item.com_date}`).join('\n\n') : '尚無關注';
   }
 
   // --- 互動與事件監聽區塊 ---
 
-  function toggleFavorite(id){
-    const favs = loadFavorites();
-    const index = favs.indexOf(id);
-    if (index >= 0) favs.splice(index, 1); else favs.push(id);
-    saveFavorites(favs);
-    render(); // 重新渲染
+  // 收藏 / 取消收藏
+  async function toggleFavorite(teamId, favBtn) {
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+
+    if (!token || !userId) {
+      alert('請先登入才能收藏隊伍！');
+      return;
+    }
+
+    favBtn.style.opacity = '0.5';
+    favBtn.disabled = true;
+
+    try {
+      const response = await fetch('/api/teams/toggle-favorite', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': ` ${token}` 
+        },
+        body: JSON.stringify({ userId: Number(userId), teamId: Number(teamId) })
+      });
+
+      if (!response.ok) throw new Error('伺服器回應錯誤');
+      const result = await response.json();
+
+      console.log(`🎯 收藏狀態已同步資料庫：`, result.message);
+
+      if (result.action === 'favorite') {
+        favBtn.classList.add('active');
+        favBtn.innerHTML = '♥ 已收藏';
+        favBtn.setAttribute('aria-pressed', 'true');
+      } else if (result.action === 'unfavorite') {
+        favBtn.classList.remove('active');
+        favBtn.innerHTML = '♡ 收藏';
+        favBtn.setAttribute('aria-pressed', 'false');
+      }
+      
+      // 成功後連動刷新右側邊欄
+      if (typeof renderSidebarTeams === 'function') {
+        await renderSidebarTeams();
+      } else if (typeof UI !== 'undefined' && typeof UI.renderSidebarTeams === 'function') {
+        await UI.renderSidebarTeams();
+      }
+
+    } catch (error) {
+      console.error('❌ 收藏失敗:', error);
+      alert('收藏操作失敗，請稍後再試');
+    } finally {
+      favBtn.style.opacity = '1';
+      favBtn.disabled = false;
+    }
   }
 
   async function openTeamDetail(id){
     const allTeams = await loadTeams();
-    // 🛠️ 對齊修正：此處的 item.id 與傳入的 team_id 比對
     const team = allTeams.find(item => item.team_id === id);
     if (!team) return alert('找不到隊伍');
     location.href = teamInfoHref(id);
   }
 
-  function openCreateTeamPage(){
-    location.href = createTeamHref();
-  }
-  $('createBtn').addEventListener('click', openCreateTeamPage);
+  $('createBtn').addEventListener('click', () => { location.href = createTeamHref(); });
 
   // 事件委派：監聽隊伍列表的點擊
   $('teamCards').addEventListener('click', e=>{
     const favBtn = e.target.closest('[data-fav]');
-    if (favBtn) return toggleFavorite(Number(favBtn.dataset.fav));
+    if (favBtn) return toggleFavorite(Number(favBtn.dataset.fav), favBtn);
     const joinBtn = e.target.closest('[data-id]');
     if (joinBtn) openTeamDetail(Number(joinBtn.dataset.id)); 
   });

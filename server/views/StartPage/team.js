@@ -182,24 +182,6 @@ async function render() {
 //     body: JSON.stringify({ emp_no: "E002", name: "王小明" }),
 // }
 
-
-// 點擊事件：切換某個隊伍的收藏狀態
-function toggleFavorite(id) {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    requireLogin('【系統提示】請先登入才能收藏比賽喔！');
-    return;
-  }
-  const favorites = Data.loadFavorites();
-  const index = favorites.indexOf(id);
-  if (index >= 0) favorites.splice(index, 1);
-  else favorites.push(id);
-  Data.saveFavorites(favorites);
-  // Update sidebar favorites immediately for snappier UX, then re-render main content
-  if (isLoggedIn()) UI.renderSidebarTeams(Data.loadTeams());
-  render();
-}
-
 // 點擊事件：切換某個比賽的收藏狀態
 function toggleContestFavorite(id) {
   const token = localStorage.getItem('token');
