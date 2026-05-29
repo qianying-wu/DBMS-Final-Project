@@ -584,5 +584,8 @@
     console.error('profile.js initialization failed:', err);
   }
 
+  const homeLink = $('homeLink');
+  if (homeLink) homeLink.href = withUserParam('/contests.html');
+
 })();
 
