@@ -172,17 +172,6 @@ async function render() {
   }
 }
 
-
-// {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//       "Authorization": `JWT ${token}`,   // ← 這行是重點
-//     },
-//     body: JSON.stringify({ emp_no: "E002", name: "王小明" }),
-// }
-
-
 // 點擊事件：切換某個隊伍的收藏狀態
 function toggleFavorite(id) {
   const token = localStorage.getItem('token');

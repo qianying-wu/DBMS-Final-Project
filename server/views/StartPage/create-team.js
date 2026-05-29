@@ -404,30 +404,31 @@ $('createForm').addEventListener('submit', async event => {
   $('backBtn').addEventListener('click', () => { location.href = withUserParam('/team.html'); });
   document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/team.html'));
 
-  // 🚀 2. 負責網頁載入啟動的監聽器，回呼函式要加上 async
+  // 負責網頁載入啟動的監聽器，回呼函式要加上 async
   document.addEventListener('DOMContentLoaded', async () => {
-    
-    // await renderContestSelect(); 
     
     const contests = await loadContests();
     
-    const select = document.getElementById('contestSelect');
-    if (!select) return;
-
-    // 清空舊的選項（保留請選擇或建立新比賽的預設選項）
-    select.innerHTML = '<option value="">-- 請選擇比賽 --</option><option value="new">建立新比賽...</option>';
-
-    // 2. 根據資料庫欄位渲染選項
-    contests.forEach(contest => {
-      const option = document.createElement('option');
+    // 檢查網址有沒有帶 contestId 過來 (initialContestId 在程式最上面已經抓好了)
+    if (initialContestId) {
+      // 從撈回來的比賽清單中，找出對應的那一場比賽
+      const targetContest = contests.find(c => 
+        Number(c.com_id) === initialContestId || Number(c.id) === initialContestId
+      );
       
-      // 🔔 注意：這裡的欄位名稱必須跟你的 MySQL 欄位一模一樣！
-      // 假設你的比賽 Table 主鍵叫 com_id，名字叫 name
-      option.value = contest.com_id; 
-      option.textContent = contest.com_name; 
-      
-      select.appendChild(option);
-    });
+      if (targetContest) {
+        $('contestSelect').value = targetContest.com_id || targetContest.id;
+        if (window.hasOwnProperty('selectedContestId')) {
+           selectedContestId = targetContest.com_id || targetContest.id;
+        }
+        
+        $('contestResults').innerHTML = `
+            <div class="selected-tag" style="background:#f0f7ff; padding:10px; border:1px solid #1890ff; margin-top:10px; border-radius:4px;">
+                ✅ 已選擇比賽：<strong>${targetContest.com_name || targetContest.name}</strong>
+            </div>
+        `;
+      }
+    }
   });  
   toggleNewContestFields();
   render();
