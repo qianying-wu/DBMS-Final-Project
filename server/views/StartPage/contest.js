@@ -27,8 +27,12 @@
         id: contest.com_id,                             
         name: contest.com_name,                       
         com_date: contest.com_date || '日期未定',    // 👉 對齊 contest.com_date
+        com_enroll_ddl: contest.com_enroll_ddl || '報名截止未定', // 👉 對齊 contest.com_enroll_ddl
         com_intro: contest.com_intro || '尚未填寫說明', // 👉 對齊 contest.com_intro
-        officialUrl: contest.com_link || '#'    
+        com_link: contest.com_link || '#',
+        com_location: contest.com_location || '地點未定', // 👉 對齊 contest.com_location
+        com_reward: contest.com_reward || '獎勵未定', // 👉 對齊 contest.com_reward
+        com_fee: contest.com_fee || '費用未定' // 👉 若你後端有提供比賽費用欄位，對齊它
       }));
 
       return mappedContests;
@@ -127,14 +131,18 @@
       <div class="summary-grid">
         <div class="summary-item"><span>隊伍數量</span><strong>${teams.length}</strong></div>
         <div class="summary-item"><span>比賽日期</span><strong>${contest.com_date}</strong></div>
-        <div class="summary-item"><span>招募需求</span><strong>${teams.reduce((sum,t)=>sum + Math.max((t.num_limit||0)-(t.current_member_count||0),0),0)} 人</strong></div>
+        <div class="summary-item"><span>報名截止</span><strong>${contest.com_enroll_ddl}</strong></div>
+        <div class="summary-item"><span>比賽費用</span><strong>${contest.com_fee}</strong></div>
+        <div class="summary-item"><span>比賽獎金</span><strong>${contest.com_reward}</strong></div>
+
       </div>
     `;
 
     // 渲染比賽說明文字
     $('contestInfo').innerHTML = `
       <p>${contest.com_intro}</p>
-      <p>可以在此查看目前正在招募的隊伍，也可以直接建立自己的隊伍並開始招募成員。</p>
+      </br>
+      <p>比賽官網連結：<a href="${contest.com_link}" >${contest.com_link}</a></p>
     `;
 
     // 渲染屬於該比賽的「所有隊伍卡片」

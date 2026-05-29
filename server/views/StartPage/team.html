@@ -18,7 +18,13 @@
       <a href="/auth.html">登入</a>
     </div>
     <div id="userActions" class="actions" style="display: none;">
-      <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
+      <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+      </button>
     </div>
 
   </header>
@@ -60,7 +66,7 @@
       <div id="contestsGrid" class="contests-grid"></div>
     </section>
 
-    <aside id="rightSide" class="sidebar right" style="display: none;">
+    <aside id="rightSide" class="sidebar right" >
       <section class="side-card side-card-team" data-collapsible-card="teams">
         <button class="side-card-toggle" type="button" data-card-toggle aria-expanded="true">我的隊伍</button>
         <div class="side-card-body">
@@ -151,6 +157,7 @@
       </div>
     </div>
   </div>
+  <script src="account-menu.js"></SCript>
   <script src="/preferences.js"></script>
   <script type="module" src="team.js"></script>
 </body>

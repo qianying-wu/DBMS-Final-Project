@@ -25,16 +25,18 @@ const loginPromptCancel = $('loginPromptCancel');
 // localStorage.setItem("token", token);
 //localStorage.setItem("current_user_id", response.userId); // 把當前登入者的 ID 存起來 
 
-
-
-const token = localStorage.getItem("token");
-const currentUserId = localStorage.getItem("userId");
+// const token = localStorage.getItem("token");
+// const currentUserId = localStorage.getItem("userId");
 
 // 初始化狀態變數
 let currentPreferences = isLoggedIn() ? (window.AppPreferences?.getFallbackPreferences(Data.currentUserId) || []) : [];
 let expandedContestCategory = localStorage.getItem('expandedContestCategory') || '';
 let currentAd = 0;
 const collapsedSideCards = new Set(JSON.parse(localStorage.getItem('collapsedSideCards') || '[]'));
+
+// 用來暫存後端 API 撈回來的最新資料
+let globalContests = [];
+let globalTeams = [];
 
 // 設定廣告橫幅的自動輪播（每 4 秒切換一次）
 setInterval(() => {
@@ -114,8 +116,13 @@ async function render() {
   if (!response.ok) throw new Error('無法取得後端隊伍資料');
   const { contests, teams } = await response.json();
 
-  const favs = Data.loadFavorites();
-  const contestFavs = Data.loadContestFavorites();
+  globalContests = contests;
+  globalTeams = teams;
+
+  // Only surface stored favorites when the page is viewed as a logged-in user.
+  // Guests should not see items pre-marked as "favorited" even if localStorage contains values.
+  const favs = isLoggedIn() ? Data.loadFavorites() : [];
+  const contestFavs = isLoggedIn() ? Data.loadContestFavorites() : [];
   const reqs = JSON.parse(localStorage.getItem('joinRequests') || '[]');
   const selectedContest = Data.getSelectedContestId();
 
@@ -127,7 +134,7 @@ async function render() {
 
   // 呼叫 UI 模組渲染各個區塊
   if (isLoggedIn()) UI.renderRecommendations(contests, currentPreferences);
-  else UI.renderGuestSidebar();
+  else;
   UI.renderContestOverview(contests, teams, selectedContest, contestFavs);
   expandedContestCategory = UI.renderContestCategoryList(contests, selectedContest, expandedContestCategory);
 
@@ -138,6 +145,7 @@ async function render() {
     const isOwner = String(team.owner) === String(Data.currentUserId) || (String(Data.currentUserId) === String(Data.ME.id) && Number(team.owner) === Number(Data.ME.id));
     const pending = reqs.filter(request => request.teamId === team.id && request.status === 'pending').length;
     const contest = contests.find(item => Number(item.id) === Number(team.contestId));
+
 
     // 建立隊伍卡片 DOM 並附加到 teamsGrid 容器中
     const card = document.createElement('div');
@@ -165,17 +173,6 @@ async function render() {
     UI.renderFollowedContests(contests, contestFavs);
   }
 }
-
-
-// {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//       "Authorization": `JWT ${token}`,   // ← 這行是重點
-//     },
-//     body: JSON.stringify({ emp_no: "E002", name: "王小明" }),
-// }
-
 
 // 點擊事件：切換某個隊伍的收藏狀態
 function toggleFavorite(id) {
@@ -404,7 +401,6 @@ document.addEventListener('keydown', event => {
 
 const homeLink = $('homeLink');
 if (homeLink) homeLink.href = Data.withUserParam('/team.html');
-const notifyBtn = $('notifyBtn');
 const avatarBtn = $('avatarBtn');
 
 
@@ -425,7 +421,7 @@ document.addEventListener('click', event => {
   if (!contestButton) return;
   if (!requireLogin('查看比賽完整資訊需要先登入。')) return;
   const cid = Number(contestButton.dataset.cid);
-  Data.setSelectedContestId(cid);
+  // Data.setSelectedContestId(cid);
   location.href = Data.withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
 });
 
@@ -446,7 +442,7 @@ contestsGrid && contestsGrid.addEventListener('click', event => {
   if (!card) return;
   if (!requireLogin('查看比賽完整資訊需要先登入。')) return;
   const cid = Number(card.dataset.cid);
-  Data.setSelectedContestId(cid);
+  // Data.setSelectedContestId(cid);
   location.href = Data.withUserParam(`/contest.html?id=${encodeURIComponent(cid)}`);
 });
 
@@ -560,44 +556,57 @@ function runGlobalSearch() {
     globalSearchResults.innerHTML = '<div style="padding:30px;text-align:center;color:#8a735e;">請輸入關鍵字開始搜尋...</div>';
     return;
   }
-  const teams = Data.loadTeams();
-  const contests = Data.loadContests();
+
+  // 優先使用後端撈下來的暫存資料，如果還沒載入完才去讀本機舊資料
+  const teams = globalTeams.length ? globalTeams : Data.loadTeams();
+  const contests = globalContests.length ? globalContests : Data.loadContests();
   let html = '';
 
   if (currentGlobalTab === 'comp') {
-    const results = contests.filter(contest =>
-      (contest.com_name && contest.com_name.toLowerCase().includes(q)) ||
-      (contest.com_intro && contest.com_intro.toLowerCase().includes(q))
-    );
+    const results = contests.filter(contest => {
+      const name = (contest.com_name || contest.name || '').toLowerCase();
+      const info = (contest.com_intro || contest.info || '').toLowerCase();
+      return name.includes(q) || info.includes(q);
+    });
 
-    html = results.map(contest => `
-      <div class="search-list-item" onclick="document.querySelector('#contestsList [data-cid=\\'${contest.com_id}\\']')?.click(); window.closeGlobalSearch();">
-        <strong style="color:#4f3827;">競賽：${Data.escapeHtml(contest.com_name ? contest.com_name.trim() : '')}</strong>
-        <span style="font-size:12px;color:#8a735e;margin-left:8px;">(${Data.escapeHtml(contest.com_date)})</span>
-        <p style="margin:4px 0 0;font-size:13px;color:#666;">${Data.escapeHtml(contest.com_intro ? contest.com_intro.trim() : '暫無簡介')}</p>
-      </div>
-    `).join('');
-    // const results = contests.filter(contest =>
-    //   contest.name.toLowerCase().includes(q)
-    //   || (contest.info && contest.info.toLowerCase().includes(q)));
+    html = results.map(contest => {
+      // 統一處理後端與本機欄位名稱落差
+      const cId = contest.com_id || contest.id;
+      const cName = contest.com_name || contest.name;
+      const cDate = contest.com_date || contest.date || '日期未定';
+      const cInfo = contest.com_intro || contest.info || '點擊查看詳情';
 
-    // html = results.map(contest => `
-    //   <div class="search-list-item" onclick="document.querySelector('#contestsList [data-cid=\\'${contest.id}\\']')?.click(); window.closeGlobalSearch();">
-    //     <strong style="color:#4f3827;">競賽：${Data.escapeHtml(contest.name)}</strong>
-    //     <span style="font-size:12px;color:#8a735e;margin-left:8px;">(${Data.escapeHtml(contest.date)})</span>
-    //     <p style="margin:4px 0 0;font-size:13px;color:#666;">${Data.escapeHtml(contest.info)}</p>
-    //   </div>
-    // `).join('');
+      return `
+        <div class="search-list-item" onclick="document.querySelector('#contestsList [data-cid=\\'${cId}\\']')?.click(); window.closeGlobalSearch();">
+          <strong style="color:#4f3827;">競賽：${Data.escapeHtml(cName)}</strong>
+          <span style="font-size:12px;color:#8a735e;margin-left:8px;">(${Data.escapeHtml(cDate)})</span>
+          <p style="margin:4px 0 0;font-size:13px;color:#666;">${Data.escapeHtml(cInfo)}</p>
+        </div>
+      `;
+    }).join('');
 
   } else if (currentGlobalTab === 'team') {
-    const results = teams.filter(team => team.name.toLowerCase().includes(q) || (team.desc && team.desc.toLowerCase().includes(q)));
-    html = results.map(team => `
-      <div class="search-list-item" onclick="window.closeGlobalSearch(); window.openTeamDetail(${team.id});">
-        <strong style="color:#4f3827;">隊伍：${Data.escapeHtml(team.name)}</strong>
-        <span style="font-size:12px;color:#8a735e;margin-left:8px;">(缺額: ${team.slots - team.members})</span>
-        <p style="margin:4px 0 0;font-size:13px;color:#666;">${Data.escapeHtml(team.desc)}</p>
-      </div>
-    `).join('');
+    // 篩選隊伍（同樣做雙重保險）
+    const results = teams.filter(team => {
+      const name = (team.team_name || team.name || '').toLowerCase();
+      const desc = (team.demand || team.desc || '').toLowerCase();
+      return name.includes(q) || desc.includes(q);
+    });
+
+    html = results.map(team => {
+      const tId = team.team_id || team.id;
+      const tName = team.team_name || team.name;
+      const tDesc = team.demand || team.desc || '';
+      const slotsLeft = (team.num_limit || 4) - (team.current_member_count || 1);
+
+      return `
+        <div class="search-list-item" onclick="window.closeGlobalSearch(); window.openTeamDetail(${tId});">
+          <strong style="color:#4f3827;">隊伍：${Data.escapeHtml(tName)}</strong>
+          <span style="font-size:12px;color:#8a735e;margin-left:8px;">(缺額: ${slotsLeft})</span>
+          <p style="margin:4px 0 0;font-size:13px;color:#666;">${Data.escapeHtml(tDesc)}</p>
+        </div>
+      `;
+    }).join('');
 
   } else if (currentGlobalTab === 'user') {
     const results = mockUsers.filter(user => user.toLowerCase().includes(q));
