@@ -1,4 +1,4 @@
-import * as Data from '../team-data.js';
+import * as Data from './team-data.js';
 
 // DOM 元素選擇器輔助
 const $ = id => document.getElementById(id);
@@ -8,12 +8,51 @@ let currentPreferences = [];
 let allContestsData = []; // 快取比賽資料，供隊伍卡片對照比賽名稱使用
 let activeTab = 'joined'; // 預設當前分頁：已加入
 
+const tabMeta = {
+  joined: {
+    title: '已加入的隊伍',
+    icon: `
+      <svg viewBox="0 0 24 24">
+        <path d="M16 20v-1.5c0-2.2-1.8-4-4-4H7c-2.2 0-4 1.8-4 4V20"/>
+        <circle cx="9.5" cy="7.5" r="3.5"/>
+        <path d="M21 20v-1.2c0-1.8-1.2-3.3-2.8-3.8"/>
+        <path d="M16.5 4.4a3.4 3.4 0 0 1 0 6.2"/>
+      </svg>`
+  },
+  owned: {
+    title: '我建立的隊伍',
+    icon: `
+      <svg viewBox="0 0 24 24">
+        <path d="m3 8 4.2 3.4L12 4l4.8 7.4L21 8l-2 11H5L3 8Z"/>
+        <path d="M6.5 15.5h11"/>
+      </svg>`
+  },
+  favorites: {
+    title: '我的收藏隊伍',
+    icon: `
+      <svg viewBox="0 0 24 24">
+        <path d="M12 20.5s-7.5-4.6-9.2-9.1C1.7 8.5 3.5 5.5 6.5 5.5c1.8 0 3.2 1 4 2.3.8-1.3 2.2-2.3 4-2.3 3 0 4.8 3 3.7 5.9C16.5 15.9 12 20.5 12 20.5Z"/>
+      </svg>`
+  },
+  history: {
+    title: '歷史紀錄隊伍',
+    icon: `
+      <svg viewBox="0 0 24 24">
+        <path d="M4 12a8 8 0 1 0 2.3-5.7"/>
+        <path d="M4 4.8v4.5h4.5"/>
+        <path d="M12 8v4.4l3 1.8"/>
+      </svg>`
+  }
+};
+
 /**
  * 👑 1. 初始化管理控制台的所有事件監聽
  */
 export function initManageDashboard() {
   const sidebarNav = document.querySelector('.manage-menu');
   if (!sidebarNav) return;
+
+  updateCurrentTabTitle(activeTab);
 
   // 綁定左側控制邊欄的「分類切換」點擊事件
   sidebarNav.addEventListener('click', async event => {
@@ -27,16 +66,7 @@ export function initManageDashboard() {
     // 更新右側主畫面的標題
     const tab = button.dataset.teamTab;
     activeTab = tab;
-    
-    const tabTitles = {
-      joined: '👥 已加入的隊伍',
-      owned: '👑 我建立的隊伍',
-      favorites: '♥ 我的收藏隊伍',
-      history: '🕒 歷史紀錄隊伍'
-    };
-    if ($('currentTabTitle')) {
-      $('currentTabTitle').textContent = tabTitles[tab] || '隊伍列表';
-    }
+    updateCurrentTabTitle(tab);
 
     // 重新驅動中央主畫面的資料撈取與字卡渲染
     renderTeamsGridSection();
@@ -53,10 +83,15 @@ export async function renderTeamsGridSection() {
   gridContainer.innerHTML = '<div class="loading-placeholder">動態資料加載中...</div>';
 
   const token = localStorage.getItem('token');
-  const userId = localStorage.getItem('userId');
+  const userId = getCurrentUserId();
 
-  if (!isLoggedIn()) {
+  if (!isLoggedIn() || !userId || userId === 'unknown') {
     gridContainer.innerHTML = '<div class="empty-text">請先登入以管理您的隊伍。</div>';
+    return;
+  }
+
+  if (activeTab === 'history') {
+    gridContainer.innerHTML = '<div class="empty-text">歷史紀錄隊伍目前尚未開放。</div>';
     return;
   }
 
@@ -64,19 +99,16 @@ export async function renderTeamsGridSection() {
   let apiEndpoint = '';
   switch (activeTab) {
     case 'joined':
-      apiEndpoint = `/api/teams/my-joined?userId=${userId}`;
+      apiEndpoint = `/api/teams/my-joined?userId=${encodeURIComponent(userId)}`;
       break;
     case 'owned':
-      apiEndpoint = `/api/teams/my-owned?userId=${userId}`;
+      apiEndpoint = `/api/teams/my-owned?userId=${encodeURIComponent(userId)}`;
       break;
     case 'favorites':
-      apiEndpoint = `/api/teams/my-favorites?userId=${userId}`;
-      break;
-    case 'history':
-      apiEndpoint = `/api/teams/my-history?userId=${userId}`; // 確保後端有此路由，或先用 joined 模擬
+      apiEndpoint = `/api/teams/my-favorites?userId=${encodeURIComponent(userId)}`;
       break;
     default:
-      apiEndpoint = `/api/teams/my-joined?userId=${userId}`;
+      apiEndpoint = `/api/teams/my-joined?userId=${encodeURIComponent(userId)}`;
   }
 
   try {
@@ -104,9 +136,9 @@ export async function renderTeamsGridSection() {
         : `<span class="role-badge member">已加入</span>`;
 
       // 預留容錯欄位名 (後端欄位可能為 t.competition_name 或 t.com_name)
-      const contestName = t.competition_name || t.com_name || '未指定特定競賽';
-      const currentCount = t.current_members || t.member_count || 1;
-      const maxCount = t.max_members || 5;
+      const contestName = t.competition_name || t.com_name || t.contestName || '未指定特定競賽';
+      const currentCount = t.current_member_count ?? t.current_members ?? t.member_count ?? 1;
+      const maxCount = t.num_limit ?? t.max_members ?? 5;
 
       return `
         <div class="team-manage-card">
@@ -181,7 +213,7 @@ export async function loadSummaryContestsZone() {
     }
 
     // 2. 撈取並渲染專屬推薦比賽
-    const userId = localStorage.getItem('userId');
+    const userId = getCurrentUserId();
     if (isLoggedIn() && userId && window.AppPreferences?.loadUserPreferences) {
       currentPreferences = await window.AppPreferences.loadUserPreferences(userId);
     }
@@ -212,7 +244,7 @@ function renderRecommendationsUI(contests, preferences) {
     <a href="${Data.withUserParam(`/contest.html?id=${c.com_id || c.id}`)}" class="contest-item-link" data-cid="${c.com_id || c.id}">
       <div>
         <span style="display:block;">✨ ${Data.escapeHtml(c.com_name || c.name)}</span>
-        <small style="font-size:11px; color:#99k; font-weight:400;">${Data.escapeHtml((c.com_intro || '').substring(0, 35))}...</small>
+        <small style="font-size:11px; color:#889; font-weight:400;">${Data.escapeHtml((c.com_intro || '').substring(0, 35))}...</small>
       </div>
       <span style="font-size:12px; color:#caa77a; flex-shrink:0; margin-left:10px;">推薦 →</span>
     </a>
@@ -224,8 +256,28 @@ function isLoggedIn() {
   return Boolean(token && token.trim() !== "");
 }
 
+function updateCurrentTabTitle(tab) {
+  const titleEl = $('currentTabTitle');
+  if (!titleEl) return;
+
+  const meta = tabMeta[tab] || tabMeta.joined;
+  titleEl.innerHTML = `
+    <span class="title-icon" aria-hidden="true">${meta.icon}</span>
+    <span>${meta.title}</span>
+  `;
+}
+
+function getCurrentUserId() {
+  const urlUserId = new URLSearchParams(location.search).get('userId');
+  const userId = localStorage.getItem('userId') || urlUserId || Data.currentUserId;
+  if (urlUserId && urlUserId !== 'unknown') {
+    localStorage.setItem('userId', urlUserId);
+  }
+  return userId;
+}
+
 const homeLink = $('homeLink');
-if (homeLink) homeLink.href = withUserParam('/contests.html');
+if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
 
 // ----------------------------------
 // --- 🚀 初始自動啟動流程 ---
