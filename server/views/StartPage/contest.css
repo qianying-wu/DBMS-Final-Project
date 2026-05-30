@@ -200,7 +200,7 @@ body.modal-open{overflow:hidden}
 
 /* 收藏後的啟動狀態 */
 .fav-btn.active {
-    color: #e74c3c;s
+    color: #e74c3c;
     border-color: #e74c3c;
     background-color: #fff5f5;
 }
