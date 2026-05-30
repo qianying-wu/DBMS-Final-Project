@@ -1,3 +1,5 @@
+import * as Data from './team-data.js';
+
 // (function(){
 //   // 預設標籤：API 暫時無法連線時，前端仍可用這組資料正常顯示。
 //   const DEFAULT_TAGS = [
@@ -139,6 +141,8 @@
 // })();
 
 (function(){
+  const $ = id => document.getElementById(id);
+
   // 預設標籤：API 暫時無法連線時，前端仍可用這組資料正常顯示。
   const DEFAULT_TAGS = [
     { key: 'ai', label: 'AI / 機器學習' },
@@ -298,6 +302,6 @@
   };
 
   const homeLink = $('homeLink');
-  if (homeLink) homeLink.href = withUserParam('/contests.html');
+  if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
   
 })();

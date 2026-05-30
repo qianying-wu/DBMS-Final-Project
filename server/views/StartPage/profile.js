@@ -1,7 +1,9 @@
+import * as Data from './team-data.js';
 (function () {
+  const $ = id => document.getElementById(id);
+
   // 初始化履歷頁面，集中取得 DOM 元素並綁定互動事件。
   function init() {
-    const $ = id => document.getElementById(id);
     const saveBtn = $('saveBtn');
     const exportBtn = $('exportBtn');
     const delResume = $('delResume');
@@ -543,7 +545,6 @@
 
     // 右上角按鈕的防禦性綁定，避免缺少共用模組時整頁失效。
     try {
-      console.log('profile.js loaded - binding top-right buttons');
       const notifyBtn = document.getElementById('notifyBtn');
       // const avatarBtn = document.getElementById('avatarBtn');
       const teamBtn = document.getElementById('teamBtn');
@@ -566,11 +567,9 @@
     document.querySelector('.logo-link')?.setAttribute('href', new URLSearchParams(window.location.search).get('userId') ? `/team.html?userId=${encodeURIComponent(new URLSearchParams(window.location.search).get('userId'))}` : '/team.html');
     window.addEventListener('storage', e => {
       if (['myTeams', 'favorites', 'teams', 'contests'].includes(e.key)) renderSyncedSidebar();
-      if (e.key === 'notifications' && !window.AppNotifications) updateNotificationBadge();
     });
 
     load();
-    if (!window.AppNotifications) updateNotificationBadge();
 
   }
   // 確保 DOM 完成後才初始化，並記錄啟動錯誤方便除錯。
@@ -585,7 +584,7 @@
   }
 
   const homeLink = $('homeLink');
-  if (homeLink) homeLink.href = withUserParam('/contests.html');
+  if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
 
 })();
 

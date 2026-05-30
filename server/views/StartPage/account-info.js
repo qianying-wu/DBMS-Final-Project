@@ -1,6 +1,8 @@
 // 🔑 關鍵串接：直接從登入成功的驗證快取中抓取真實狀態
 const token = localStorage.getItem('token');
 const id = localStorage.getItem('userId');
+const $ = id => document.getElementById(id);
+
 
 // 安全機制：若完全沒有登入資訊，強制引導回登入頁
 if (!id || id === 'unknown') {

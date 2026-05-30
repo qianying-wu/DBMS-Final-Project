@@ -1,4 +1,9 @@
+import * as Data from './team-data.js';
+
 document.addEventListener('DOMContentLoaded', () => {
+
+  const $ = id => document.getElementById(id);
+
   // 1. 從網址取得用戶 ID
   const urlParams = new URLSearchParams(window.location.search);
   const targetUserId = urlParams.get('userId') || 'default_user'; 
@@ -169,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   const homeLink = $('homeLink');
-  if (homeLink) homeLink.href = withUserParam('/contests.html');
+  if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
   
   loadResumeData();
   loadReviews();

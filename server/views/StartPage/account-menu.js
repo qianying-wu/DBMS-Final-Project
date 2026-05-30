@@ -1,5 +1,7 @@
 (function(){
 
+  const $ = id => document.getElementById(id);
+
   // 將目前網址上的 userId 附加到導頁連結。
   function withUser(path){
     const userId = new URLSearchParams(location.search).get('userId');

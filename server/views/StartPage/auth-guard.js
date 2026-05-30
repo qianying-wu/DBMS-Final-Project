@@ -1,6 +1,7 @@
 // auth-guard.js
 (function() {
     function syncAuthUI() {
+      
       // 1. 先抓網址參數
       const params = new URLSearchParams(window.location.search);
       const urlUserId = params.get('userId');
