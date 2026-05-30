@@ -66,6 +66,11 @@ function renderContests(dataList = []) {
 
   grid.innerHTML = dataList.length ? dataList.map(contest => {
     const category = inferCategory(contest);
+
+    const displayDate = (contest.com_date && contest.com_date.includes('T')) 
+                        ? contest.com_date.split('T')[0] 
+                        : contest.com_date;
+                        
     return `
       <article class="contest-card" data-id="${contest.com_id}">
         <div class="card-tag">${categoryLabel(category)}</div>
@@ -73,7 +78,7 @@ function renderContests(dataList = []) {
         <p class="category">分類：${categoryLabel(category)}</p>
         <p class="desc">${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
         <div class="card-footer">
-          <span>${escapeHtml(contest.com_date || '日期未定')}</span>
+          <span>${escapeHtml(/*contest.com_date*/displayDate || '日期未定')}</span>
           <span class="more-link">查看更多 →</span>
         </div>
       </article>

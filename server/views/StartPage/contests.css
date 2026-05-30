@@ -72,15 +72,30 @@
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
+  z-index: 1; /* 確保標籤在最上面 */
 }
 
-.contest-card h3 { margin: 0 0 10px; color: #4f3827; font-size: 18px; padding-right: 60px; line-height: 1.3;}
-.contest-card .category { color: #a17851; font-size: 13px; margin: 0 0 8px; font-weight: 700; }
+.contest-card h3 { 
+  margin: 0 0 10px; 
+  color: #4f3827; 
+  font-size: 18px; 
+  padding-right: /*60*/80px; 
+  line-height: 1.3;
+  word-wrap: break-word; /* 確保長字會斷行 */
+}
+
+.contest-card .category { 
+  color: #a17851; 
+  font-size: 13px; 
+  margin: 0 0 8px; 
+  font-weight: 700; 
+}
+
 .contest-card .desc { 
   color: #5b6570; 
   font-size: 14px; 
   line-height: 1.5; 
-  margin: 0 0 16px; 
+  margin: 0 0 /*16*/4px; 
   flex: 1; 
 
   /* 🚀 新增：限制最多顯示 3 行，多餘文字自動變省略號 (...) */
@@ -101,6 +116,7 @@
   border-top: 1px solid #f0ebe5;
   padding-top: 12px;
   font-size: 13px;
+  margin-top: auto; /* 🚀 新增這行：強制將 footer 推到卡片最底部 */
 }
 .card-footer span:first-child { color: #8a735e; }
 .card-footer .more-link { color: #d4b283; font-weight: 700; }
