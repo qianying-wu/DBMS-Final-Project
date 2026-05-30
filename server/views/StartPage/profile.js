@@ -386,8 +386,9 @@
       try {
         // 1. 先準備一份要送給後端的全新空履歷格式
         const newProfilePayload = {
-          resume_id: undefined,        // 🌟 傳 undefined，後端看到就知道這是「全新建立」
-          user_name: ' ',
+          resume_id: undefined,
+          resume_name: '履歷',      // 🌟 傳 undefined，後端看到就知道這是「全新建立」
+          user_pv_name: ' ',
           user_school: '',
           department_grade: '',
           user_intro: '',
