@@ -4,8 +4,7 @@ import * as Data from './team-data.js';
 const $ = id => document.getElementById(id);
 
 // 核心狀態管理
-let currentPreferences = [];
-let allContestsData = []; // 快取比賽資料，供隊伍卡片與收藏比賽使用
+let allContestsData = []; // 快取比賽資料，供收藏比賽使用
 let activeTab = 'my-teams'; // 預設當前分頁
 
 // 🚀 四大分頁 Meta 資訊設定（包含右側主畫面大標題與動態 SVG 圖標）
@@ -167,8 +166,8 @@ export async function renderTeamsGridSection() {
 
       // 渲染「精緻的隊伍字卡框框」
       const cardsHtml = teams.map(t => {
-        // 判斷角色標籤：如果當前分頁本來就是我建立的，或是資料中 owner_id 等於目前登入者
-        const isCreator = activeTab === 'owned' || String(t.owner_id) === String(userId);
+        // 判斷是不是隊伍建立者；只有建立者才顯示審核申請與隊友名單入口。
+        const isCreator = t.isApiOwner === true || activeTab === 'owned' || String(t.owner_id) === String(userId);
         const teamId = t.team_id || t.id;
         const pendingCount = getLocalApplications(teamId).filter(app => app.status === 'pending').length;
         const badgeHtml = isCreator
@@ -200,7 +199,7 @@ export async function renderTeamsGridSection() {
                 <button class="btn-manage-action" data-team-id="${teamId}">
                   管理隊伍
                 </button>
-                ${activeTab === 'owned' ? `
+                ${isCreator ? `
                   <div class="owned-action-row">
                     <button class="btn-secondary-action" data-owned-action="applications" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">
                       申請審核${pendingCount ? ` (${pendingCount})` : ''}
@@ -215,9 +214,7 @@ export async function renderTeamsGridSection() {
       `;
       }).join('');
 
-      gridContainer.innerHTML = activeTab === 'owned'
-        ? `${cardsHtml}<section id="ownedTeamPanel" class="owned-team-panel"><div class="empty-text">選擇一支隊伍查看申請審核或隊友名單。</div></section>`
-        : cardsHtml;
+      gridContainer.innerHTML = `${cardsHtml}<section id="ownedTeamPanel" class="owned-team-panel"><div class="empty-text">選擇一支由您建立的隊伍，查看申請審核或隊友名單。</div></section>`;
 
       // 綁定所有新生成卡片的「管理隊伍」按鈕點擊跳轉事件
       gridContainer.querySelectorAll('.btn-manage-action').forEach(btn => {
@@ -341,69 +338,6 @@ export async function renderTeamsGridSection() {
   }
 }
 
-/**
- * 👑 3. 渲染下方的固定輔助區塊：關注比賽、專屬推薦
- */
-export async function loadSummaryContestsZone() {
-  const token = localStorage.getItem('token');
-  const followedEl = $('followed');
-  const contestFavs = JSON.parse(localStorage.getItem('favoriteContests') || '[]');
-
-  try {
-    const res = await fetch('/api/contests/competitions');
-    if (res.ok) {
-      const result = await res.json();
-      allContestsData = result.competitions || result || [];
-    }
-
-    if (followedEl && allContestsData.length > 0) {
-      const favContests = allContestsData.filter(c => contestFavs.includes(Number(c.id || c.com_id)));
-      if (favContests.length > 0) {
-        followedEl.innerHTML = favContests.map(c => `
-          <a href="${Data.withUserParam(`/contest.html?id=${c.id || c.com_id}`)}" class="contest-item-link">
-            <span>📌 ${Data.escapeHtml(c.name || c.com_name)}</span>
-            <span style="font-size:12px; color:#caa77a;">查看詳情 →</span>
-          </a>
-        `).join('');
-      } else {
-        followedEl.innerHTML = '<div class="empty-text">暫無關注的比賽</div>';
-      }
-    }
-
-    const userId = getCurrentUserId();
-    if (isLoggedIn() && userId && window.AppPreferences?.loadUserPreferences) {
-      currentPreferences = await window.AppPreferences.loadUserPreferences(userId);
-    }
-    renderRecommendationsUI(allContestsData, currentPreferences);
-
-  } catch (err) {
-    console.error('❌ 下方競賽摘要區載入失敗:', err);
-  }
-}
-
-function renderRecommendationsUI(contests, preferences) {
-  const body = $('recommendedBody');
-  if (!body) return;
-
-  const tags = preferences.length ? preferences : ['熱門'];
-  const filtered = contests.filter(c => tags.some(t => (c.com_intro || '').includes(t))).slice(0, 3);
-
-  if (filtered.length === 0) {
-    body.innerHTML = '<div class="empty-text">暫無適合的推薦比賽</div>';
-    return;
-  }
-
-  body.innerHTML = filtered.map(c => `
-    <a href="${Data.withUserParam(`/contest.html?id=${c.com_id || c.id}`)}" class="contest-item-link" data-cid="${c.com_id || c.id}">
-      <div>
-        <span style="display:block;">✨ ${Data.escapeHtml(c.com_name || c.name)}</span>
-        <small style="font-size:11px; color:#889; font-weight:400;">${Data.escapeHtml((c.com_intro || '').substring(0, 35))}...</small>
-      </div>
-      <span style="font-size:12px; color:#caa77a; flex-shrink:0; margin-left:10px;">推薦 →</span>
-    </a>
-  `).join('');
-}
-
 function isLoggedIn() {
   const token = localStorage.getItem("token");
   return Boolean(token && token.trim() !== "");
@@ -424,6 +358,19 @@ function getLocalMembers(teamId) {
 
 function saveLocalMembers(teamId, members) {
   localStorage.setItem(`teamMembers:v1:${teamId}`, JSON.stringify(members));
+}
+
+function buildReviewUrl(targetUserId, options = {}) {
+  const params = new URLSearchParams();
+  params.set('userId', getCurrentUserId());
+  params.set('targetUserId', targetUserId || '');
+
+  // mode=view 代表只查看歷史評價；沒有帶 mode 則可撰寫新的隊友評價。
+  if (options.mode) params.set('mode', options.mode);
+  if (options.teamId) params.set('teamId', options.teamId);
+  if (options.teamName) params.set('teamName', options.teamName);
+
+  return `/review.html?${params.toString()}`;
 }
 
 function getCreatorMember() {
@@ -461,7 +408,7 @@ function renderApplicationsPanel(panel, teamId, teamName) {
       </div>
       <span class="panel-count">${pending.length} 筆待審</span>
     </div>
-    ${pending.length ? pending.map(app => renderApplicationCard(app)).join('') : '<div class="empty-text">目前沒有待審核的申請。</div>'}
+    ${pending.length ? pending.map(app => renderApplicationCard(app, teamName)).join('') : '<div class="empty-text">目前沒有待審核的申請。</div>'}
   `;
 
   panel.querySelectorAll('[data-application-action]').forEach(btn => {
@@ -471,7 +418,7 @@ function renderApplicationsPanel(panel, teamId, teamName) {
   });
 }
 
-function renderApplicationCard(app) {
+function renderApplicationCard(app, teamName) {
   const resume = app.resume?.data || app.resume || {};
   return `
     <article class="local-review-card">
@@ -492,6 +439,7 @@ function renderApplicationCard(app) {
         ` : ''}
       </div>
       <div class="local-review-actions">
+        <a class="btn-secondary-action review-link" href="${buildReviewUrl(app.userId, { mode: 'view', teamId: app.teamId, teamName })}">查看評價</a>
         <button class="btn-secondary-action approve" data-application-action="approve" data-application-id="${app.id}">同意</button>
         <button class="btn-secondary-action reject" data-application-action="reject" data-application-id="${app.id}">拒絕</button>
       </div>
@@ -521,6 +469,7 @@ function handleLocalApplication(teamId, applicationId, action, teamName) {
 
 function renderMembersPanel(panel, teamId, teamName) {
   const members = [getCreatorMember(), ...getLocalMembers(teamId)];
+  const currentUserId = getCurrentUserId();
 
   panel.innerHTML = `
     <div class="owned-panel-head">
@@ -531,7 +480,9 @@ function renderMembersPanel(panel, teamId, teamName) {
       <span class="panel-count">${members.length} 人</span>
     </div>
     <div class="local-members-list">
-      ${members.map(member => `
+      ${members.map(member => {
+        const canReview = String(member.userId) !== String(currentUserId);
+        return `
         <article class="local-member-card">
           <div>
             <strong>${Data.escapeHtml(member.applicantName)}</strong>
@@ -539,8 +490,14 @@ function renderMembersPanel(panel, teamId, teamName) {
           </div>
           <p>聯絡方式：${Data.escapeHtml(member.applicantContact || '尚未填寫')}</p>
           <p>備註：${Data.escapeHtml(member.applicantReason || '尚未填寫')}</p>
+          ${canReview ? `
+            <a class="btn-secondary-action review-link member-review-link" href="${buildReviewUrl(member.userId, { teamId, teamName })}">
+              評價隊友
+            </a>
+          ` : ''}
         </article>
-      `).join('')}
+      `;
+      }).join('')}
     </div>
   `;
 }
@@ -571,4 +528,3 @@ if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
 // --- 🚀 初始自動啟動流程 ---
 initManageDashboard();
 renderTeamsGridSection();
-loadSummaryContestsZone();

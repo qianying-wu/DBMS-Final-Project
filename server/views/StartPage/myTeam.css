@@ -280,6 +280,19 @@
     background: #ffffff;
 }
 
+.review-link {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.member-review-link {
+    width: 100%;
+    margin-top: 10px;
+}
+
 .btn-secondary-action.approve {
     border-color: #b9d6be;
     color: #3f7a4c;
@@ -406,56 +419,6 @@
     margin-bottom: 8px;
 }
 
-/* --- 5. 下方：關注與推薦比賽整合區塊 --- */
-.contests-summary-zone {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    border-top: 1px solid #eadfd2;
-    padding-top: 30px;
-}
-
-.summary-box {
-    background: #ffffff;
-    border: 1px solid #eadfd2;
-    border-radius: 12px;
-    padding: 20px;
-}
-
-.sub-zone-title {
-    margin: 0 0 16px 0;
-    font-size: 16px;
-    font-weight: 800;
-    color: #4f3827;
-}
-
-.summary-list-vertical {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-/* 內部的比賽小字卡項目 */
-.contest-item-link {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    background: #fbf9f6;
-    border: 1px solid #f0ebe5;
-    border-radius: 8px;
-    text-decoration: none;
-    color: #4f3827;
-    font-weight: 700;
-    font-size: 14px;
-    transition: all 0.2s ease;
-}
-
-.contest-item-link:hover {
-    border-color: #caa77a;
-    background: #ffffff;
-}
-
 .empty-text {
     color: #8a735e;
     font-size: 13px;
@@ -475,8 +438,5 @@
     }
     .manage-content {
         padding: 20px;
-    }
-    .contests-summary-zone {
-        grid-template-columns: 1fr;
     }
 }
