@@ -23,9 +23,14 @@
 
       const mappedContests = dbContests.map(contest => ({
         id: contest.com_id,                             
-        name: contest.com_name,                       
-        com_date: contest.com_date || '日期未定',    
+        name: contest.com_name,   
+                            
+        /*com_date: contest.com_date || '日期未定',    
         com_enroll_ddl: contest.com_enroll_ddl || '報名截止未定', 
+        com_intro: contest.com_intro || '尚未填寫說明',*/
+        com_date: contest.com_date ? contest.com_date.split('T')[0] : '日期未定',
+        com_enroll_ddl: contest.com_enroll_ddl ? contest.com_enroll_ddl.split('T')[0] : '截止日未定',
+        
         com_intro: contest.com_intro || '尚未填寫說明', 
         com_link: contest.com_link || '#',
         com_location: contest.com_location || '地點未定', 
