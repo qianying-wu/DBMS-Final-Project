@@ -347,14 +347,14 @@ const openCreateTeamPage = () => {
   location.href = getCreateTeamHref();
 };
 
-if (openCreate) {
+/*if (openCreate) {
   openCreate.addEventListener('click', (e) => {
     if (!isLoggedIn) {
       requireLogin('【系統提示】請先登入才能創建隊伍喔！');
     }
     openCreateTeamPage();
   });
-}
+}*/
 
 // 保留取消按鈕
 if (modalCancel) {

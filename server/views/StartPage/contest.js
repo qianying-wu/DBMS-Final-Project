@@ -157,7 +157,7 @@
       const formattedDemand = team.demand
         ? team.demand.replace(/(需求：)/g, '<br>$1')
         : '尚未填寫說明';
-      return `
+      /*return `
         <article class="team-card">
           <h4>${team.team_name}</h4>
           <div class="team-meta" style="white-space: pre-line;">${formattedDemand}</div>          
@@ -166,7 +166,26 @@
             <button class="btn" data-id="${team.team_id}">查看 / 加入</button>
             <button class="fav-btn ${isFav ? 'active' : ''}" data-fav="${team.team_id}" aria-pressed="${isFav}">${isFav ? '♥ 已收藏' : '♡ 收藏'}</button>
           </div>
-        </article>
+        </article>*/
+
+        return `
+    <article class="team-card">
+      <div class="team-body">
+        <h4>${team.team_name}</h4>
+        <div class="team-meta" style="white-space: pre-line;">${formattedDemand}</div>
+        <div class="recruitment-status">招募進度： ${team.current_member_count} / ${team.num_limit}</div>
+      </div>
+      
+      <div class="team-actions">
+        <button class="btn" data-id="${team.team_id}">查看 / 加入</button>
+        <button class="fav-btn ${isFav ? 'active' : ''}" 
+                data-fav="${team.team_id}" 
+                aria-pressed="${isFav}">
+          ${isFav ? '♥ 已收藏' : '♡ 收藏'}
+        </button>
+      </div>
+    </article>
+
       `;
     }).join('') : '<div class="box">目前還沒有隊伍，先創建自己的隊伍吧。</div>';
   }
@@ -234,7 +253,101 @@
     location.href = teamInfoHref(id);
   }
 
-  $('createBtn').addEventListener('click', () => { location.href = createTeamHref(); });
+  //$('createBtn').addEventListener('click', () => { location.href = createTeamHref(); });
+
+  // 強制掛在視窗最頂層，誰都洗不掉它
+window.handleCreateTeamClick = function(e) {
+    if(e) e.preventDefault();
+    console.log("創建隊伍按鈕成功觸發！");
+    
+    const token = localStorage.getItem('token');
+
+    if (!token || token === 'undefined') { 
+        // 🛑 沒登入：彈窗警告，然後絕對要 return！
+        if (typeof requireLogin === 'function') {
+            requireLogin('請先登入才能創建隊伍喔！');
+        } else {
+            alert('請先登入才能創建隊伍喔！');
+        }
+        return; // 👈 這一行是保險絲，沒它就會繼續執行跳轉
+    }
+
+    // ✅ 有登入：才會跑到這裡執行跳轉
+    const urlParams = new URLSearchParams(window.location.search);
+    const contestId = urlParams.get('id') || "";
+    const contestName = document.querySelector('#contestSummary h2')?.innerText || "";
+
+    window.location.href = `create-team.html?id=${contestId}&name=${encodeURIComponent(contestName)}`;
+};
+
+// --- 處理收藏競賽的邏輯 ---
+window.handleFavoriteClick = async function(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation(); // 防止事件干擾到下方的卡片點擊
+    }
+
+    // 1. 權限檢查
+    const token = localStorage.getItem('token');
+    
+    if (!token || token === 'undefined') {
+        // 🛑 沒登入：彈窗警告，然後絕對要 return！
+        if (typeof requireLogin === 'function') {
+            requireLogin('請先登入才能收藏比賽喔！');
+        } else {
+            alert('請先登入才能收藏比賽喔！');
+        }
+        return;
+    }
+
+    // 2. 獲取按鈕元素與競賽 ID
+    const btn = e.currentTarget || document.getElementById('favContestBtn');
+    const urlParams = new URLSearchParams(window.location.search);
+    const contestId = urlParams.get('id');
+
+    if (!contestId) {
+        console.error("找不到競賽 ID");
+        return;
+    }
+
+    // 3. 即時 UI 回饋 (Optimistic UI)
+    // 切換 active 類別，並根據狀態更改圖示與文字
+    const isNowActive = btn.classList.toggle('active');
+    
+    if (isNowActive) {
+        btn.innerHTML = `<span class="heart-icon">♥</span> 已收藏`;
+        console.log(`已將競賽 ${contestId} 加入收藏清單`);
+    } else {
+        btn.innerHTML = `<span class="heart-icon">♡</span> 收藏比賽`;
+        console.log(`已將競賽 ${contestId} 從收藏清單移除`);
+    }
+
+    // 4. 同步到資料庫
+    try {
+        // 這裡對應你們後端的 API 路徑，例如 /api/favorites/contest
+        const response = await fetch('/api/contests/favorite', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ contestId: contestId })
+        });
+
+        if (!response.ok) {
+            throw new Error('網路回應不正常');
+        }
+        
+        const result = await response.json();
+        // 成功後可以根據後端回傳訊息做進一步處理
+    } catch (err) {
+        console.error("收藏同步失敗:", err);
+        // 如果後端失敗，把 UI 狀態彈回去並提醒使用者
+        btn.classList.toggle('active');
+        btn.innerHTML = !isNowActive ? `<span class="heart-icon">♥</span> 已收藏` : `<span class="heart-icon">♡</span> 收藏比賽`;
+        alert('抱歉，收藏功能暫時無法連線，請稍後再試。');
+    }
+};
 
   // 事件委派：監聽隊伍列表的點擊
   $('teamCards').addEventListener('click', e=>{
