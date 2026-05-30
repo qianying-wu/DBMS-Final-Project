@@ -63,7 +63,11 @@ function showLoginPrompt() {
     document.body.classList.add('modal-open');
     return;
   }
-  location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+  location.href = '/auth.html';
+}
+
+function redirectToAuth() {
+  location.href = '/auth.html';
 }
 
 
@@ -191,7 +195,14 @@ function setupGeneralUiEvents() {
   $('contestsGrid')?.addEventListener('click', event => {
     const card = event.target.closest('[data-id]');
     if (!card) return;
-    location.href = withUserParam(`/contest.html?id=${encodeURIComponent(card.dataset.id)}`);
+
+    if (!isLoggedIn()) {
+      redirectToAuth();
+      return;
+    }
+
+    const targetPath = withUserParam(`/contest.html?id=${encodeURIComponent(card.dataset.id)}`);
+    location.href = targetPath;
   });
 
   const homeLink = $('homeLink');

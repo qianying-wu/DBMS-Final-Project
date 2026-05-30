@@ -112,9 +112,29 @@
 
   function createTeamHref(){ return withUserParam(`/create-team.html?contestId=${encodeURIComponent(contestId)}`); }
   function teamInfoHref(id){ return withUserParam(`/team-info.html?teamId=${encodeURIComponent(id)}`); }
+  function isLoggedIn() {
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId') || params.get('userId');
+    return Boolean(
+      token &&
+      token.trim() !== '' &&
+      userId &&
+      userId !== 'unknown' &&
+      userId !== 'null' &&
+      userId !== 'undefined'
+    );
+  }
+  function redirectToAuth() {
+    location.href = '/auth.html';
+  }
 
   // --- 核心畫面渲染邏輯 ---
   async function render(){
+    if (!isLoggedIn()) {
+      redirectToAuth();
+      return;
+    }
+
     // 1. 使用 await 解開所有非同步資料
     const contest = await getContest();
     const teams = await contestTeams();
@@ -228,13 +248,25 @@
   }
 
   async function openTeamDetail(id){
+    if (!isLoggedIn()) {
+      redirectToAuth();
+      return;
+    }
+
     const allTeams = await loadTeams();
     const team = allTeams.find(item => item.team_id === id);
     if (!team) return alert('找不到隊伍');
     location.href = teamInfoHref(id);
   }
 
-  $('createBtn').addEventListener('click', () => { location.href = createTeamHref(); });
+  $('createBtn').addEventListener('click', () => {
+    if (!isLoggedIn()) {
+      redirectToAuth();
+      return;
+    }
+
+    location.href = createTeamHref();
+  });
 
   // 事件委派：監聽隊伍列表的點擊
   $('teamCards').addEventListener('click', e=>{

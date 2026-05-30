@@ -128,9 +128,11 @@ export async function renderTeamsGridSection() {
     }
 
     // 渲染「精緻的隊伍字卡框框」
-    gridContainer.innerHTML = teams.map(t => {
+    const cardsHtml = teams.map(t => {
       // 判斷角色標籤：如果當前分頁本來就是我建立的，或是資料中 owner_id 等於目前登入者
       const isCreator = activeTab === 'owned' || String(t.owner_id) === String(userId);
+      const teamId = t.team_id || t.id;
+      const pendingCount = getLocalApplications(teamId).filter(app => app.status === 'pending').length;
       const badgeHtml = isCreator 
         ? `<span class="role-badge creator">我創立</span>` 
         : `<span class="role-badge member">已加入</span>`;
@@ -157,19 +159,39 @@ export async function renderTeamsGridSection() {
                 </div>
             </div>
             <div class="card-bottom">
-                <button class="btn-manage-action" data-team-id="${t.team_id || t.id}">
+                <button class="btn-manage-action" data-team-id="${teamId}">
                   管理隊伍
                 </button>
+                ${activeTab === 'owned' ? `
+                  <div class="owned-action-row">
+                    <button class="btn-secondary-action" data-owned-action="applications" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">
+                      申請審核${pendingCount ? ` (${pendingCount})` : ''}
+                    </button>
+                    <button class="btn-secondary-action" data-owned-action="members" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">
+                      隊友名單
+                    </button>
+                  </div>
+                ` : ''}
             </div>
         </div>
       `;
     }).join('');
+
+    gridContainer.innerHTML = activeTab === 'owned'
+      ? `${cardsHtml}<section id="ownedTeamPanel" class="owned-team-panel"><div class="empty-text">選擇一支隊伍查看申請審核或隊友名單。</div></section>`
+      : cardsHtml;
 
     // 綁定所有新生成卡片的「管理隊伍」按鈕點擊跳轉事件
     gridContainer.querySelectorAll('.btn-manage-action').forEach(btn => {
       btn.addEventListener('click', () => {
         const teamId = btn.dataset.teamId;
         location.href = Data.withUserParam(`/team-info.html?teamId=${teamId}`);
+      });
+    });
+
+    gridContainer.querySelectorAll('[data-owned-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        renderOwnedTeamPanel(btn.dataset.teamId, btn.dataset.teamName, btn.dataset.ownedAction);
       });
     });
 
@@ -254,6 +276,142 @@ function renderRecommendationsUI(contests, preferences) {
 function isLoggedIn() {
   const token = localStorage.getItem("token");
   return Boolean(token && token.trim() !== "");
+}
+
+function getLocalApplications(teamId) {
+  return JSON.parse(localStorage.getItem('teamApplications:v1') || '[]')
+    .filter(app => Number(app.teamId) === Number(teamId));
+}
+
+function saveLocalApplications(applications) {
+  localStorage.setItem('teamApplications:v1', JSON.stringify(applications));
+}
+
+function getLocalMembers(teamId) {
+  return JSON.parse(localStorage.getItem(`teamMembers:v1:${teamId}`) || '[]');
+}
+
+function saveLocalMembers(teamId, members) {
+  localStorage.setItem(`teamMembers:v1:${teamId}`, JSON.stringify(members));
+}
+
+function getCreatorMember() {
+  const userId = getCurrentUserId();
+  return {
+    userId,
+    applicantName: `隊長 ${userId}`,
+    applicantContact: '登入帳號',
+    applicantReason: '隊伍建立者',
+    status: 'approved',
+    role: '建立人'
+  };
+}
+
+function renderOwnedTeamPanel(teamId, teamName, mode) {
+  const panel = $('ownedTeamPanel');
+  if (!panel) return;
+
+  if (mode === 'applications') {
+    renderApplicationsPanel(panel, teamId, teamName);
+    return;
+  }
+
+  renderMembersPanel(panel, teamId, teamName);
+}
+
+function renderApplicationsPanel(panel, teamId, teamName) {
+  const pending = getLocalApplications(teamId).filter(app => app.status === 'pending');
+
+  panel.innerHTML = `
+    <div class="owned-panel-head">
+      <div>
+        <span class="panel-eyebrow">申請審核</span>
+        <h3>${Data.escapeHtml(teamName)}</h3>
+      </div>
+      <span class="panel-count">${pending.length} 筆待審</span>
+    </div>
+    ${pending.length ? pending.map(app => renderApplicationCard(app)).join('') : '<div class="empty-text">目前沒有待審核的申請。</div>'}
+  `;
+
+  panel.querySelectorAll('[data-application-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      handleLocalApplication(teamId, btn.dataset.applicationId, btn.dataset.applicationAction, teamName);
+    });
+  });
+}
+
+function renderApplicationCard(app) {
+  const resume = app.resume?.data || app.resume || {};
+  return `
+    <article class="local-review-card">
+      <div class="local-review-main">
+        <div class="local-review-title">
+          <strong>${Data.escapeHtml(app.applicantName)}</strong>
+          <span>${new Date(app.createdAt).toLocaleDateString('zh-TW')}</span>
+        </div>
+        <p>聯絡方式：${Data.escapeHtml(app.applicantContact || '尚未填寫')}</p>
+        <p>申請理由：${Data.escapeHtml(app.applicantReason || '尚未填寫')}</p>
+        ${resume.school || resume.grade || resume.intro ? `
+          <div class="local-resume-box">
+            <strong>${Data.escapeHtml(app.resume?.name || resume.resume_name || '履歷摘要')}</strong>
+            <span>學校：${Data.escapeHtml(resume.school || app.resume?.user_school || '未填寫')}</span>
+            <span>年級：${Data.escapeHtml(resume.grade || app.resume?.department_grade || '未填寫')}</span>
+            <span>自我介紹：${Data.escapeHtml(resume.intro || app.resume?.user_intro || '未填寫')}</span>
+          </div>
+        ` : ''}
+      </div>
+      <div class="local-review-actions">
+        <button class="btn-secondary-action approve" data-application-action="approve" data-application-id="${app.id}">同意</button>
+        <button class="btn-secondary-action reject" data-application-action="reject" data-application-id="${app.id}">拒絕</button>
+      </div>
+    </article>
+  `;
+}
+
+function handleLocalApplication(teamId, applicationId, action, teamName) {
+  const applications = JSON.parse(localStorage.getItem('teamApplications:v1') || '[]');
+  const target = applications.find(app => app.id === applicationId);
+  if (!target) return;
+
+  target.status = action === 'approve' ? 'approved' : 'rejected';
+  saveLocalApplications(applications);
+
+  if (action === 'approve') {
+    const members = getLocalMembers(teamId);
+    const exists = members.some(member => String(member.userId) === String(target.userId));
+    if (!exists) {
+      members.push({ ...target, role: '組員' });
+      saveLocalMembers(teamId, members);
+    }
+  }
+
+  renderApplicationsPanel($('ownedTeamPanel'), teamId, teamName);
+}
+
+function renderMembersPanel(panel, teamId, teamName) {
+  const members = [getCreatorMember(), ...getLocalMembers(teamId)];
+
+  panel.innerHTML = `
+    <div class="owned-panel-head">
+      <div>
+        <span class="panel-eyebrow">隊友名單</span>
+        <h3>${Data.escapeHtml(teamName)}</h3>
+      </div>
+      <span class="panel-count">${members.length} 人</span>
+    </div>
+    <div class="local-members-list">
+      ${members.map(member => `
+        <article class="local-member-card">
+          <div>
+            <strong>${Data.escapeHtml(member.applicantName)}</strong>
+            <span>${Data.escapeHtml(member.role || '組員')}</span>
+          </div>
+          <p>聯絡方式：${Data.escapeHtml(member.applicantContact || '尚未填寫')}</p>
+          <p>備註：${Data.escapeHtml(member.applicantReason || '尚未填寫')}</p>
+        </article>
+      `).join('')}
+    </div>
+  `;
 }
 
 function updateCurrentTabTitle(tab) {
