@@ -58,6 +58,15 @@
       .preference-chip:hover { background: #faf6f0; border-color: #ba9675; }
       .preference-chip.active { background: #6b4f3a; color: #fff; border-color: #6b4f3a; font-weight: 600; box-shadow: 0 4px 10px rgba(107, 79, 58, 0.2); }
 
+      .received-review-list { display: flex; flex-direction: column; gap: 14px; }
+      .received-review-card { border: 1px solid #eadfd2; background: #fffdfa; border-radius: 12px; padding: 16px; }
+      .received-review-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: #4f3827; font-weight: 800; }
+      .received-review-date { color: #9b8065; font-size: 12px; font-weight: 700; }
+      .received-review-stars { color: #d9a95f; letter-spacing: 2px; margin-bottom: 6px; }
+      .received-review-meta { color: #9b8065; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+      .received-review-text { color: #5f4734; line-height: 1.6; margin: 0; white-space: pre-line; }
+      .received-review-empty { color: #8c7b6c; font-size: 14px; padding: 10px 0; }
+
       .btn-container { display: flex; justify-content: flex-end; align-items: center; margin-top: 12px; }
       .preference-status { font-size: 13px; color: #7b6a59; margin-left: 12px; }
 
@@ -136,6 +145,16 @@
           <div class="btn-container" style="border-top: 1px solid #f2ece5; padding-top: 20px; margin-top: 20px;">
             <button class="btn outline" id="savePreferences" style="padding: 0 20px; height: 42px; line-height: 42px;">儲存偏好設定</button>
             <span id="preferenceStatus" class="preference-status"></span>
+          </div>
+        </section>
+
+        <section class="settings-card">
+          <h3 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"></path></svg>
+            別人對我的評價
+          </h3>
+          <div id="receivedReviewList" class="received-review-list">
+            <div class="received-review-empty">目前尚未收到隊友評價。</div>
           </div>
         </section>
       </main>

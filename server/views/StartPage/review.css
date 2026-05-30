@@ -147,5 +147,7 @@
 .review-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .review-item-author { font-weight: 700; color: #4f3827; }
 .review-item-time { font-size: 13px; color: #8a735e; }
+.review-item-meta { color: #9b8065; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
 .review-item-stars { color: #f58228; font-size: 16px; letter-spacing: 2px; margin-bottom: 8px; }
 .review-item-content { color: #55483d; line-height: 1.6; margin: 0; white-space: pre-line; }
+.empty-note { color: #8a735e; padding: 16px; }

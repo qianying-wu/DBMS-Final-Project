@@ -125,16 +125,27 @@
 }
 
 .member-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: #d4b283;
-  color: #fff;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fdfbf7 0%, #f5ece1 100%);
+  border: 2px solid #fff;
+  box-shadow: 0 6px 16px rgba(107, 79, 58, 0.12);
+  color: #6b4f3a;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-weight: 800;
+}
+
+.member-avatar svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .member-info {

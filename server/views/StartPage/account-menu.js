@@ -4,14 +4,23 @@
 
   // 將目前網址上的 userId 附加到導頁連結。
   function withUser(path){
-    const userId = new URLSearchParams(location.search).get('userId');
+    // 有些頁面回首頁時不一定會把 userId 放在網址上，所以要同步支援 localStorage。
+    const userId = new URLSearchParams(location.search).get('userId') || localStorage.getItem('userId');
     return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
   }
 
-  // 只用網址上的 userId 判斷是否登入，避免讀到舊 localStorage 後誤開個人資料。
+  // 判斷是否登入：登入後 token/userId 主要存在 localStorage，網址參數只當輔助來源。
   function isLoggedIn(){
-    const userId = new URLSearchParams(location.search).get('userId');
-    return Boolean(userId && userId !== 'unknown');
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId') || new URLSearchParams(location.search).get('userId');
+    return Boolean(
+      token &&
+      token.trim() !== '' &&
+      userId &&
+      userId !== 'unknown' &&
+      userId !== 'null' &&
+      userId !== 'undefined'
+    );
   }
 
   function askLogin(){
@@ -30,7 +39,7 @@
       };
       const onLogin = () => {
         cleanup();
-        location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+        location.href = '/auth.html';
       };
 
       function cleanup(){
@@ -43,7 +52,7 @@
       return;
     }
     // fallback: go directly to auth page if the shared modal is missing
-    location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+    location.href = '/auth.html';
   }
 
   // 關閉已存在的帳號選單。

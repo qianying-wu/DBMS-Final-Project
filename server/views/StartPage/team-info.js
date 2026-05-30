@@ -83,15 +83,15 @@
     return profiles.find(item => String(item.id) === String(activeProfileId)) || profiles[0] || null;
   }
 
-  // 從履歷物件中取出顯示名稱，沒有履歷時使用 fallback。
+  // 從履歷物件中取出「人的名字」。注意：profile.name 通常是履歷名稱，不拿來當成員姓名。
   function getProfileName(profile, fallback) {
-    return profile?.data?.name || profile?.user_pv_name || profile?.name || fallback;
+    return profile?.data?.name || profile?.data?.user_pv_name || profile?.user_pv_name || fallback;
   }
 
   // 從履歷物件中取出技能標籤，支援目前 profile.js 可能存放的幾種格式。
   function getProfileSkills(profile) {
     const skills = profile?.tags || profile?.data?.tags || profile?.skills || profile?.data?.skills || [];
-    return Array.isArray(skills) && skills.length ? skills.join('、') : '尚未填寫技能';
+    return Array.isArray(skills) && skills.length ? skills.join('、') : '';
   }
 
   // myTeam 審核同意後，會把隊友暫存在 teamMembers:v1:{teamId}，這裡讀出來顯示。
@@ -158,9 +158,9 @@
         const resume = member.resume?.data || member.resume || {};
         const skills = member.resume?.tags || resume.tags || member.tags || [];
         return {
-          name: member.applicantName || resume.name || `使用者 ${member.userId}`,
+          name: member.applicantName || resume.user_pv_name || resume.name || `使用者 ${member.userId}`,
           role: member.role || '組員',
-          skills: Array.isArray(skills) && skills.length ? skills.join('、') : '尚未填寫技能'
+          skills: Array.isArray(skills) && skills.length ? skills.join('、') : ''
         };
       })
     ];
@@ -170,11 +170,16 @@
 
     memberList.innerHTML = members.map(member => `
       <li class="member-card">
-        <div class="member-avatar">${escapeHtml(member.name).slice(0, 1)}</div>
+        <div class="member-avatar" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          </svg>
+        </div>
         <div class="member-info">
           <strong>${escapeHtml(member.name)}</strong>
           <span>${escapeHtml(member.role)}</span>
-          <p>技能：${escapeHtml(member.skills)}</p>
+          ${member.skills ? `<p>專長：${escapeHtml(member.skills)}</p>` : ''}
         </div>
       </li>
     `).join('');
