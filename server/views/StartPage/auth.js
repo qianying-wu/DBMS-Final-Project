@@ -86,7 +86,7 @@
   }
 
   back.addEventListener('click', () => {
-    location.href = qs.get('redirect') || '/contests.html';
+    location.href = '/contests.html';
   });
 
   // 點擊送出按鈕時，驗證欄位並發送 POST 請求給後端 API。

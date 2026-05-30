@@ -15,7 +15,7 @@ body{font-family:Arial,'Noto Sans TC',sans-serif;margin:0;background:#faf7f2;col
 .left-panel,.right-panel{align-self:stretch}
 .panel,.main-panel{min-height:0;overflow-y:auto;overscroll-behavior:contain}
 .main-panel{padding:22px}
-.btn{padding:10px 14px;border-radius:8px;border:none;cursor:pointer}
+.btn{padding:10px 14px;border-radius:8px;border:none;cursor:pointer;white-space: nowrap; /* 確保文字不會換行 */}
 .btn.primary{background:linear-gradient(90deg,#d4b283,#c9a56f);color:#fff}
 .btn.outline{background:transparent;border:1px solid #ddd}
 .btn.block{width:100%;margin-bottom:16px}
@@ -34,13 +34,92 @@ body{font-family:Arial,'Noto Sans TC',sans-serif;margin:0;background:#faf7f2;col
 .summary-item{border-top:1px solid #eadfd2;padding-top:9px}
 .summary-item span{display:block;font-size:12px;color:#8a735e;margin-bottom:4px}
 .main-section{border-top:1px solid #e6ddd3;padding-top:18px;margin-top:18px}
-.section-heading{display:flex;justify-content:space-between;gap:12px;align-items:center}
+/* 讓標題絕對不換行 */
+.no-wrap {
+    white-space: nowrap; 
+    flex-shrink: 0; /* 防止標題被按鈕擠扁 */
+    margin: 0;
+}
+.section-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom: 12px; /* 與下方文字保持距離 */}
 .info-box{line-height:1.7;color:#4a4038}
-.team-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
-.team-card{border:1px solid #e9ded2;border-radius:8px;padding:12px;background:#fff}
+.team-cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:12px
+}
+.team-card{
+  /*border:1px solid #e9ded2;
+  border-radius:8px;
+  padding:12px;
+  background:#fff*/
+    display: flex;
+    flex-direction: column;
+    height: 100%;           /* 讓同排卡片等高 */
+    min-height: 250px;      /* 給一個最小高度，避免太矮 */
+    padding: 12px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px;
+}
 .team-card h4{margin:0 0 8px;color:#4f3827}
-.team-meta{font-size:13px;color:#666;margin-bottom:10px}
-.team-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+/* 讓隊伍的需求描述區塊自動吃掉剩餘空間 */
+.team-card .team-desc-area { 
+    flex: 1;                /* 🚀 關鍵：把中間撐開，把按鈕往下擠 */
+    margin-bottom: 15px;    /* 跟按鈕保持距離 */
+}
+
+/* 按鈕容器（包含 查看/加入 與 收藏） */
+.team-card .team-actions {
+    margin-top: auto;       /* 🚀 雙重保險：確保按鈕組永遠墊底 */
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+/* 2. 內容區塊（標題、描述、需求） */
+.team-body {
+    flex-grow: 1;     /* 🚀 關鍵：這塊會把剩下的空間「吃光」，把按鈕推下去 */
+    display: flex;
+    flex-direction: column;
+}
+
+.team-card .team-actions button {
+    flex: 1;                /* 讓兩個按鈕平分寬度，看起來更整齊 */
+    white-space: nowrap;
+}
+.team-meta{
+  flex: 1;
+  font-size:13px;
+  color:#666;
+  margin-bottom:10px}
+
+.team-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:5px
+}
+
+/* 4. 按鈕本人 */
+.team-actions .fav-btn,
+.team-actions.btn {
+    flex: 1;                /* 🚀 關鍵：讓「查看」跟「收藏」平分寬度，字就不會縮起來 */
+    padding: 10px;          /* 增加上下高度 */
+    white-space: nowrap;    /* 確保字不換行 */
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 🚀 招募進度樣式：設定 margin-bottom 為 0 或極小，緊貼按鈕區 */
+.recruitment-status {
+    font-size: 15px;
+    color: #133b99;
+    margin-bottom: 8px; /* 這裡控制它跟按鈕組的距離 */
+    font-weight: 500;
+}
+
 .fav-btn{background:transparent;border:1px solid #eadfd2;border-radius:8px;padding:6px 9px;cursor:pointer}
 .fav-btn.active{color:#d45b6f;background:#fff5f7}
 .box{background:rgba(255,255,255,0.72);border:1px solid rgba(96,116,135,0.12);border-radius:8px;padding:12px;line-height:1.6;white-space:pre-line}
@@ -88,4 +167,46 @@ body.modal-open{overflow:hidden}
 .icon-btn:hover, .avatar-btn:hover {
   background: #f5f0ea;
 }
+
+
+.heading-actions {
+    display: flex;
+    gap: 12px; /* 按鈕間距 */
+    margin-left: auto; /* 確保在任何情況下都靠右 */
+}
+
+/* 🚀 統一按鈕高度：參考一般連結/輸入框的高度，通常是 36px 或 38px */
+.heading-actions .btn {
+    height: 38px;      /* 固定高度 */
+    padding: 0 16px;   /* 左右留白 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    white-space: nowrap;
+    line-height: 1;    /* 防止內文字體偏移 */
+}
+
+/* 收藏按鈕的基本樣式 */
+.fav-btn {
+    display: flex;
+    /*align-items: center;*/
+    gap: 5px;
+    background-color: #fff;
+    border: 1px solid #dbe7ef;
+    color: #5b6570;
+    transition: all 0.2s;
+}
+
+/* 收藏後的啟動狀態 */
+.fav-btn.active {
+    color: #e74c3c;
+    border-color: #e74c3c;
+    background-color: #fff5f5;
+}
+
+.fav-btn.active .heart-icon {
+    content: '♥'; /* 變實心 */
+}
+
 

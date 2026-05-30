@@ -1,6 +1,26 @@
 // 🔑 關鍵串接：直接從登入成功的驗證快取中抓取真實狀態
 const token = localStorage.getItem('token');
 const id = localStorage.getItem('userId');
+const $ = id => document.getElementById(id);
+
+function escapeHtml(value) {
+return String(value ?? '').replace(/[&<>"']/g, match => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+})[match]);
+}
+
+function readJson(key, fallback) {
+try {
+    return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+} catch (error) {
+    return fallback;
+}
+}
+
 
 // 安全機制：若完全沒有登入資訊，強制引導回登入頁
 if (!id || id === 'unknown') {
@@ -168,6 +188,39 @@ try {
 }
 });
 
+// 4. 顯示別人對自己的評價，目前先讀 review.js 寫入的 localStorage。
+function renderReceivedReviews() {
+const list = $('receivedReviewList');
+if (!list) return;
+
+const reviews = readJson(`userReviews_${id}`, []);
+
+if (reviews.length === 0) {
+    list.innerHTML = '<div class="received-review-empty">目前尚未收到隊友評價。</div>';
+    return;
+}
+
+list.innerHTML = reviews.map(review => {
+    const rating = Math.max(0, Math.min(5, Number(review.rating) || 0));
+    const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+    const date = review.date ? new Date(review.date).toLocaleDateString('zh-TW') : '';
+    const meta = review.teamName ? `來自 ${review.teamName}` : '隊友評價';
+
+    return `
+    <article class="received-review-card">
+        <div class="received-review-head">
+        <span>${escapeHtml(review.reviewerName || '匿名隊友')}</span>
+        <span class="received-review-date">${escapeHtml(date)}</span>
+        </div>
+        <div class="received-review-meta">${escapeHtml(meta)}</div>
+        <div class="received-review-stars">${stars}</div>
+        <p class="received-review-text">${escapeHtml(review.content || '')}</p>
+    </article>
+    `;
+}).join('');
+}
+
 // 初始化啟動
 fetchAccountDataFromServer();
 initPreferences();
+renderReceivedReviews();

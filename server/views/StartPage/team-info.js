@@ -71,6 +71,120 @@
     return JSON.parse(localStorage.getItem('profiles') || '[]');
   }
 
+  // 將要放進 innerHTML 的文字做轉義，避免使用者填的名字或技能破壞頁面結構。
+  function escapeHtml(value){
+    return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+  }
+
+  // 目前先用 localStorage 的履歷資料推估使用者名稱與技能；之後接後端時可替換這裡。
+  function getActiveProfile() {
+    const profiles = loadProfiles();
+    const activeProfileId = localStorage.getItem('activeProfileId');
+    return profiles.find(item => String(item.id) === String(activeProfileId)) || profiles[0] || null;
+  }
+
+  // 從履歷物件中取出「人的名字」。注意：profile.name 通常是履歷名稱，不拿來當成員姓名。
+  function getProfileName(profile, fallback) {
+    return profile?.data?.name || profile?.data?.user_pv_name || profile?.user_pv_name || fallback;
+  }
+
+  // 從履歷物件中取出技能標籤，支援目前 profile.js 可能存放的幾種格式。
+  function getProfileSkills(profile) {
+    const skills = profile?.tags || profile?.data?.tags || profile?.skills || profile?.data?.skills || [];
+    return Array.isArray(skills) && skills.length ? skills.join('、') : '';
+  }
+
+  // myTeam 審核同意後，會把隊友暫存在 teamMembers:v1:{teamId}，這裡讀出來顯示。
+  function getLocalMembers(teamId) {
+    return JSON.parse(localStorage.getItem(`teamMembers:v1:${teamId}`) || '[]');
+  }
+
+  function saveLocalApplication(teamId) {
+    const applications = JSON.parse(localStorage.getItem('teamApplications:v1') || '[]');
+    const profile = getActiveProfile();
+    const applicantName = getProfileName(profile, `使用者 ${ME.id}`);
+
+    const exists = applications.some(app =>
+      Number(app.teamId) === Number(teamId) &&
+      String(app.userId) === String(ME.id) &&
+      app.status === 'pending'
+    );
+    if (exists) return;
+
+    applications.unshift({
+      id: `${teamId}-${ME.id}-${Date.now()}`,
+      teamId: Number(teamId),
+      userId: String(ME.id),
+      applicantName,
+      applicantContact: profile?.email || profile?.userEmail || '尚未填寫',
+      applicantReason: '想加入這個隊伍，一起完成比賽。',
+      resume: profile,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    });
+
+    localStorage.setItem('teamApplications:v1', JSON.stringify(applications));
+  }
+
+  // 用既有的「我建立的隊伍」API 判斷目前使用者是不是這支隊伍的建立者。
+  // 這樣不需要新增後端路由，也比用 team.owner_id 猜測更可靠。
+  async function isOwnedByCurrentUser(teamId) {
+    try {
+      const res = await fetch(`/api/teams/my-owned?userId=${encodeURIComponent(ME.id)}`);
+      if (!res.ok) return false;
+      const result = await res.json();
+      const teams = result.data || result.teams || [];
+      return teams.some(team => Number(team.team_id || team.id) === Number(teamId));
+    } catch (err) {
+      console.error('❌ 判斷隊伍建立者失敗:', err);
+      return false;
+    }
+  }
+
+  // 渲染「目前成員」區塊：先顯示隊長，再顯示 myTeam 審核通過後存在 localStorage 的隊友。
+  function renderMemberList(team, isCreator) {
+    const memberList = $('memberList');
+    if (!memberList) return;
+
+    const creatorProfile = getActiveProfile();
+    const localMembers = getLocalMembers(team.team_id);
+    const members = [
+      {
+        name: isCreator ? getProfileName(creatorProfile, `隊長 ${ME.id}`) : '隊伍建立者',
+        role: '建立人',
+        skills: isCreator ? getProfileSkills(creatorProfile) : '隊伍管理'
+      },
+      ...localMembers.map(member => {
+        const resume = member.resume?.data || member.resume || {};
+        const skills = member.resume?.tags || resume.tags || member.tags || [];
+        return {
+          name: member.applicantName || resume.user_pv_name || resume.name || `使用者 ${member.userId}`,
+          role: member.role || '組員',
+          skills: Array.isArray(skills) && skills.length ? skills.join('、') : ''
+        };
+      })
+    ];
+
+    // localStorage 成員可能比資料庫 current_member_count 更新，所以取較大的數字顯示。
+    $('displayMemberCount').textContent = Math.max(Number(team.current_member_count) || 0, members.length);
+
+    memberList.innerHTML = members.map(member => `
+      <li class="member-card">
+        <div class="member-avatar" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          </svg>
+        </div>
+        <div class="member-info">
+          <strong>${escapeHtml(member.name)}</strong>
+          <span>${escapeHtml(member.role)}</span>
+          ${member.skills ? `<p>專長：${escapeHtml(member.skills)}</p>` : ''}
+        </div>
+      </li>
+    `).join('');
+  }
+
   function withUserParam(path){
     const userId = localStorage.getItem('userId');
     return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
@@ -97,7 +211,7 @@
     $('displayTeamName').textContent = team.team_name;
     $('displayContestLabel').textContent = contest.name;
     $('displayContestName').textContent = contest.name;
-    $('displayContestDate').textContent = contest.com_date || '日期未定';
+    $('displayContestDate').textContent = (contest.com_date) ? contest.com_date.split('T')[0] : '日期未定';
     $('displayContestInfo').textContent = contest.com_intro || '尚未填寫比賽資訊。';
     $('displayMemberCount').textContent = team.current_member_count;
     $('displayMaxSlots').textContent = team.num_limit;
@@ -114,14 +228,14 @@
     
     if (alreadyJoinedLocal || pending || Number(team.current_member_count) >= Number(team.num_limit)) {
       $('applyBtn').textContent = alreadyJoinedLocal ? '已在隊伍中' : pending ? '審核中...' : '隊伍已額滿';
+      $('applyBtn').disabled = true;
       if (alreadyJoinedLocal) {
-        if ($('applyBtn')) $('applyBtn').style.display = 'none';
-        if ($('contactBtn')) $('contactBtn').style.display = 'none';
+        if ($('applicationBlock')) $('applicationBlock').style.display = 'none';
       }
     }
 
-    // 🚀 執行真實資料庫的角色與成員關係檢查
-    await checkUserRoleAndRender();
+    // 🚀 執行角色與成員關係檢查，決定要不要顯示申請按鈕，並渲染目前成員。
+    await checkUserRoleAndRender(team);
   }
 
   // 2. 綁定事件處理器
@@ -144,6 +258,7 @@
         if (!res.ok) throw new Error(result.message || '申請失敗');
 
         alert('申請成功！目前狀態：審核中。');
+        saveLocalApplication(currentTeamId);
         $('applyBtn').textContent = '審核中...';
         $('applyBtn').disabled = true;
 
@@ -151,42 +266,45 @@
         alert(err.message);
       }
     });
-
-    // 其他導覽按鈕
-    $('contactBtn').addEventListener('click', () => { alert('聯絡功能整合中...'); });
   }
 
   /**
    * 👑 核心身分權限與加入狀態檢查
    */
-  async function checkUserRoleAndRender() {
+  async function checkUserRoleAndRender(team) {
     try {
-      // 🚀 對齊變數來源，確保撈到正確隊伍的詳細資料
-      const res = await fetch(`/api/teams/detail?teamId=${currentTeamId}`);
-      if (!res.ok) return;
-      
-      const result = await res.json();
-      const team = result.team;
-      const members = result.members || []; // 後端傳回來的目前隊員清單陣列
+      // 1. 👑 判斷當前登入者是不是這個隊伍的建立者。
+      const isCreator = await isOwnedByCurrentUser(currentTeamId);
 
-      const currentUserId = localStorage.getItem('userId');
+      // 2. 👥 判斷目前登入者是否已經被本機審核通過為隊員。
+      const isAlreadyMember = getLocalMembers(currentTeamId).some(member => String(member.userId) === String(ME.id));
 
-      // 1. 👑 判斷當前登入者是不是這個隊伍的 Owner (建立者)
-      const isCreator = String(team.owner_id) === String(currentUserId);
+      // 3. 🕒 判斷目前登入者是否已有待審核申請，避免重複送出。
+      const hasPendingApplication = JSON.parse(localStorage.getItem('teamApplications:v1') || '[]').some(app =>
+        Number(app.teamId) === Number(currentTeamId) &&
+        String(app.userId) === String(ME.id) &&
+        app.status === 'pending'
+      );
 
-      // 2. 👥 判斷目前登入者是否「已經在這個隊伍裡」（遍歷隊員名單的 user_id）
-      const isAlreadyMember = members.some(m => String(m.user_id) === String(currentUserId));
+      // 4. 🧾 不管是否顯示申請按鈕，都先把目前成員列表畫出來。
+      renderMemberList(team, isCreator);
 
       // 🚀 核心新增：如果已經在隊伍裡（身分是建立者或一般成員），直接拔除「申請」與「聯絡」按鈕
       if (isCreator || isAlreadyMember) {
-        if ($('applyBtn')) $('applyBtn').style.display = 'none';
-        if ($('contactBtn')) $('contactBtn').style.display = 'none';
+        if ($('applicationBlock')) $('applicationBlock').style.display = 'none';
+      } else if (hasPendingApplication) {
+        if ($('applicationBlock')) $('applicationBlock').style.display = 'flex';
+        if ($('applyBtn')) {
+          $('applyBtn').textContent = '審核中...';
+          $('applyBtn').disabled = true;
+        }
       } else {
         // 如果不在隊伍裡，確保按鈕正常顯示（避免被上面舊的 local 狀態誤卡）
         if ($('applyBtn') && $('applyBtn').textContent !== '審核中...' && $('applyBtn').textContent !== '隊伍已額滿') {
-          $('applyBtn').style.display = 'block';
+          $('applyBtn').style.display = 'inline-flex';
+          $('applyBtn').disabled = false;
         }
-        if ($('contactBtn')) $('contactBtn').style.display = 'block';
+        if ($('applicationBlock')) $('applicationBlock').style.display = 'flex';
       }
 
       // 3. 根據身分切換控制台的 UI 欄位（建立者可修改，其餘人唯讀）

@@ -27,14 +27,25 @@
 
         <section class="main-section">
           <div class="section-heading">
-            <h3>比賽資訊</h3>
-            <button id="createBtn" class="btn primary">創建自己的隊伍 +</button>
+            <h3 class="no-wrap">比賽資訊</h3>
+            <div class="heading-actions">
+              <button type="button" id="favContestBtn" class="btn secondary fav-btn" onclick="handleFavoriteClick(event)">
+                <span class="heart-icon">♡</span> 收藏比賽
+              </button>
+            </div>
           </div>
           <div id="contestInfo" class="info-box"></div>
         </section>
 
         <section class="main-section">
-          <h3>其它隊伍</h3>
+          <div class="section-heading">
+            <h3 class="no-wrap">隊伍列表</h3>
+            <div class="heading-actions">
+              <button type="button" class="btn primary" onclick="handleCreateTeamClick(event)">
+                創建隊伍 +
+              </button>
+            </div>  
+          </div> 
           <div id="teamCards" class="team-cards"></div>
         </section>
       </section>
@@ -56,7 +67,6 @@
       </div>
     </div>
 
-    <script src="/notifications.js"></script>
     <script src="/account-menu.js"></script>
     <script src="/contest.js"></script>
   </body>

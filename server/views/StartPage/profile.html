@@ -35,7 +35,6 @@
 
         <div id="resumeGallery" class="resume-gallery"></div>
       </div>
-      </div>
 
 
       <div id="resumeEditor" class="card editor-card" hidden>
@@ -62,7 +61,9 @@
           </div>
         </div>
 
-        <form id="profileForm" onsubmit="return false;">
+        <form id="profileForm">
+
+          <!-- 姓名 -->
           <div class="row">
             <div class="field-label full">
               <span class="label-title">姓名 <span class="required-star">*</span></span>
@@ -71,6 +72,7 @@
             </div>
           </div>
 
+          <!-- 學校 / 系級 -->
           <div class="row">
             <div class="field-label">
               <span class="label-title">學校 <span class="required-star">*</span></span>
@@ -92,38 +94,30 @@
                 <button id="addTag" type="button" aria-label="新增專長">＋</button>
               </div>
             </div>
-            <div class="editor-actions">
-              <button id="backToGallery" type="button" class="btn outline">返回列表</button>
-              <button id="viewResumeBtn" type="button" class="btn outline">查看制式履歷</button>
-            </div>
           </div>
 
+          <!-- 自我介紹 -->
           <div class="row">
             <div class="field-label full">
               <span class="label-title">自我介紹 <span class="required-star">*</span></span>
-              <textarea id="bio" placeholder="一段短介紹" rows="3" required style="resize:none"></textarea>
+              <textarea id="intro" placeholder="一段短介紹" rows="3" required style="resize:none"></textarea>
               <div class="field-error" id="error-intro" aria-live="polite"></div>
             </div>
           </div>
 
-          <form id="profileForm">
+          <!-- 操作按鈕 -->
+          <div class="actions-row">
+            <button id="saveBtn" type="button" class="btn primary">儲存</button>
+            <button id="delResume" type="button" class="btn outline danger">刪除此履歷</button>
+          </div>
 
-
-
-            <!-- 操作按鈕 -->
-            <div class="actions-row">
-              <button id="saveBtn" type="button" class="btn primary">儲存</button>
-              <button id="delResume" type="button" class="btn outline danger">刪除此履歷</button>
-            </div>
-
-          </form>
+        </form>
       </div>
     </section>
   </main>
 
-  <script src="/notifications.js"></script>
   <script src="/account-menu.js"></script>
-  <script src="/profile.js"></script>
+  <script type="module" src="/profile.js"></script>
 
 </body>
 
