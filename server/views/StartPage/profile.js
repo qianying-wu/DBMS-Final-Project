@@ -44,7 +44,7 @@ import * as Data from './team-data.js';
     // 儲存：將特定履歷資料推送到資料庫
     async function saveProfileToDB(profilePayload) {
       try {
-        path = '/api/pv/savePV';
+        const path = '/api/pv/savePV';
         const res = await fetch(path, {
           method: 'POST',
           headers: {
@@ -261,7 +261,8 @@ import * as Data from './team-data.js';
       $('name').value = data.user_pv_name || '';
       $('school').value = data.school || '';
       $('grade').value = data.grade || '';
-      $('bio').value = data.intro || '';
+      // HTML 內自我介紹欄位的 id 是 intro；原本抓 bio 會讓初始化中斷，導致 gallery 不會渲染。
+      $('intro').value = data.intro || '';
       const tags = data.tags || []; renderTags(tags);
       window._tags = tags;
     }
@@ -389,7 +390,7 @@ import * as Data from './team-data.js';
         // 1. 先準備一份要送給後端的全新空履歷格式
         const newProfilePayload = {
           resume_id: undefined,        // 🌟 傳 undefined，後端看到就知道這是「全新建立」
-          user_name: ' ',
+          user_pv_name: ' ',
           user_school: '',
           department_grade: '',
           user_intro: '',
@@ -418,7 +419,8 @@ import * as Data from './team-data.js';
 
 
     viewResumeBtn.addEventListener('click', () => {
-      const activeId = localStorage.getItem("userId");
+      // 查看制式履歷要使用目前選取的履歷 ID，不是使用者 ID。
+      const activeId = getActiveProfileId();
       if (!activeId) { alert('請先新增或選擇一份履歷'); return; }
       window.location.href = getResumeViewHref(activeId);
     });
@@ -483,7 +485,8 @@ import * as Data from './team-data.js';
       const nameVal = $('name').value.trim();
       const schoolVal = $('school').value.trim();
       const gradeVal = $('grade').value.trim();
-      const introVal = $('bio').value.trim();
+      // HTML 內欄位 id 是 intro，這裡必須保持一致，否則儲存時會讀不到欄位。
+      const introVal = $('intro').value.trim();
       const errorInputs = [];
 
       if (!resNameVal) {
@@ -500,7 +503,7 @@ import * as Data from './team-data.js';
       }
       if (!introVal) {
         $('error-intro').textContent = '請簡短介紹自己';
-        errorInputs.push($('bio'));
+        errorInputs.push($('intro'));
       }
 
       // 如果有欄位沒填，把游標焦點移到第一個漏填的欄位並中斷執行
@@ -587,4 +590,3 @@ import * as Data from './team-data.js';
   if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
 
 })();
-

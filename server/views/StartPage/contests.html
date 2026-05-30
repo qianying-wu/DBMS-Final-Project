@@ -9,13 +9,15 @@
 <body>
   <header class="topbar">
     <a id="homeLink" href="/contests.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
-    <div class="actions">
-        <!--右上的個人icon圖示-->
+    <div id="authAction" class="loginBtn">
+      <a href="/auth.html">登入</a>
+    </div>
+    <div id="userActions" class="actions" style="display: none;">
       <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-            fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="8" r="4"/>
-          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
         </svg>
       </button>
     </div>
@@ -36,14 +38,26 @@
       </div>
     </section>
 
+    <section id="recommendedSection" class="recommended-section hidden" aria-labelledby="recommendedTitle">
+      <div class="recommended-heading">
+        <div>
+          <span class="section-kicker">Personal Picks</span>
+          <h2 id="recommendedTitle">專屬推薦比賽</h2>
+        </div>
+        <p>依照你的偏好與熱門主題挑出適合先看的比賽。</p>
+      </div>
+      <div id="recommendedGrid" class="recommended-grid">
+        <div class="empty-note">推薦比賽載入中...</div>
+      </div>
+    </section>
+
     <div id="contestsGrid" class="contests-grid">
       
     </div>
   </main>
-
+  <script type="module" src="/contests.js"></script>
   <script type="module" src="/preferences.js"></script>
   <script src="/auth-guard.js"></script>
   <script src="/account-menu.js"></script>
-  <script src="contests.js"></script>
 </body>
 </html>

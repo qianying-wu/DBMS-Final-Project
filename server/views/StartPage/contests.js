@@ -7,6 +7,18 @@ const $ = id => document.getElementById(id);
 
 // 存放後端撈回來的「全部比賽原始資料」
 let contests = [];
+let currentPreferences = [];
+
+// 檢查 sessionStorage 有沒有進站紀錄
+if (!sessionStorage.getItem('hasVisited')) {
+  // 如果沒有，代表這是「新開的分頁」或是「剛關掉重開」
+  localStorage.removeItem('token');
+  localStorage.removeItem('userId');
+
+  // 標記已經進站了，接下來在站內怎麼跳轉，都不會再觸發上面這段
+  sessionStorage.setItem('hasVisited', 'true');
+  console.log('[AUTH] 檢測到新工作階段，已清空舊的 localStorage');
+}
 
 // 將字串轉成安全 HTML，避免資料庫文字影響頁面結構
 function escapeHtml(value) {
@@ -27,8 +39,18 @@ function withUserParam(path) {
 
 // 檢查使用者是否已登入
 function isLoggedIn() {
+  const token = localStorage.getItem('token'); // 或是 sessionStorage.getItem('token')
   const id = localStorage.getItem('userId') || new URLSearchParams(location.search).get('userId');
-  return Boolean(id && id !== 'unknown');
+  
+  // 👑 關鍵核心：只有當 token 存在，且 id 不是髒資料時，才算真正登入
+  return Boolean(
+    token && 
+    token.trim() !== "" && 
+    id && 
+    id !== 'unknown' && 
+    id !== 'null' && 
+    id !== 'undefined'
+  );
 }
 
 // 未登入時的彈出提示或跳轉
@@ -42,8 +64,11 @@ function showLoginPrompt() {
     document.body.classList.add('modal-open');
     return;
   }
-  // 備用機制：直接導向登入頁面
-  location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+  location.href = '/auth.html';
+}
+
+function redirectToAuth() {
+  location.href = '/auth.html';
 }
 
 
@@ -88,6 +113,97 @@ function categoryLabel(category) {
   }[category] || category;
 }
 
+function preferenceKeywords(preferences = []) {
+  const map = {
+    ai: ['ai', '人工智慧', '智慧', '機器', '資料', '模型'],
+    data: ['資料', '數據', '分析', 'data'],
+    web: ['網頁', '網站', 'web', '前端', '後端'],
+    app: ['app', '應用', '手機', '行動'],
+    robotics: ['機器人', '自動化', 'robot'],
+    security: ['資安', '安全', 'security'],
+    medical: ['醫療', '健康', '照護'],
+    fintech: ['金融', 'fintech', '商業'],
+    sustainability: ['永續', '環境', '綠色'],
+    startup: ['創業', '新創', '提案'],
+    design: ['設計', '創意', 'ui', 'ux'],
+    presentation: ['簡報', '企劃', '提案']
+  };
+
+  const keywords = preferences.flatMap(key => map[key] || [key]);
+  return keywords.length ? keywords : ['ai', '人工智慧', '設計', '創意', '商業', '熱門'];
+}
+
+async function loadRecommendationPreferences() {
+  const userId = localStorage.getItem('userId') || new URLSearchParams(location.search).get('userId');
+  if (!userId || userId === 'unknown') return [];
+
+  try {
+    if (window.AppPreferences?.loadUserPreferences) {
+      return await window.AppPreferences.loadUserPreferences(userId);
+    }
+  } catch (err) {
+    console.warn('讀取使用者偏好失敗，改用熱門推薦:', err);
+  }
+
+  return [];
+}
+
+function getRecommendedContests(dataList = [], preferences = []) {
+  const keywords = preferenceKeywords(preferences).map(item => String(item).toLowerCase());
+
+  return dataList
+    .map(contest => {
+      const text = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase();
+      const score = keywords.reduce((sum, keyword) => sum + (text.includes(keyword) ? 1 : 0), 0);
+      return { contest, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(item => item.contest);
+}
+
+function renderRecommendations(dataList = []) {
+  const grid = $('recommendedGrid');
+  const section = $('recommendedSection');
+  if (!grid || !section) return;
+
+  if (!isLoggedIn()) {
+    section.classList.add('hidden');
+    grid.innerHTML = '';
+    return;
+  }
+
+  section.classList.remove('hidden');
+
+  const recommended = getRecommendedContests(dataList, currentPreferences);
+  if (!recommended.length) {
+    grid.innerHTML = '<div class="empty-note">目前暫無適合的推薦比賽。</div>';
+    return;
+  }
+
+  grid.innerHTML = recommended.map(contest => {
+    const category = inferCategory(contest);
+    const rawDate = contest.com_date || '';
+    const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
+    const contestId = contest.com_id || contest.id;
+
+    return `
+      <article class="recommend-card" data-recommend-id="${contestId}">
+        <div class="recommend-topline">
+          <span>${categoryLabel(category)}</span>
+          <strong>推薦</strong>
+        </div>
+        <h3>${escapeHtml(contest.com_name || contest.name || '未命名比賽')}</h3>
+        <p>${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
+        <div class="recommend-footer">
+          <span>${escapeHtml(displayDate || '日期未定')}</span>
+          <span>查看詳情 →</span>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
 // 核心渲染函式：負責將比賽資料陣列轉換成 HTML 卡片
 function renderContests(dataList = []) {
   const grid = $('contestsGrid');
@@ -96,9 +212,9 @@ function renderContests(dataList = []) {
   grid.innerHTML = dataList.length ? dataList.map(contest => {
     const category = inferCategory(contest);
 
-    const displayDate = (contest.com_date && contest.com_date.includes('T')) 
-                        ? contest.com_date.split('T')[0] 
-                        : contest.com_date;
+    // 💡 修正原本 com_date 為 null 時可能引發的 .includes 報錯問題
+    const rawDate = contest.com_date || '';
+    const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
                         
     return `
       <article class="contest-card" data-id="${contest.com_id}">
@@ -107,7 +223,7 @@ function renderContests(dataList = []) {
         <p class="category">分類：${categoryLabel(category)}</p>
         <p class="desc">${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
         <div class="card-footer">
-          <span>${escapeHtml(/*contest.com_date*/displayDate || '日期未定')}</span>
+          <span>${escapeHtml(displayDate || '日期未定')}</span>
           <span class="more-link">查看更多 →</span>
         </div>
       </article>
@@ -165,18 +281,34 @@ function bindAvatar() {
 }
 
 function setupGeneralUiEvents() {
-  // 監聽搜尋與分類輸入
   $('contestSearch')?.addEventListener('input', applyFilters);
   $('categoryFilter')?.addEventListener('change', applyFilters);
 
-  // 點擊卡片跳轉詳情
   $('contestsGrid')?.addEventListener('click', event => {
     const card = event.target.closest('[data-id]');
     if (!card) return;
-    location.href = withUserParam(`/contest.html?id=${encodeURIComponent(card.dataset.id)}`);
+
+    if (!isLoggedIn()) {
+      redirectToAuth();
+      return;
+    }
+
+    const targetPath = withUserParam(`/contest.html?id=${encodeURIComponent(card.dataset.id)}`);
+    location.href = targetPath;
   });
 
-  // Logo 導頁按鈕
+  $('recommendedGrid')?.addEventListener('click', event => {
+    const card = event.target.closest('[data-recommend-id]');
+    if (!card) return;
+
+    if (!isLoggedIn()) {
+      redirectToAuth();
+      return;
+    }
+
+    location.href = withUserParam(`/contest.html?id=${encodeURIComponent(card.dataset.recommendId)}`);
+  });
+
   const homeLink = $('homeLink');
   if (homeLink) homeLink.href = withUserParam('/contests.html');
 }
@@ -186,13 +318,20 @@ function setupGeneralUiEvents() {
 // 4. 統一初始化入口
 // ==========================================================================
 function initApp() {
-  // 1. 綁定常規 UI 事件與通知/頭像監聽
+  // 1. 執行登入狀態 UI 切換
+  // renderAuthAction();
+
+  // 2. 綁定常規 UI 事件與通知/頭像監聽
   setupGeneralUiEvents();
   bindNotify();
   bindAvatar();
 
-  // 2. 從後端非同步讀取資料庫，並驅動第一次的畫面渲染
-  loadContests().then(applyFilters);
+  // 3. 從後端非同步讀取資料庫，並驅動第一次的畫面渲染
+  Promise.all([loadContests(), isLoggedIn() ? loadRecommendationPreferences() : Promise.resolve([])]).then(([loadedContests, preferences]) => {
+    currentPreferences = isLoggedIn() ? preferences : [];
+    renderRecommendations(loadedContests);
+    applyFilters();
+  });
 }
 
 // 確保在 DOM 樹完全載入後才執行初始化
