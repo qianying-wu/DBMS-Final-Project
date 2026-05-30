@@ -1,21 +1,7 @@
 /* =========================================
    探索競賽列表頁 (contests.html) 專用樣式
    ========================================= */
-
-/* --- 1. 基礎設定與 Topbar (承襲既有風格) --- */
-* { box-sizing: border-box; }
-body { font-family: Arial, 'Noto Sans TC', sans-serif; margin: 0; background: #faf7f2; color: #333; overflow-y: auto; }
-a { text-decoration: none; }
-
-.topbar { height: 64px; background: #fff; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; position: sticky; top: 0; z-index: 10; }
-.logo { font-weight: 700; color: #6b4f3a; font-size: 18px; }
-.logo-img { height: 40px; width: auto; display: block; object-fit: contain; }
-.actions { display: flex; gap: 10px; align-items: center; }
-.icon-btn, .avatar-btn { background: transparent; border: 1px solid transparent; padding: 6px 8px; border-radius: 8px; cursor: pointer; font-size: 18px; }
-.icon-btn:hover { background: #f5f5f5; }
-.avatar-btn { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
-
-/* --- 2. 頁面主體與 Header 區塊 --- */
+/* --- 2. 頁面主體 區塊 --- */
 .layout-single { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
 
 .hero-section {
@@ -86,11 +72,42 @@ a { text-decoration: none; }
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
+  z-index: 1; /* 確保標籤在最上面 */
 }
 
-.contest-card h3 { margin: 0 0 10px; color: #4f3827; font-size: 18px; padding-right: 60px; line-height: 1.3;}
-.contest-card .category { color: #a17851; font-size: 13px; margin: 0 0 8px; font-weight: 700; }
-.contest-card .desc { color: #5b6570; font-size: 14px; line-height: 1.5; margin: 0 0 16px; flex: 1; }
+.contest-card h3 { 
+  margin: 0 0 10px; 
+  color: #4f3827; 
+  font-size: 18px; 
+  padding-right: /*60*/80px; 
+  line-height: 1.3;
+  word-wrap: break-word; /* 確保長字會斷行 */
+}
+
+.contest-card .category { 
+  color: #a17851; 
+  font-size: 13px; 
+  margin: 0 0 8px; 
+  font-weight: 700; 
+}
+
+.contest-card .desc { 
+  color: #5b6570; 
+  font-size: 14px; 
+  line-height: 1.5; 
+  margin: 0 0 /*16*/4px; 
+  flex: 1; 
+
+  /* 🚀 新增：限制最多顯示 3 行，多餘文字自動變省略號 (...) */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;          /* 你可以調整這個數字，決定要看得到幾行 */
+  -webkit-box-orient: vertical;  
+  overflow: hidden;               /* 隱藏超出範圍的文字 */
+  text-overflow: ellipsis;        /* 安全防護：文字溢出時顯示省略號 */
+  
+  /* 可選：配合 line-height 計算最大高度 (14px * 1.5 * 3行 = 63px)，確保撐開時的排版高度穩定 */
+  max-height: 63px;
+}
 
 .card-footer {
   display: flex;
@@ -99,22 +116,10 @@ a { text-decoration: none; }
   border-top: 1px solid #f0ebe5;
   padding-top: 12px;
   font-size: 13px;
+  margin-top: auto; /* 🚀 新增這行：強制將 footer 推到卡片最底部 */
 }
 .card-footer span:first-child { color: #8a735e; }
 .card-footer .more-link { color: #d4b283; font-weight: 700; }
-
-.icon-btn svg, .avatar-btn svg {
-  display: block;
-  color: #7b6a59;
-}
-
-.icon-btn:hover svg, .avatar-btn:hover svg {
-  color: #4f3827;
-}
-
-.icon-btn:hover, .avatar-btn:hover {
-  background: #f5f0ea;
-}
 
 /* --- 響應式 --- */
 @media (max-width: 560px) {

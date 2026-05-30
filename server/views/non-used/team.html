@@ -7,23 +7,14 @@
   <title>組隊瀏覽 / 發起隊伍</title>
   <link rel="stylesheet" href="/team.css">
   <script>
-    // 檢查 sessionStorage 有沒有進站紀錄
-    if (!sessionStorage.getItem('hasVisited')) {
-      // 如果沒有，代表這是「新開的分頁」或是「剛關掉重開」
-      localStorage.removeItem('token');
-      localStorage.removeItem('userId');
 
-      // 標記已經進站了，接下來在站內怎麼跳轉，都不會再觸發上面這段
-      sessionStorage.setItem('hasVisited', 'true');
-      console.log('[AUTH] 檢測到新工作階段，已清空舊的 localStorage');
-    }
   </script>
 
 </head>
 
 <body>
   <header class="topbar">
-    <a id="homeLink" href="/team.html">
+    <a id="homeLink" href="/contests.html">
       <img src="/logo.png" alt="競賽組隊 Logo" class="logo-img">
     </a>
     <input type="text" id="globalSearch" class="global-search-input" placeholder="搜尋比賽、隊伍或用戶...">

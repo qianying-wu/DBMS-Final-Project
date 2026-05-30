@@ -10,15 +10,8 @@
 
 <body>
   <header class="topbar">
-    <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
+    <a id="homeLink" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
     <div class="actions">
-      <button id="notifyBtn" class="icon-btn" aria-label="通知">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-        </svg>
-      </button>
       <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -27,43 +20,47 @@
         </svg>
       </button>
     </div>
-    </header>
+  </header>
 
-    <main class="layout profile-layout">
-      <section class="content profile-content">
-        <div id="resumeHome" class="resume-home">
-          <div class="profile-heading">
-            <div>
-              <h2 class="page-title">個人履歷</h2>
-              <p>建立不同用途的履歷，申請隊伍時可以選擇要附上的版本。</p>
-            </div>
-             </div>
-         <div id="resumeGallery" class="resume-gallery"></div> 
-     
-          </div>
-         
+  <main class="layout profile-layout">
+    <section class="content profile-content">
 
-        <div id="resumeEditor" class="card editor-card" hidden>
-          <div class="editor-heading">
-            <div>
-              <div class="editor-title-row">
-                <h2 id="editorTitle" class="editor-title" contenteditable="true" spellcheck="false" aria-label="編輯履歷名稱">
-                  新增履歷</h2>
-                <button id="editorRenameBtn" class="rename-btn" type="button" aria-label="編輯履歷名稱">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden="true">
-                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="currentColor" />
-                    <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-                      fill="currentColor" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="editor-actions">
-              <button id="backToGallery" type="button" class="btn outline">返回列表</button>
-              <button id="viewResumeBtn" type="button" class="btn outline">查看制式履歷</button>
+      <div id="resumeHome" class="resume-home">
+        <div class="profile-heading">
+          <div>
+            <h2 class="page-title">個人履歷</h2>
+            <p>建立不同用途的履歷，申請隊伍時可以選擇要附上的版本。</p>
+          </div>
+        </div>
+
+        <div id="resumeGallery" class="resume-gallery"></div>
+      </div>
+      </div>
+
+
+      <div id="resumeEditor" class="card editor-card" hidden>
+        <div class="editor-heading">
+          <div>
+            <div class="editor-title-row">
+              <input type="text" id="editorTitle" class="editor-title-input" value="新增履歷" spellcheck="false"
+                aria-label="編輯履歷名稱" placeholder="履歷名稱">
+              <!-- <h2 id="editorTitle" class="editor-title" contenteditable="true" spellcheck="false" aria-label="編輯履歷名稱"> -->
+              <!-- 新增履歷</h2> -->
+              <!-- <button id="editorRenameBtn" class="rename-btn" type="button" aria-label="編輯履歷名稱">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true">
+                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="currentColor" />
+                  <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                    fill="currentColor" />
+                </svg>
+              </button> -->
             </div>
           </div>
+          <div class="editor-actions">
+            <button id="backToGallery" type="button" class="btn outline">返回列表</button>
+            <button id="viewResumeBtn" type="button" class="btn outline">查看制式履歷</button>
+          </div>
+        </div>
 
           <form id="profileForm">
 
@@ -89,17 +86,20 @@
               </div>
             </div>
 
-            <!-- 專長 -->
-            <div class="row">
-              <div class="field-label full">
-                <span class="label-title">專長</span>
-                <div class="tags" id="tags"></div>
-                <div class="tag-input">
-                  <input id="newTag" type="text" placeholder="新增專長">
-                  <button id="addTag" type="button" aria-label="新增專長">＋</button>
-                </div>
+          <div class="row">
+            <div class="field-label full">
+              <span class="label-title">專長</span>
+              <div class="tags" id="tags"></div>
+              <div class="tag-input">
+                <input id="newTag" type="text" placeholder="新增專長">
+                <button id="addTag" type="button" aria-label="新增專長">＋</button>
               </div>
             </div>
+            <div class="editor-actions">
+              <button id="backToGallery" type="button" class="btn outline">返回列表</button>
+              <button id="viewResumeBtn" type="button" class="btn outline">查看制式履歷</button>
+            </div>
+          </div>
 
             <!-- 自我介紹 -->
             <div class="row">
@@ -110,13 +110,9 @@
               </div>
             </div>
 
-            <!-- 個人經歷 -->
-            <div class="row">
-              <div class="field-label full">
-                <span class="label-title">個人經歷</span>
-                <textarea id="experience" placeholder="描述你的專案、比賽或經歷" rows="3" style="resize:none"></textarea>
-              </div>
-            </div>
+          <form id="profileForm">
+
+
 
             <!-- 操作按鈕 -->
             <div class="actions-row">
@@ -126,16 +122,13 @@
             </div>
 
           </form>
-        </div>
-      </section>
-    </main>
+      </div>
+    </section>
+  </main>
 
-    <script src="/notifications.js"></script>
-    <script src="/account-menu.js"></script>
-    <script src="/profile.js"></script>
-   
+  <script src="/account-menu.js"></script>
+  <script type="module" src="/profile.js"></script>
+
 </body>
 
 </html>
-
-    

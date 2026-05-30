@@ -46,7 +46,7 @@ passportConfig(passport);
 
 // --- HTML 頁面 routes  --- 看網址後面加什麼就帶去哪
 app.get('/', (req, res) => {
-    res.sendFile(path.join(startPageDir, 'team.html'));
+    res.sendFile(path.join(startPageDir, 'contests.html'));
 });
 app.get('/profile', (req, res) => {
     res.sendFile(path.join(startPageDir, 'profile.html'));

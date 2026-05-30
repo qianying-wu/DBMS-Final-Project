@@ -1,0 +1,80 @@
+/* --- 1. 基礎設定與 Topbar (承襲既有風格) --- */
+* { box-sizing: border-box; }
+body { font-family: Arial, 'Noto Sans TC', sans-serif; margin: 0; background: #faf7f2; color: #333; overflow-y: auto; }
+a { text-decoration: none; }
+
+.topbar { height: 64px; background: #fff; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; position: sticky; top: 0; z-index: 10; }
+.logo { font-weight: 700; color: #6b4f3a; font-size: 18px; }
+.logo-img { height: 40px; width: auto; display: block; object-fit: contain; }
+.actions { display: flex; gap: 10px; align-items: center; }
+.avatar-btn { background: transparent; border: 1px solid transparent; padding: 6px 8px; border-radius: 8px; cursor: pointer; font-size: 18px; }
+.avatar-btn { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
+
+.avatar-btn svg {
+    display: block;
+    color: #7b6a59;
+}
+  
+.avatar-btn:hover svg {
+    color: #4f3827;
+}
+  
+.avatar-btn:hover {
+    background: #f5f0ea;
+}
+
+/* 如果要調整圖片跟左邊邊界的距離，可以加在 homeLink 上 */
+#homeLink {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+}
+
+/* 登入按鈕外層容器（確保居中對齊） */
+.loginBtn {
+    display: flex;
+    align-items: center;
+}
+
+/* 登入按鈕主體 */
+.loginBtn a {
+    display: inline-block;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px; /* 字距微調，質感提升 */
+    color: #fff;
+
+    /* 柔和的大地色系漸層，呼應你原本的米色調 */
+    background: linear-gradient(135deg, #caa77a 0%, #b89362 100%);
+
+    /* 尺寸與完美圓角 */
+    padding: 10px 24px;
+    border-radius: 50px;
+    text-decoration: none;
+    text-align: center;
+
+    /* 關鍵：柔和的環境陰影 (Ambient Shadow) */
+    box-shadow: 0 4px 15px rgba(184, 147, 98, 0.25);
+
+    /* 讓所有動畫過渡變流暢 */
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    cursor: pointer;
+    }
+
+    /* 滑鼠懸浮效果 (Hover) */
+    .loginBtn a:hover {
+    /* 微微向上飄移，並讓漸層稍微變亮 */
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, #d9b88c 0%, #caa77a 100%);
+
+    /* 陰影隨之加深放大，營造真實的懸浮感 */
+    box-shadow: 0 8px 20px rgba(184, 147, 98, 0.4);
+    }
+
+    /* 滑鼠點擊瞬間反饋 (Active) */
+    .loginBtn a:active {
+    /* 點擊時下沉，並縮小陰影，模擬實體按鈕被按下去的感覺 */
+    transform: translateY(1px);
+    box-shadow: 0 2px 6px rgba(184, 147, 98, 0.3);
+}

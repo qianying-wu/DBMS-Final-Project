@@ -1,4 +1,7 @@
 (function(){
+
+  const $ = id => document.getElementById(id);
+
   // 將目前網址上的 userId 附加到導頁連結。
   function withUser(path){
     const userId = new URLSearchParams(location.search).get('userId');
@@ -57,7 +60,7 @@
     menu.innerHTML = `
       <a href="${withUser('/profile.html')}">我的履歷</a>
       <a href="${withUser('/account-info.html')}">帳號資訊</a>
-      <a href="${withUser('/history.html')}">歷史紀錄</a>
+      <a href="${withUser('/myTeam.html')}">隊伍管理</a>
       <button onclick="logout()" class="logout-btn">登出</button>
     `;
     document.body.appendChild(menu);
@@ -73,7 +76,7 @@
 
     // 2. 清除登入狀態
     localStorage.removeItem('token');
-    localStorage.removeItem('user'); // 檢查你們存的是什麼 key，如果不確定就用 localStorage.clear();
+    localStorage.removeItem('userId'); // 檢查你們存的是什麼 key，如果不確定就用 localStorage.clear();
 
     // 🚀 新增：把畫面上所有的紅色愛心變回灰色/空心
     // 假設你的愛心標籤是 <i class="fav-btn active"> 或 <div class="fav-btn red">
@@ -86,7 +89,7 @@
     alert('您已成功登出');
     
     // 4. 強制跳轉回首頁，且不帶任何使用者參數 (解決跳轉問題)
-    window.location.href = 'team.html'; 
+    window.location.href = 'contests.html'; 
   };
 
   // 動態注入帳號選單樣式，避免每個頁面重複寫 CSS。

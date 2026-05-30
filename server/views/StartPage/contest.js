@@ -1,5 +1,6 @@
 // 使用立即執行函式 (IIFE) 包裝，避免內部的變數污染到全域環境
 (function(){
+
   // DOM 元素選擇器簡寫
   const $ = id => document.getElementById(id);
   
@@ -22,9 +23,14 @@
 
       const mappedContests = dbContests.map(contest => ({
         id: contest.com_id,                             
-        name: contest.com_name,                       
-        com_date: contest.com_date || '日期未定',    
+        name: contest.com_name,   
+                            
+        /*com_date: contest.com_date || '日期未定',    
         com_enroll_ddl: contest.com_enroll_ddl || '報名截止未定', 
+        com_intro: contest.com_intro || '尚未填寫說明',*/
+        com_date: contest.com_date ? contest.com_date.split('T')[0] : '日期未定',
+        com_enroll_ddl: contest.com_enroll_ddl ? contest.com_enroll_ddl.split('T')[0] : '截止日未定',
+        
         com_intro: contest.com_intro || '尚未填寫說明', 
         com_link: contest.com_link || '#',
         com_location: contest.com_location || '地點未定', 
@@ -106,9 +112,29 @@
 
   function createTeamHref(){ return withUserParam(`/create-team.html?contestId=${encodeURIComponent(contestId)}`); }
   function teamInfoHref(id){ return withUserParam(`/team-info.html?teamId=${encodeURIComponent(id)}`); }
+  function isLoggedIn() {
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId') || params.get('userId');
+    return Boolean(
+      token &&
+      token.trim() !== '' &&
+      userId &&
+      userId !== 'unknown' &&
+      userId !== 'null' &&
+      userId !== 'undefined'
+    );
+  }
+  function redirectToAuth() {
+    location.href = '/auth.html';
+  }
 
   // --- 核心畫面渲染邏輯 ---
   async function render(){
+    if (!isLoggedIn()) {
+      redirectToAuth();
+      return;
+    }
+
     // 1. 使用 await 解開所有非同步資料
     const contest = await getContest();
     const teams = await contestTeams();
@@ -222,13 +248,25 @@
   }
 
   async function openTeamDetail(id){
+    if (!isLoggedIn()) {
+      redirectToAuth();
+      return;
+    }
+
     const allTeams = await loadTeams();
     const team = allTeams.find(item => item.team_id === id);
     if (!team) return alert('找不到隊伍');
     location.href = teamInfoHref(id);
   }
 
-  $('createBtn').addEventListener('click', () => { location.href = createTeamHref(); });
+  $('createBtn').addEventListener('click', () => {
+    if (!isLoggedIn()) {
+      redirectToAuth();
+      return;
+    }
+
+    location.href = createTeamHref();
+  });
 
   // 事件委派：監聽隊伍列表的點擊
   $('teamCards').addEventListener('click', e=>{
@@ -238,7 +276,8 @@
     if (joinBtn) openTeamDetail(Number(joinBtn.dataset.id)); 
   });
 
-  document.querySelector('.logo-link')?.setAttribute('href', withUserParam('/team.html'));
+  const homeLink = $('homeLink');
+  if (homeLink) homeLink.href = withUserParam('/contests.html');
 
   // 頁面載入後執行初始渲染
   render();

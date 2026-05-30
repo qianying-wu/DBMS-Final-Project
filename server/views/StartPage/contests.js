@@ -1,10 +1,25 @@
-// 取得 DOM 元素的簡寫工具函式，方便後續快速抓取 ID
+// ==========================================================================
+// 1. 全域變數與基礎工具函式
+// ==========================================================================
+
+// 取得 DOM 元素的簡寫工具函式
 const $ = id => document.getElementById(id);
 
-// 🚀 修正 1：只保留一個全域變數，存放後端撈回來的「全部比賽原始資料」
+// 存放後端撈回來的「全部比賽原始資料」
 let contests = [];
 
-// 將字串轉成安全 HTML，避免資料庫文字影響頁面結構。
+// 檢查 sessionStorage 有沒有進站紀錄
+if (!sessionStorage.getItem('hasVisited')) {
+  // 如果沒有，代表這是「新開的分頁」或是「剛關掉重開」
+  localStorage.removeItem('token');
+  localStorage.removeItem('userId');
+
+  // 標記已經進站了，接下來在站內怎麼跳轉，都不會再觸發上面這段
+  sessionStorage.setItem('hasVisited', 'true');
+  console.log('[AUTH] 檢測到新工作階段，已清空舊的 localStorage');
+}
+
+// 將字串轉成安全 HTML，避免資料庫文字影響頁面結構
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
     '&': '&amp;',
@@ -15,24 +30,62 @@ function escapeHtml(value) {
   }[char]));
 }
 
-// 導頁時保留目前登入使用者的 userId。
+// 導頁時保留目前登入使用者的 userId
 function withUserParam(path) {
   const userId = new URLSearchParams(location.search).get('userId') || localStorage.getItem('userId');
   return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
 }
 
-// 從後端讀取資料庫 Competition 表的全部比賽。
+// 檢查使用者是否已登入
+function isLoggedIn() {
+  const token = localStorage.getItem('token'); // 或是 sessionStorage.getItem('token')
+  const id = localStorage.getItem('userId') || new URLSearchParams(location.search).get('userId');
+  
+  // 👑 關鍵核心：只有當 token 存在，且 id 不是髒資料時，才算真正登入
+  return Boolean(
+    token && 
+    token.trim() !== "" && 
+    id && 
+    id !== 'unknown' && 
+    id !== 'null' && 
+    id !== 'undefined'
+  );
+}
+
+// 未登入時的彈出提示或跳轉
+function showLoginPrompt() {
+  const loginPromptModal = $('loginPromptModal');
+  const loginPromptMessage = $('loginPromptMessage');
+  
+  if (loginPromptMessage) loginPromptMessage.textContent = '此功能需要登入後才能使用。';
+  if (loginPromptModal) {
+    loginPromptModal.classList.remove('hidden');
+    document.body.classList.add('modal-open');
+    return;
+  }
+  location.href = '/auth.html';
+}
+
+function redirectToAuth() {
+  location.href = '/auth.html';
+}
+
+
+// ==========================================================================
+// 2. 競賽資料處理與渲染核心 (核心業務邏輯)
+// ==========================================================================
+
+// 從後端讀取資料庫 Competition 表的全部比賽
 async function loadContests() {
   try {
     const res = await fetch('/api/contests/competitions');
     if (!res.ok) throw new Error('無法取得比賽資料');
     const result = await res.json();
     
-    // 🚀 修正 2：拿掉 const，直接把資料指定給全域變數 contests！
     contests = result.competitions || result;
     console.log('成功載入比賽資料：', contests);
     
-    return contests; // 確保後續的 .then(applyFilters) 沒拿到空東西
+    return contests; 
   } catch (err) {
     console.error('讀取比賽失敗:', err);
     contests = [];
@@ -40,7 +93,7 @@ async function loadContests() {
   }
 }
 
-// 依照比賽名稱與說明做簡單分類，維持原本頁面上的分類篩選體驗。
+// 依照比賽名稱與說明做簡單分類
 function inferCategory(contest) {
   const text = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase();
   if (text.includes('ai') || text.includes('資料') || text.includes('機器') || text.includes('智慧')) return 'AI';
@@ -49,6 +102,7 @@ function inferCategory(contest) {
   return 'Other';
 }
 
+// 對應中文標籤
 function categoryLabel(category) {
   return {
     AI: '人工智慧',
@@ -58,14 +112,18 @@ function categoryLabel(category) {
   }[category] || category;
 }
 
-
-// 核心渲染函式：負責將比賽資料陣列轉換成 HTML 卡片。
+// 核心渲染函式：負責將比賽資料陣列轉換成 HTML 卡片
 function renderContests(dataList = []) {
   const grid = $('contestsGrid');
   if (!grid) return;
 
   grid.innerHTML = dataList.length ? dataList.map(contest => {
     const category = inferCategory(contest);
+
+    // 💡 修正原本 com_date 為 null 時可能引發的 .includes 報錯問題
+    const rawDate = contest.com_date || '';
+    const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
+                        
     return `
       <article class="contest-card" data-id="${contest.com_id}">
         <div class="card-tag">${categoryLabel(category)}</div>
@@ -73,7 +131,7 @@ function renderContests(dataList = []) {
         <p class="category">分類：${categoryLabel(category)}</p>
         <p class="desc">${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
         <div class="card-footer">
-          <span>${escapeHtml(contest.com_date || '日期未定')}</span>
+          <span>${escapeHtml(displayDate || '日期未定')}</span>
           <span class="more-link">查看更多 →</span>
         </div>
       </article>
@@ -81,39 +139,96 @@ function renderContests(dataList = []) {
   }).join('') : '<div class="empty-note">目前資料庫沒有可瀏覽的比賽。</div>';
 }
 
-// 🚀 修正 3：把原本被你封印的篩選功能復活！並且對齊全域變數 contests
+// 執行搜尋與下拉選單的篩選功能
 function applyFilters() {
   const q = $('contestSearch')?.value.trim().toLowerCase() || '';
   const category = $('categoryFilter')?.value || 'all';
   
-  // 根據搜尋關鍵字與下拉選單分類，去過濾全域變數 contests
   const filtered = contests.filter(contest => {
     const matchedText = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase().includes(q);
     const matchedCategory = category === 'all' || inferCategory(contest) === category;
     return matchedText && matchedCategory;
   });
   
-  // 將篩選後的乾淨資料餵給渲染函式
   renderContests(filtered);
 }
 
-// 監聽搜尋與分類
-$('contestSearch')?.addEventListener('input', applyFilters);
-$('categoryFilter')?.addEventListener('change', applyFilters);
 
-// 點擊卡片跳轉詳情
-$('contestsGrid')?.addEventListener('click', event => {
-  const card = event.target.closest('[data-id]');
-  if (!card) return;
-  location.href = withUserParam(`/contest.html?id=${encodeURIComponent(card.dataset.id)}`);
-});
+// ==========================================================================
+// 3. UI 互動與通知/頭像權限事件綁定
+// ==========================================================================
 
-const homeLink = $('homeLink');
-if (homeLink) homeLink.href = withUserParam('/team.html');
+function bindNotify() {
+  const btn = $('notifyBtn');
+  if (!btn) return;
+  
+  btn.addEventListener('click', (e) => {
+    if (!isLoggedIn()) { showLoginPrompt(); return; }
+    if (window.AppNotifications && typeof window.AppNotifications.bind === 'function') {
+      window.AppNotifications.bind(btn);
+    } else if (typeof window.showNotifications === 'function') {
+      window.showNotifications();
+    } else {
+      location.href = '/profile.html';
+    }
+  });
+}
+
+function bindAvatar() {
+  const btn = $('avatarBtn');
+  if (!btn) return;
+  
+  btn.addEventListener('click', (e) => {
+    if (!isLoggedIn()) { showLoginPrompt(); return; }
+    if (window.AccountMenu && typeof window.AccountMenu.open === 'function') {
+      window.AccountMenu.open(btn);
+    } else {
+      location.href = '/profile.html';
+    }
+  });
+}
+
+function setupGeneralUiEvents() {
+  $('contestSearch')?.addEventListener('input', applyFilters);
+  $('categoryFilter')?.addEventListener('change', applyFilters);
+
+  $('contestsGrid')?.addEventListener('click', event => {
+    const card = event.target.closest('[data-id]');
+    if (!card) return;
+
+    if (!isLoggedIn()) {
+      redirectToAuth();
+      return;
+    }
+
+    const targetPath = withUserParam(`/contest.html?id=${encodeURIComponent(card.dataset.id)}`);
+    location.href = targetPath;
+  });
+
+  const homeLink = $('homeLink');
+  if (homeLink) homeLink.href = withUserParam('/contests.html');
+}
 
 
-// 頁面初始載入時，先從後端讀取資料庫，再執行篩選渲染。
-document.addEventListener('DOMContentLoaded', () => {
+// ==========================================================================
+// 4. 統一初始化入口
+// ==========================================================================
+function initApp() {
+  // 1. 執行登入狀態 UI 切換
+  // renderAuthAction();
+
+  // 2. 綁定常規 UI 事件與通知/頭像監聽
+  setupGeneralUiEvents();
+  bindNotify();
+  bindAvatar();
+
+  // 3. 從後端非同步讀取資料庫，並驅動第一次的畫面渲染
   loadContests().then(applyFilters);
-});
+}
 
+// 確保在 DOM 樹完全載入後才執行初始化
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}

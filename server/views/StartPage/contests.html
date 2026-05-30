@@ -3,27 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <title>探索競賽 - 競賽組隊平台</title>
+  <link rel="stylesheet" href="header.css">
   <link rel="stylesheet" href="contests.css">
 </head>
 <body>
   <header class="topbar">
-    <a id="homeLink" href="team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
-    <div class="actions">
-        <!--右上的通知和個人icon圖示-->
-       <button id="notifyBtn" class="icon-btn" aria-label="通知">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-            fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    <a id="homeLink" href="/contests.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
+    <div id="authAction" class="loginBtn">
+      <a href="/auth.html">登入</a>
+    </div>
+    <div id="userActions" class="actions" style="display: none;">
+      <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
         </svg>
       </button>
-<button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-       fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="8" r="4"/>
-    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-  </svg>
-</button>
     </div>
   </header>
 
@@ -46,66 +42,9 @@
       
     </div>
   </main>
-
-  <script src="/preferences.js"></script>
+  <script type="module" src="/contests.js"></script>
+  <script type="module" src="/preferences.js"></script>
   <script src="/auth-guard.js"></script>
   <script src="/account-menu.js"></script>
-  <script src="/notifications.js"></script>
-  <script>
-    // bind notify button to shared notifications module but require login first
-    (function(){
-      function isLoggedIn(){
-        const id = localStorage.getItem('userId') || new URLSearchParams(location.search).get('userId');
-        return Boolean(id && id !== 'unknown');
-      }
-
-      function showLoginPrompt(){
-        const loginPromptModal = document.getElementById('loginPromptModal');
-        const loginPromptMessage = document.getElementById('loginPromptMessage');
-        if (loginPromptMessage) loginPromptMessage.textContent = '此功能需要登入後才能使用。';
-        if (loginPromptModal) {
-          loginPromptModal.classList.remove('hidden');
-          document.body.classList.add('modal-open');
-          return;
-        }
-        // fallback redirect to auth
-        location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
-      }
-
-      function bindNotify(){
-        const btn = document.getElementById('notifyBtn');
-        if (!btn) return;
-        btn.addEventListener('click', (e)=>{
-          if (!isLoggedIn()) { showLoginPrompt(); return; }
-          if (window.AppNotifications && typeof window.AppNotifications.bind === 'function') {
-            window.AppNotifications.bind(btn);
-          } else if (typeof window.showNotifications === 'function') {
-            window.showNotifications();
-          } else {
-            // fallback: go to profile page
-            location.href = '/profile.html';
-          }
-        });
-      }
-
-      // avatar: open account menu or redirect to profile when available
-      function bindAvatar(){
-        const btn = document.getElementById('avatarBtn');
-        if (!btn) return;
-        btn.addEventListener('click', (e)=>{
-          if (!isLoggedIn()) { showLoginPrompt(); return; }
-          if (window.AccountMenu && typeof window.AccountMenu.open === 'function') {
-            window.AccountMenu.open(btn);
-          } else {
-            location.href = '/profile.html';
-          }
-        });
-      }
-
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { bindNotify(); bindAvatar(); });
-      else { bindNotify(); bindAvatar(); }
-    })();
-  </script>
-  <script src="contests.js"></script>
 </body>
 </html>

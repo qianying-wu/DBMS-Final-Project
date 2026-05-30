@@ -104,19 +104,60 @@
   padding: 0;
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 12px;
 }
 
 .member-list li {
   background: #faf7f2;
   border: 1px solid #e6ddd3;
-  padding: 12px 10px;
+  padding: 14px;
   border-radius: 8px;
-  text-align: center;
+  text-align: left;
   color: #3f342c;
-  font-weight: 700;
   font-size: 14px;
+}
+
+.member-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.member-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #d4b283;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 800;
+}
+
+.member-info {
+  display: grid;
+  gap: 4px;
+}
+
+.member-info strong {
+  font-size: 15px;
+  color: #3f342c;
+}
+
+.member-info span {
+  color: #9a7d5f;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.member-info p {
+  margin: 0;
+  color: #6f6359;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .step-link {
@@ -133,8 +174,9 @@
 
 /* 申請加入區塊 (重點提示) */
 .application-block {
-  border: 2px solid #d6c2ad;
-  background: #fffdf9;
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
 }
 
 .required-application-fields,
@@ -174,8 +216,9 @@
 
 #actionButtons {
   display: flex;
-  gap: 12px;
-  margin-top: 10px;
+  justify-content: center;
+  width: 100%;
+  margin-top: 0;
 }
 
 /* 針對申請表單內的題目顯示 */
