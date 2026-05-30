@@ -255,6 +255,157 @@
     box-shadow: 0 4px 10px rgba(212, 178, 131, 0.25);
 }
 
+.owned-action-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.btn-secondary-action {
+    border: 1px solid #eadfd2;
+    background: #fbf9f6;
+    color: #6f5a47;
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary-action:hover {
+    border-color: #caa77a;
+    color: #4f3827;
+    background: #ffffff;
+}
+
+.btn-secondary-action.approve {
+    border-color: #b9d6be;
+    color: #3f7a4c;
+    background: #f5fbf6;
+}
+
+.btn-secondary-action.reject {
+    border-color: #e3c1b9;
+    color: #a05a48;
+    background: #fff7f4;
+}
+
+.owned-team-panel {
+    grid-column: 1 / -1;
+    border: 1px solid #eadfd2;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 22px;
+    box-shadow: 0 4px 12px rgba(79, 56, 39, 0.03);
+}
+
+.owned-panel-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    border-bottom: 1px solid #f0ebe5;
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+}
+
+.owned-panel-head h3 {
+    margin: 4px 0 0;
+    color: #4f3827;
+    font-size: 18px;
+}
+
+.panel-eyebrow,
+.panel-count {
+    color: #9b8065;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.panel-count {
+    background: #fbf4e7;
+    border: 1px solid #f3e3cc;
+    border-radius: 999px;
+    padding: 5px 10px;
+}
+
+.local-review-card,
+.local-member-card {
+    border: 1px solid #f0ebe5;
+    background: #fbf9f6;
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.local-review-card {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    margin-top: 12px;
+}
+
+.local-review-title {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.local-review-title strong,
+.local-member-card strong {
+    color: #4f3827;
+    font-size: 15px;
+}
+
+.local-review-title span,
+.local-member-card span {
+    color: #8a735e;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.local-review-main p,
+.local-member-card p {
+    margin: 6px 0;
+    color: #6f5a47;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.local-resume-box {
+    display: grid;
+    gap: 5px;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid #eadfd2;
+    color: #6f5a47;
+    font-size: 13px;
+}
+
+.local-review-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 90px;
+}
+
+.local-members-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.local-member-card > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
 /* --- 5. 下方：關注與推薦比賽整合區塊 --- */
 .contests-summary-zone {
     display: grid;
