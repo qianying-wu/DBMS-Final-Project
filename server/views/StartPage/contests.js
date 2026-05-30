@@ -8,6 +8,17 @@ const $ = id => document.getElementById(id);
 // 存放後端撈回來的「全部比賽原始資料」
 let contests = [];
 
+// 檢查 sessionStorage 有沒有進站紀錄
+if (!sessionStorage.getItem('hasVisited')) {
+  // 如果沒有，代表這是「新開的分頁」或是「剛關掉重開」
+  localStorage.removeItem('token');
+  localStorage.removeItem('userId');
+
+  // 標記已經進站了，接下來在站內怎麼跳轉，都不會再觸發上面這段
+  sessionStorage.setItem('hasVisited', 'true');
+  console.log('[AUTH] 檢測到新工作階段，已清空舊的 localStorage');
+}
+
 // 將字串轉成安全 HTML，避免資料庫文字影響頁面結構
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -27,8 +38,18 @@ function withUserParam(path) {
 
 // 檢查使用者是否已登入
 function isLoggedIn() {
+  const token = localStorage.getItem('token'); // 或是 sessionStorage.getItem('token')
   const id = localStorage.getItem('userId') || new URLSearchParams(location.search).get('userId');
-  return Boolean(id && id !== 'unknown');
+  
+  // 👑 關鍵核心：只有當 token 存在，且 id 不是髒資料時，才算真正登入
+  return Boolean(
+    token && 
+    token.trim() !== "" && 
+    id && 
+    id !== 'unknown' && 
+    id !== 'null' && 
+    id !== 'undefined'
+  );
 }
 
 // 未登入時的彈出提示或跳轉
@@ -42,7 +63,6 @@ function showLoginPrompt() {
     document.body.classList.add('modal-open');
     return;
   }
-  // 備用機制：直接導向登入頁面
   location.href = `/auth.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
 }
 
@@ -96,9 +116,9 @@ function renderContests(dataList = []) {
   grid.innerHTML = dataList.length ? dataList.map(contest => {
     const category = inferCategory(contest);
 
-    const displayDate = (contest.com_date && contest.com_date.includes('T')) 
-                        ? contest.com_date.split('T')[0] 
-                        : contest.com_date;
+    // 💡 修正原本 com_date 為 null 時可能引發的 .includes 報錯問題
+    const rawDate = contest.com_date || '';
+    const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
                         
     return `
       <article class="contest-card" data-id="${contest.com_id}">
@@ -107,7 +127,7 @@ function renderContests(dataList = []) {
         <p class="category">分類：${categoryLabel(category)}</p>
         <p class="desc">${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
         <div class="card-footer">
-          <span>${escapeHtml(/*contest.com_date*/displayDate || '日期未定')}</span>
+          <span>${escapeHtml(displayDate || '日期未定')}</span>
           <span class="more-link">查看更多 →</span>
         </div>
       </article>
@@ -165,18 +185,15 @@ function bindAvatar() {
 }
 
 function setupGeneralUiEvents() {
-  // 監聽搜尋與分類輸入
   $('contestSearch')?.addEventListener('input', applyFilters);
   $('categoryFilter')?.addEventListener('change', applyFilters);
 
-  // 點擊卡片跳轉詳情
   $('contestsGrid')?.addEventListener('click', event => {
     const card = event.target.closest('[data-id]');
     if (!card) return;
     location.href = withUserParam(`/contest.html?id=${encodeURIComponent(card.dataset.id)}`);
   });
 
-  // Logo 導頁按鈕
   const homeLink = $('homeLink');
   if (homeLink) homeLink.href = withUserParam('/contests.html');
 }
@@ -186,12 +203,15 @@ function setupGeneralUiEvents() {
 // 4. 統一初始化入口
 // ==========================================================================
 function initApp() {
-  // 1. 綁定常規 UI 事件與通知/頭像監聽
+  // 1. 執行登入狀態 UI 切換
+  // renderAuthAction();
+
+  // 2. 綁定常規 UI 事件與通知/頭像監聽
   setupGeneralUiEvents();
   bindNotify();
   bindAvatar();
 
-  // 2. 從後端非同步讀取資料庫，並驅動第一次的畫面渲染
+  // 3. 從後端非同步讀取資料庫，並驅動第一次的畫面渲染
   loadContests().then(applyFilters);
 }
 

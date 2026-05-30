@@ -121,19 +121,6 @@
 .card-footer span:first-child { color: #8a735e; }
 .card-footer .more-link { color: #d4b283; font-weight: 700; }
 
-.icon-btn svg, .avatar-btn svg {
-  display: block;
-  color: #7b6a59;
-}
-
-.icon-btn:hover svg, .avatar-btn:hover svg {
-  color: #4f3827;
-}
-
-.icon-btn:hover, .avatar-btn:hover {
-  background: #f5f0ea;
-}
-
 /* --- 響應式 --- */
 @media (max-width: 560px) {
   .filter-bar { flex-direction: column; }
