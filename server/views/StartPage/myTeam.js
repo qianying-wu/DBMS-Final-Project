@@ -117,7 +117,7 @@ export async function renderTeamsGridSection() {
       const mergedMap = new Map();
       processedJoined.forEach(item => { const id = item.team_id || item.id; if (id) mergedMap.set(id, item); });
       processedOwned.forEach(item => { const id = item.team_id || item.id; if (id) mergedMap.set(id, item); });
-      
+
       const teams = Array.from(mergedMap.values());
 
       if (teams.length === 0) {
@@ -165,22 +165,22 @@ export async function renderTeamsGridSection() {
         });
       });
 
-    // 渲染「精緻的隊伍字卡框框」
-    const cardsHtml = teams.map(t => {
-      // 判斷角色標籤：如果當前分頁本來就是我建立的，或是資料中 owner_id 等於目前登入者
-      const isCreator = activeTab === 'owned' || String(t.owner_id) === String(userId);
-      const teamId = t.team_id || t.id;
-      const pendingCount = getLocalApplications(teamId).filter(app => app.status === 'pending').length;
-      const badgeHtml = isCreator 
-        ? `<span class="role-badge creator">我創立</span>` 
-        : `<span class="role-badge member">已加入</span>`;
+      // 渲染「精緻的隊伍字卡框框」
+      const cardsHtml = teams.map(t => {
+        // 判斷角色標籤：如果當前分頁本來就是我建立的，或是資料中 owner_id 等於目前登入者
+        const isCreator = activeTab === 'owned' || String(t.owner_id) === String(userId);
+        const teamId = t.team_id || t.id;
+        const pendingCount = getLocalApplications(teamId).filter(app => app.status === 'pending').length;
+        const badgeHtml = isCreator
+          ? `<span class="role-badge creator">我創立</span>`
+          : `<span class="role-badge member">已加入</span>`;
 
-      // 預留容錯欄位名 (後端欄位可能為 t.competition_name 或 t.com_name)
-      const contestName = t.competition_name || t.com_name || t.contestName || '未指定特定競賽';
-      const currentCount = t.current_member_count ?? t.current_members ?? t.member_count ?? 1;
-      const maxCount = t.num_limit ?? t.max_members ?? 5;
+        // 預留容錯欄位名 (後端欄位可能為 t.competition_name 或 t.com_name)
+        const contestName = t.competition_name || t.com_name || t.contestName || '未指定特定競賽';
+        const currentCount = t.current_member_count ?? t.current_members ?? t.member_count ?? 1;
+        const maxCount = t.num_limit ?? t.max_members ?? 5;
 
-      return `
+        return `
         <div class="team-manage-card">
             <div class="card-top">
                 ${badgeHtml}
@@ -213,23 +213,25 @@ export async function renderTeamsGridSection() {
             </div>
         </div>
       `;
-    }).join('');
+      }).join('');
 
-    gridContainer.innerHTML = activeTab === 'owned'
-      ? `${cardsHtml}<section id="ownedTeamPanel" class="owned-team-panel"><div class="empty-text">選擇一支隊伍查看申請審核或隊友名單。</div></section>`
-      : cardsHtml;
+      gridContainer.innerHTML = activeTab === 'owned'
+        ? `${cardsHtml}<section id="ownedTeamPanel" class="owned-team-panel"><div class="empty-text">選擇一支隊伍查看申請審核或隊友名單。</div></section>`
+        : cardsHtml;
 
-    // 綁定所有新生成卡片的「管理隊伍」按鈕點擊跳轉事件
-    gridContainer.querySelectorAll('.btn-manage-action').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const teamId = btn.dataset.teamId;
-        location.href = Data.withUserParam(`/team-info.html?teamId=${teamId}`);
-    // ----------------------------------------------------------------------
-    // 分頁二：我收藏的隊伍 (原先撈取 my-favorites API 的功能)
-    // ----------------------------------------------------------------------
+      // 綁定所有新生成卡片的「管理隊伍」按鈕點擊跳轉事件
+      gridContainer.querySelectorAll('.btn-manage-action').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const teamId = btn.dataset.teamId;
+          location.href = Data.withUserParam(`/team-info.html?teamId=${teamId}`);
+        });
+      });
+      // ----------------------------------------------------------------------
+      // 分頁二：我收藏的隊伍 (原先撈取 my-favorites API 的功能)
+      // ----------------------------------------------------------------------
     } else if (activeTab === 'favorites-teams') {
-      const res = await fetch(`/api/teams/my-favorites?userId=${encodeURIComponent(userId)}`, { 
-        headers: { 'Authorization': ` ${token}` } 
+      const res = await fetch(`/api/teams/my-favorites?userId=${encodeURIComponent(userId)}`, {
+        headers: { 'Authorization': ` ${token}` }
       });
       if (!res.ok) throw new Error('API 回傳失敗');
       const result = await res.json();
@@ -275,9 +277,9 @@ export async function renderTeamsGridSection() {
         });
       });
 
-    // ----------------------------------------------------------------------
-    // 分頁三：我收藏的比賽 (讀取總大賽庫與 localStorage 對照)
-    // ----------------------------------------------------------------------
+      // ----------------------------------------------------------------------
+      // 分頁三：我收藏的比賽 (讀取總大賽庫與 localStorage 對照)
+      // ----------------------------------------------------------------------
     } else if (activeTab === 'favorites-com') {
       if (!allContestsData || allContestsData.length === 0) {
         const res = await fetch('/api/contests/competitions');
@@ -299,7 +301,7 @@ export async function renderTeamsGridSection() {
         const cId = c.com_id || c.id;
         const cName = c.com_name || c.name || '未命名比賽';
         const cIntro = c.com_intro || '尚未填寫比賽說明';
-        
+
         return `
           <div class="team-manage-card" style="border-left: 4px solid #caa77a;">
               <div class="card-top">
@@ -382,10 +384,10 @@ export async function loadSummaryContestsZone() {
 function renderRecommendationsUI(contests, preferences) {
   const body = $('recommendedBody');
   if (!body) return;
-  
+
   const tags = preferences.length ? preferences : ['熱門'];
   const filtered = contests.filter(c => tags.some(t => (c.com_intro || '').includes(t))).slice(0, 3);
-  
+
   if (filtered.length === 0) {
     body.innerHTML = '<div class="empty-text">暫無適合的推薦比賽</div>';
     return;
@@ -567,6 +569,6 @@ const homeLink = $('homeLink');
 if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
 
 // --- 🚀 初始自動啟動流程 ---
-initManageDashboard();       
-renderTeamsGridSection();    
+initManageDashboard();
+renderTeamsGridSection();
 loadSummaryContestsZone();
