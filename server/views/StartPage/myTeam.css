@@ -73,7 +73,37 @@
 }
 
 .menu-icon {
-    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #9b8065;
+    background: rgba(202, 167, 122, 0.12);
+    transition: all 0.2s ease;
+}
+
+.menu-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.menu-item:hover .menu-icon {
+    color: #7b5f42;
+    background: rgba(202, 167, 122, 0.18);
+}
+
+.menu-item.active .menu-icon {
+    color: #ffffff;
+    background: #caa77a;
+    box-shadow: 0 6px 14px rgba(202, 167, 122, 0.25);
 }
 
 /* --- 3. 右側主畫面區 --- */
@@ -89,6 +119,32 @@
     color: #4f3827;
     margin: 0 0 24px 0;
     font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.title-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #ffffff;
+    background: #caa77a;
+    box-shadow: 0 8px 18px rgba(202, 167, 122, 0.22);
+}
+
+.title-icon svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 /* --- 4. 核心：每一個隊伍都是一個可以選的精緻框框 --- */
