@@ -135,7 +135,7 @@ export const loadResumes = async (req, res) => {
             updatedAt: row.updated_at || null,
             data: {
                 resume_name: row.resume_name || '未命名履歷',
-                name: row.user_pv_name || '匿名',
+                user_pv_name: row.user_pv_name || '匿名',
                 school: row.user_school,
                 grade: row.department_grade,
                 intro: row.user_intro
