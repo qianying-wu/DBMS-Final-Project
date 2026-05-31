@@ -91,18 +91,20 @@
     }
   }
 
-  async function saveFavoriteContests() {
-    path = '/api/contests//toggle-favorite';
-    const res = await fetch(path, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
-      body: JSON.stringify({ userId: localStorage.getItem('userId'), comId })
-    });
-    if (!res.ok) throw new Error('無法更新收藏狀態');
-  }
+  // async function saveFavoriteContests() {
+  //   path = '/api/contests/';
+  //   const res = await fetch(path, {
+  //     method: 'POST',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //       ...getAuthHeader()
+  //     },
+  //     body: JSON.stringify({ userId: localStorage.getItem('userId'), comId })
+  //   });
+  //   if (!res.ok) throw new Error('無法更新收藏狀態');
+  // }
+
+  //===================================
 
   // 取得目前頁面指定的「特定比賽」物件資料
   async function getContest() {
