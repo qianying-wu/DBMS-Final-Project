@@ -44,18 +44,18 @@ const mintEn = new MintFilter(englishWords);
  */
 export const checkContent = (text) => {
     if (!text) return { isBad: false, cleanText: '' };
+    const normalizedText = text.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
 
-    // 只要其中一個驗證沒過，isBad 就是 true
-    const isChClean = mintCh.verify(text);
-    const isEnClean = mintEn.verify(text);
+    const isChClean = mintCh.verify(normalizedText);
+    const isEnClean = mintEn.verify(normalizedText);
 
-    // 進行過濾（把髒話變星號）
-    // 先濾中文再濾英文
+    // 進行過濾（把髒話變星號，保留原本的 text 格式）
     const chFiltered = mintCh.filter(text).text;
     const finalFiltered = mintEn.filter(chFiltered).text;
 
     return {
-        isBad: !isChClean || !isEnClean,
+        // 只要中文或英文有其中一個「不乾淨 (!true)」，整句就是 isBad
+        isBad: !isChClean || !isEnClean, 
         cleanText: finalFiltered
     };
 };

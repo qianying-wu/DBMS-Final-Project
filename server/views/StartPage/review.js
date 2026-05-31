@@ -1,12 +1,15 @@
 import * as Data from './team-data.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+// 這裡加上了 async，才能在內部使用 await 等待資料
+document.addEventListener('DOMContentLoaded', async () => {
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(window.location.search);
 
   // targetUserId 是「被評價的人」，userId 則保留給目前登入者，避免兩者混在一起。
   const currentUserId = localStorage.getItem('userId') || params.get('userId') || Data.currentUserId || '';
   const targetUserId = params.get('targetUserId') || params.get('revieweeId') || currentUserId || 'default_user';
+  // 新增：嘗試從網址抓履歷 ID（例如 ?resumeId=xxx）
+  const resumeId = params.get('resumeId') || ''; 
   const mode = params.get('mode') || 'write';
   const teamId = params.get('teamId') || '';
   const teamName = params.get('teamName') || '';
@@ -20,6 +23,75 @@ document.addEventListener('DOMContentLoaded', () => {
   const reviewFormCard = document.querySelector('.review-column .editor-card');
   let currentRating = 0;
   let targetProfile = null;
+
+  function showCustomAlert(message, type = 'success') {
+    // 檢查是不是已經有打開的視窗，有的話先清掉
+    const existingModal = document.getElementById('customAlertModal');
+    if (existingModal) existingModal.remove();
+
+    // 建立外層的半透明黑色背景
+    const modal = document.createElement('div');
+    modal.id = 'customAlertModal';
+    modal.className = 'modal'; 
+    modal.style.zIndex = '9999'; 
+
+    // 根據成功或失敗，決定圖示跟顏色
+    const icon = type === 'error' ? '🥺' : '✨';
+    const title = type === 'error' ? '哎呀！' : '太棒了！';
+    const titleColor = type === 'error' ? '#d9534f' : '#a17851';
+
+    // 塞入裡面的卡片內容
+    modal.innerHTML = `
+      <div class="modal-card" style="text-align: center; min-width: 320px; padding: 36px 24px;">
+        <div style="font-size: 56px; margin-bottom: 12px; line-height: 1;">${icon}</div>
+        <h3 style="margin: 0 0 12px 0; color: ${titleColor}; font-size: 22px;">${title}</h3>
+        <p style="color: #55483d; margin: 0 0 24px 0; font-size: 16px; line-height: 1.6;">${message}</p>
+        <button id="closeAlertBtn" class="btn primary" style="width: 100%; border-radius: 99px; font-size: 16px;">我知道了</button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 綁定「我知道了」按鈕，點下去就把視窗關掉
+    document.getElementById('closeAlertBtn').addEventListener('click', () => {
+      modal.remove();
+    });
+  }
+
+  function showCustomConfirm(message, onConfirm) {
+    const existingModal = document.getElementById('customConfirmModal');
+    if (existingModal) existingModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'customConfirmModal';
+    modal.className = 'modal';
+    modal.style.zIndex = '9999';
+
+    modal.innerHTML = `
+      <div class="modal-card" style="text-align: center; min-width: 320px; padding: 36px 24px;">
+        <div style="font-size: 56px; margin-bottom: 12px; line-height: 1;">🗑️</div>
+        <h3 style="margin: 0 0 12px 0; color: #d9534f; font-size: 22px;">確認刪除？</h3>
+        <p style="color: #55483d; margin: 0 0 24px 0; font-size: 16px; line-height: 1.6;">${message}</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button id="cancelConfirmBtn" class="btn" style="flex: 1; border-radius: 99px; font-size: 16px; background: #f1e8dd; color: #55483d; border: none;">取消</button>
+          <button id="okConfirmBtn" class="btn primary" style="flex: 1; border-radius: 99px; font-size: 16px; background: #d9534f; border: none; color: #fff;">確定刪除</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 按下取消：直接關閉視窗，什麼都不做
+    document.getElementById('cancelConfirmBtn').addEventListener('click', () => {
+      modal.remove();
+    });
+
+    // 按下確定：關閉視窗，並執行傳進來的刪除邏輯
+    document.getElementById('okConfirmBtn').addEventListener('click', () => {
+      modal.remove();
+      onConfirm(); 
+    });
+  }
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, match => ({
@@ -71,30 +143,32 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  function findProfileFromLocalData() {
-    // 先從隊伍申請與已核准隊友資料找，讓審核申請時能看到同一位申請者的資料。
-    const applications = readJson('teamApplications:v1', []);
-    const matchedApplication = applications.find(app => String(app.userId) === String(targetUserId));
-    if (matchedApplication) return extractResume(matchedApplication);
+  // 新增：透過 API 向後端獲取目標用戶的履歷資料
+  async function fetchTargetUserResume() {
+    try {
+      let url = `/api/pv/getTargetResume?userId=${targetUserId}`;
+      if (resumeId) {
+        url += `&resumeId=${resumeId}`; // 如果網址有傳履歷 ID，就一起帶給後端
+      }
 
-    const memberKeys = Object.keys(localStorage).filter(key => key.startsWith('teamMembers:v1:'));
-    for (const key of memberKeys) {
-      const matchedMember = readJson(key, []).find(member => String(member.userId) === String(targetUserId));
-      if (matchedMember) return extractResume(matchedMember);
+      // 如果拿別人的履歷也需要你的登入驗證，就把 token 塞進去
+      const token = localStorage.getItem('token');
+      const headers = token ? { 'Authorization': token } : {};
+
+      const response = await fetch(url, { headers });
+      if (!response.ok) throw new Error('無法取得該用戶履歷');
+
+      const data = await response.json();
+      return extractResume(data);
+
+    } catch (error) {
+      console.error('抓取履歷失敗：', error);
+      // 萬一壞掉（例如後端掛了或找不到），給個預設值，畫面才不會一片白
+      return extractResume({
+        name: localStorage.getItem(`nickname:${targetUserId}`) || `使用者 ${targetUserId}`,
+        intro: '目前無法取得履歷資料，可能已被隱藏或刪除。'
+      });
     }
-
-    // 若是在看自己的評價，補抓個人履歷 gallery 中目前啟用的履歷。
-    if (String(currentUserId) === String(targetUserId)) {
-      const profiles = readJson('profiles', []);
-      const activeProfileId = localStorage.getItem('activeProfileId');
-      const activeProfile = profiles.find(item => String(item.id) === String(activeProfileId)) || profiles[0];
-      if (activeProfile) return extractResume(activeProfile);
-    }
-
-    return extractResume({
-      name: localStorage.getItem(`nickname:${targetUserId}`) || `使用者 ${targetUserId}`,
-      intro: '目前尚未留下更多個人資料'
-    });
   }
 
   function safeSetText(id, text) {
@@ -102,8 +176,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) el.textContent = text || '-';
   }
 
-  function loadResumeData() {
-    targetProfile = findProfileFromLocalData();
+  // 改為非同步函式 (async)
+  async function loadResumeData() {
+    // 這裡變成等待後端回傳資料
+    targetProfile = await fetchTargetUserResume();
+
     safeSetText('r-title', targetProfile.title);
     safeSetText('r-school', targetProfile.school);
     safeSetText('r-name', targetProfile.name);
@@ -150,47 +227,86 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  function loadReviews() {
+  async function loadReviews() {
     if (!reviewList) return;
-    const reviews = readJson(storageKey, []);
-    reviewList.innerHTML = '';
-
-    if (reviews.length === 0) {
-      reviewList.innerHTML = '<div class="empty-note">目前還沒有人留下評價。</div>';
-      return;
-    }
-
-    reviews.forEach(review => {
-      const item = document.createElement('div');
-      item.className = 'review-item';
-      const rating = Math.max(0, Math.min(5, Number(review.rating) || 0));
-      const starString = '★'.repeat(rating) + '☆'.repeat(5 - rating);
-      const sourceText = review.teamName ? `來自 ${review.teamName}` : '隊友評價';
-
-      item.innerHTML = `
-        <div class="review-item-header">
-          <span class="review-item-author">${escapeHtml(review.reviewerName || '匿名隊友')}</span>
-          <span class="review-item-time">${new Date(review.date).toLocaleDateString('zh-TW')}</span>
-        </div>
-        <div class="review-item-meta">${escapeHtml(sourceText)}</div>
-        <div class="review-item-stars">${starString}</div>
-        <p class="review-item-content">${escapeHtml(review.content)}</p>
-      `;
-      reviewList.appendChild(item);
-    });
-  }
-
-  async function checkIsBadContent(text) {
-    const gasUrl = 'https://script.google.com/macros/s/AKfycbz4ifJzx6YFG7SroCncE5gcbXp17GyYeGbqJPXGWAeRIMazlifaeJT3ijeDZ5cVqnu-Lw/exec';
+    reviewList.innerHTML = '讀取中...';
 
     try {
-      const response = await fetch(`${gasUrl}?text=${encodeURIComponent(text)}`);
-      const data = await response.json();
-      return data.flagged === true;
+      // 呼叫我們剛剛在後端寫好的 API
+      const response = await fetch(`/api/review/list/${targetUserId}`);
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        throw new Error('無法取得評價資料');
+      }
+
+      const reviews = result.data;
+      reviewList.innerHTML = '';
+
+      if (reviews.length === 0) {
+        reviewList.innerHTML = '<div class="empty-note">目前還沒有人留下評價。</div>';
+        return;
+      }
+
+      // 把資料庫撈出來的資料一筆一筆畫在畫面上
+      reviews.forEach(review => {
+        const item = document.createElement('div');
+        item.className = 'review-item';
+        const rating = Math.max(0, Math.min(5, Number(review.star) || 0));
+        const starString = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+
+        // 邏輯：判斷這則留言的作者，是不是現在正在看網頁的人
+        const isMyReview = String(review.userWrite_id) === String(currentUserId);
+        
+        const deleteBtnHtml = isMyReview 
+          ? `<button class="delete-review-btn" data-revid="${review.rev_id}">🗑️ 刪除</button>` 
+          : '';
+
+        item.innerHTML = `
+          <div class="review-item-header">
+            <span class="review-item-author">${escapeHtml(review.reviewer_name || '匿名隊友')}</span>
+            ${deleteBtnHtml}
+          </div>
+          <div class="review-item-stars">${starString}</div>
+          <p class="review-item-content">${escapeHtml(review.rev_content)}</p>
+        `;
+        reviewList.appendChild(item);
+      });
+
+      const deleteBtns = reviewList.querySelectorAll('.delete-review-btn');
+      deleteBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const revId = e.target.getAttribute('data-revid');
+          
+          // 呼叫自訂確認視窗，把 fetch 刪除的動作包進去
+          showCustomConfirm('確定要刪除這則評價嗎？此動作無法復原。', async () => {
+            try {
+              const token = localStorage.getItem('token');
+              const response = await fetch(`/api/review/delete/${revId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': token ? token : '' }
+              });
+
+              if (response.status === 401) {
+                throw new Error('登入已過期，請重新登入！');
+              }
+              const data = await response.json();
+              if (!response.ok || !data.ok) throw new Error(data.error || '刪除失敗');
+              
+              showCustomAlert('評價已成功刪除！');
+              await loadReviews(); 
+
+            } catch (error) {
+              console.error('刪除評價失敗:', error);
+              showCustomAlert(error.message, 'error');
+            }
+          });
+        });
+      });
+
     } catch (error) {
-      // 外部審查服務失敗時，不阻擋使用者送出，避免整個評價功能不可用。
-      console.error('評價內容審查服務連線失敗:', error);
-      return false;
+      console.error('讀取歷史評價失敗：', error);
+      reviewList.innerHTML = '<div class="empty-note">目前無法載入評價，請稍後再試。</div>';
     }
   }
 
@@ -202,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function initMode() {
-    // mode=view 用在隊長審核申請者時，只看歷史評價，不顯示撰寫表單。
+    // mode=view 用在只看歷史評價，不顯示撰寫表單
     if (mode === 'view' && reviewFormCard) {
       reviewFormCard.hidden = true;
     }
@@ -213,56 +329,72 @@ document.addEventListener('DOMContentLoaded', () => {
       const comment = reviewComment.value.trim();
 
       if (String(currentUserId) === String(targetUserId)) {
-        alert('不能評價自己，請選擇隊友進行評價。');
+        showCustomAlert('不能評價自己，請選擇隊友進行評價。', 'error');
         return;
       }
       if (currentRating === 0) {
-        alert('請先選擇星級評分！');
+        showCustomAlert('請先選擇星級評分！', 'error');
         return;
       }
       if (!comment) {
-        alert('請輸入評價內容！');
+        showCustomAlert('請輸入評價內容！', 'error');
         return;
       }
 
       setSubmitState(true);
-      const isBad = await checkIsBadContent(comment);
+      
+      const reviewPayload = {
+        com_id: teamId || 1, // 端必填 com_id(比賽ID)，如果你從網址抓不到，可能要先塞個預設值(如 1)避免報錯
+        userWrite_id: currentUserId,
+        userRec_id: targetUserId,
+        star: currentRating,
+        rev_content: comment
+      };
 
-      if (isBad) {
-        alert('系統檢測到您的留言包含不文明用語，請修改後再發布！');
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/review/submit-review', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? token : '' 
+          },
+          body: JSON.stringify(reviewPayload)
+        });
+
+        // 先檢查是不是被 401 擋在門外
+        if (response.status === 401) {
+          throw new Error('登入已過期或未登入，請重新登入後再試一次！');
+        }
+
+        // 確認沒被擋，再來解析 JSON
+        const data = await response.json();
+        
+        if (!response.ok || !data.ok) {
+           throw new Error(data.error || '後端儲存評價失敗');
+        }
+
+        currentRating = 0;
+        updateStars(0);
+        reviewComment.value = '';
         setSubmitState(false);
-        return;
+        
+        showCustomAlert('評價發布成功！');
+        await loadReviews(); 
+        
+      } catch (error) {
+        console.error('發送評價失敗：', error);
+        showCustomAlert(error.message || '評價送出失敗，請檢查網路連線或稍後再試。', 'error');
+        setSubmitState(false);
       }
-
-      // 先存 localStorage，未來後端 review API 完整後可以在這裡同步送出資料庫。
-      const reviews = readJson(storageKey, []);
-      reviews.unshift({
-        rating: currentRating,
-        content: comment,
-        date: new Date().toISOString(),
-        reviewerId: currentUserId,
-        reviewerName: getReviewerName(),
-        targetUserId,
-        targetName: targetProfile?.name || `使用者 ${targetUserId}`,
-        teamId,
-        teamName
-      });
-      localStorage.setItem(storageKey, JSON.stringify(reviews));
-
-      currentRating = 0;
-      updateStars(0);
-      reviewComment.value = '';
-      setSubmitState(false);
-
-      alert('評價發布成功！');
-      loadReviews();
     });
   }
-
   const homeLink = document.querySelector('.logo-link');
   if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
 
-  loadResumeData();
   initMode();
-  loadReviews();
+  
+  // 已經拿掉多餘的 loadReviews() 呼叫
+  await loadReviews();
+  await loadResumeData();
 });

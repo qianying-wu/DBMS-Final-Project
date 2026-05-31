@@ -169,3 +169,62 @@ export const deleteResume = async (req, res) => {
         res.status(500).json({ ok: false, message: '刪除失敗' });
     }
 };
+
+// ======================================================================
+// 獲取特定使用者的最新履歷 (給評價頁面或別人看的)
+export const getTargetResume = async (req, res) => {
+    // 這個 API 是要看別人的，所以從網址列抓取要查詢的 userId，而不是從 token 抓
+    const targetUserId = req.query.userId; 
+    
+    if (!targetUserId) {
+        return res.status(400).json({ ok: false, message: '必須提供 userId' });
+    }
+
+    try {
+        const sql = `
+            SELECT 
+                r.resume_id,
+                r.resume_name,
+                r.user_pv_name,
+                r.user_school,
+                r.department_grade,
+                r.user_intro,
+                r.created_at,
+                r.updated_at,
+                GROUP_CONCAT(t.tag_name) AS tag_list
+            FROM Resumes r
+            LEFT JOIN Resume_tags rt ON r.resume_id = rt.resume_id
+            LEFT JOIN Person_tags t ON rt.tag_id = t.tag_id
+            WHERE r.user_id = ?
+            GROUP BY r.resume_id
+            ORDER BY r.resume_id DESC
+            LIMIT 1 
+        `;
+        // LIMIT 1 的意思是：如果他有很多份履歷，我們預設只抓最新建立的那一份給評價頁面看。
+
+        const [rows] = await pool.query(sql, [targetUserId]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ ok: false, message: '找不到該用戶的履歷' });
+        }
+
+        const row = rows[0];
+        
+        // 把格式整理得跟之前前端 extractResume 期待的形狀一樣
+        const formattedResume = {
+            id: row.resume_id,
+            name: row.resume_name,
+            applicantName: row.user_pv_name || '匿名', // review.js 的 extractResume 吃這個
+            school: row.user_school,
+            grade: row.department_grade,
+            experience: '目前沒有經驗欄位', // 你的 db 沒有這欄位，先給預設
+            intro: row.user_intro,
+            tags: row.tag_list ? row.tag_list.split(',') : []
+        };
+
+        res.json(formattedResume);
+    } catch (error) {
+        console.error('撈取他人履歷失敗：', error);
+        res.status(500).json({ ok: false, message: '伺服器內部錯誤' });
+    }
+};
