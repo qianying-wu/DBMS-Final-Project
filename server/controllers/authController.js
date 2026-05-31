@@ -230,11 +230,10 @@ export const updatePsw = async (req, res) => {
             });
         }
         console.log(`[密碼變更] 正在為 user_id: ${userId} 進行密碼加密與同步...`);
-        // 3. 🔐 使用 bcrypt 進行密碼雜湊加密
+        //  使用 bcrypt 進行密碼雜湊加密
         const saltRounds = 10; // 建議的加鹽複雜度
         const hashedPassword = await bcrypt.hash(userPsw, saltRounds);
-        // 4. 執行 SQL 更新密碼
-        // 💡 根據你的資訊：table 叫做 user，欄位分別是 userPsw 與 user_id
+
         const [result] = await pool.execute(
             'UPDATE user SET userPsw = ? WHERE user_id = ?',
             [hashedPassword, Number(userId)]

@@ -71,25 +71,22 @@
             statusEl.style.color = '#b64d45';
             return;
         }
-
         if (newPassword && newPassword !== confirmPassword) {
             statusEl.textContent = '❌ 新密碼與確認密碼不符！';
             statusEl.style.color = '#b64d45';
             return;
         }
-
         statusEl.textContent = '正同步至資料庫...';
         statusEl.style.color = '#7b6a59';
-
         try {
             const response = await fetch('/api/auth/password', {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    ...getAuthHeader()
                 },
                 body: JSON.stringify({
-                    userId: id,
+                    user_id: id,
                     userPsw: newPassword
                 })
             });
