@@ -4,109 +4,111 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>用戶評價 - 競賽組隊</title>
-    <link rel="stylesheet" href="/profile.css"> <link rel="stylesheet" href="/review.css">
+    <link rel="stylesheet" href="/header.css">
+    <link rel="stylesheet" href="/review.css">
   </head>
   <body>
     <header class="topbar">
-      <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
-      <div class="actions">
-        <button id="notifyBtn" class="icon-btn" aria-label="通知">🔔</button>
-        <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">👤</button>
+      <a id="homeLink" href="/contests.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
+      <div id="authAction" class="loginBtn">
+        <a href="/auth.html">登入</a>
+      </div>
+      <div id="userActions" class="actions" style="display: none;">
+        <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </button>
       </div>
     </header>
 
-    <main class="layout profile-layout">
-      <div class="profile-heading" style="margin-bottom: 24px;">
+    <main class="review-page-container">
+      <div class="page-header">
         <h2 class="page-title">用戶評價</h2>
-        <p>為曾經合作過的隊友留下真實的評價與建議。</p>
+        <p class="page-subtitle">為曾經合作過的隊友留下真實的評價與建議</p>
       </div>
 
-      <div class="split-layout">
+      <div class="content-grid">
         
-        <section class="resume-column">
-          <div class="resume-card" id="resumeCard">
+        <aside class="resume-sidebar">
+          <div class="card resume-card">
             <div class="resume-header">
-              <div class="resume-avatar">履歷</div>
-              <div class="resume-title-info">
-                <span class="resume-template-name">標準履歷模板</span>
-                <h3 class="resume-title" id="r-title">載入中...</h3>
-                <span class="resume-school" id="r-school"></span>
+              <div class="avatar">👤</div>
+              <div class="user-info">
+                <span class="badge">標準履歷模板</span>
+                <h3 id="r-title" class="name">載入中...</h3>
+                <p id="r-school" class="school"></p>
               </div>
             </div>
+            
             <div class="resume-body">
-              <div class="resume-section">
-                <h4>基本資料</h4>
-                <div class="basic-info-grid">
-                  <div class="info-box">
-                    <span class="info-label">姓名</span>
-                    <span class="info-value" id="r-name">-</span>
-                  </div>
-                  <div class="info-box">
-                    <span class="info-label">學校 / 年級</span>
-                    <span class="info-value" id="r-grade">-</span>
-                  </div>
-                </div>
+              <div class="info-row">
+                <span class="label">姓名</span>
+                <span id="r-name" class="value">-</span>
               </div>
-              <div class="resume-section">
-                <h4>專長</h4>
-                <div class="skills-container" id="r-skills">
-                  </div>
+              <div class="info-row">
+                <span class="label">學校 / 年級</span>
+                <span id="r-grade" class="value">-</span>
               </div>
-              <div class="resume-section">
-                <h4>個人經歷</h4>
-                <p id="r-exp">-</p>
+              
+              <div class="info-block">
+                <span class="label block-label">專業技能</span>
+                <div id="r-skills" class="skills-wrapper"></div>
               </div>
-              <div class="resume-section">
-                <h4>自我介紹</h4>
-                <p id="r-intro">-</p>
+              
+              <div class="info-block">
+                <span class="label block-label">個人經歷</span>
+                <p id="r-exp" class="text-content">-</p>
+              </div>
+              
+              <div class="info-block last-block">
+                <span class="label block-label">自我介紹</span>
+                <p id="r-intro" class="text-content">-</p>
               </div>
             </div>
           </div>
-        </section>
+        </aside>
 
-        <section class="review-column">
-          <div class="card editor-card" style="margin-bottom: 24px;">
-            <div class="editor-heading">
-              <div>
-                <span class="eyebrow">撰寫評價</span>
-                <h2>評價此用戶</h2>
+        <section class="review-main">
+          
+          <div class="card review-form-card">
+            <h3 class="card-title">撰寫評價</h3>
+            <form id="reviewForm" class="review-form">
+              <div class="form-group">
+                <label>整體評分</label>
+                <div class="star-rating" id="starRating">
+                  <span class="star" data-value="1">★</span>
+                  <span class="star" data-value="2">★</span>
+                  <span class="star" data-value="3">★</span>
+                  <span class="star" data-value="4">★</span>
+                  <span class="star" data-value="5">★</span>
+                </div>
               </div>
-            </div>
-            <form id="reviewForm">
-              <div class="row">
-                <label class="full">評分
-                  <div class="star-rating" id="starRating">
-                    <span class="star" data-value="1">★</span>
-                    <span class="star" data-value="2">★</span>
-                    <span class="star" data-value="3">★</span>
-                    <span class="star" data-value="4">★</span>
-                    <span class="star" data-value="5">★</span>
-                  </div>
-                </label>
+              <div class="form-group">
+                <label>留言內容</label>
+                <textarea id="reviewComment" class="clean-textarea" placeholder="說說你與這位用戶合作的經驗，例如溝通方式、技術能力等..." rows="4"></textarea>
               </div>
-              <div class="row">
-                <label class="full">留言內容
-                  <textarea id="reviewComment" placeholder="請描述你與這位用戶合作的經驗..." rows="4"></textarea>
-                </label>
-              </div>
-              <div class="actions-row">
-                <button id="submitReviewBtn" type="button" class="btn primary">發布評價</button>
+              <div class="form-actions">
+                <button id="submitReviewBtn" type="button" class="btn-submit">發布評價</button>
               </div>
             </form>
           </div>
 
-          <div class="card editor-card">
-            <div class="editor-heading">
-              <h2>歷史評價記錄</h2>
-            </div>
+          <div class="card review-history-card">
+            <h3 class="card-title">歷史評價記錄</h3>
             <div id="reviewList" class="review-list">
               </div>
           </div>
+
         </section>
 
       </div>
     </main>
 
     <script type="module" src="/review.js"></script>
+    <script src="/auth-guard.js"></script>
+    <script src="/account-menu.js"></script>
   </body>
 </html>
