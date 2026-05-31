@@ -9,15 +9,6 @@ let activeTab = 'my-teams'; // 預設當前分頁
 
 // 🚀 四大分頁 Meta 資訊設定（包含右側主畫面大標題與動態 SVG 圖標）
 const tabMeta = {
-    'search-talent': {
-    title: '探索人才與隊伍',
-    icon: `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        <path d="M11 8a3 3 0 0 0-3 3"></path>
-      </svg>`
-  },
   'my-teams': {
     title: '我的隊伍',
     icon: `
