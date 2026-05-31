@@ -158,34 +158,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  function loadReviews() {
+  async function loadReviews() {
     if (!reviewList) return;
-    const reviews = readJson(storageKey, []);
-    reviewList.innerHTML = '';
+    reviewList.innerHTML = '讀取中...';
 
-    if (reviews.length === 0) {
-      reviewList.innerHTML = '<div class="empty-note">目前還沒有人留下評價。</div>';
-      return;
+    try {
+      // 呼叫我們剛剛在後端寫好的 API
+      const response = await fetch(`/api/review/list/${targetUserId}`);
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        throw new Error('無法取得評價資料');
+      }
+
+      const reviews = result.data;
+      reviewList.innerHTML = '';
+
+      if (reviews.length === 0) {
+        reviewList.innerHTML = '<div class="empty-note">目前還沒有人留下評價。</div>';
+        return;
+      }
+
+      // 把資料庫撈出來的資料一筆一筆畫在畫面上
+      reviews.forEach(review => {
+        const item = document.createElement('div');
+        item.className = 'review-item';
+        const rating = Math.max(0, Math.min(5, Number(review.star) || 0));
+        const starString = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+
+        item.innerHTML = `
+          <div class="review-item-header">
+            <span class="review-item-author">${escapeHtml(review.reviewer_name || '匿名隊友')}</span>
+          </div>
+          <div class="review-item-stars">${starString}</div>
+          <p class="review-item-content">${escapeHtml(review.rev_content)}</p>
+        `;
+        reviewList.appendChild(item);
+      });
+
+    } catch (error) {
+      console.error('讀取歷史評價失敗：', error);
+      reviewList.innerHTML = '<div class="empty-note">目前無法載入評價，請稍後再試。</div>';
     }
-
-    reviews.forEach(review => {
-      const item = document.createElement('div');
-      item.className = 'review-item';
-      const rating = Math.max(0, Math.min(5, Number(review.rating) || 0));
-      const starString = '★'.repeat(rating) + '☆'.repeat(5 - rating);
-      const sourceText = review.teamName ? `來自 ${review.teamName}` : '隊友評價';
-
-      item.innerHTML = `
-        <div class="review-item-header">
-          <span class="review-item-author">${escapeHtml(review.reviewerName || '匿名隊友')}</span>
-          <span class="review-item-time">${new Date(review.date).toLocaleDateString('zh-TW')}</span>
-        </div>
-        <div class="review-item-meta">${escapeHtml(sourceText)}</div>
-        <div class="review-item-stars">${starString}</div>
-        <p class="review-item-content">${escapeHtml(review.content)}</p>
-      `;
-      reviewList.appendChild(item);
-    });
   }
 
   async function checkIsBadContent(text) {
@@ -232,8 +246,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-// ... 前面確認星星數量和留言內容的程式碼不變 ...
-
       setSubmitState(true);
       
       const isBad = await checkIsBadContent(comment);
@@ -257,7 +269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         const token = localStorage.getItem('token');
         // 這裡對齊你們的 api route (假設有掛上 /api)
-        const response = await fetch('/api/submit-review', {
+        const response = await fetch('/api/review/submit-review', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -293,6 +305,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   initMode();
   loadReviews();
   
-
+  await loadReviews();
   await loadResumeData();
 });

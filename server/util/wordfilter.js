@@ -45,17 +45,17 @@ const mintEn = new MintFilter(englishWords);
 export const checkContent = (text) => {
     if (!text) return { isBad: false, cleanText: '' };
 
-    // 只要其中一個驗證沒過，isBad 就是 true
+    // mint-filter 的 verify 回傳 true 代表「字眼乾淨」
     const isChClean = mintCh.verify(text);
     const isEnClean = mintEn.verify(text);
 
     // 進行過濾（把髒話變星號）
-    // 先濾中文再濾英文
     const chFiltered = mintCh.filter(text).text;
     const finalFiltered = mintEn.filter(chFiltered).text;
 
     return {
-        isBad: !isChClean || !isEnClean,
+        // 只要中文或英文有其中一個「不乾淨 (!true)」，整句就是 isBad
+        isBad: !isChClean || !isEnClean, 
         cleanText: finalFiltered
     };
 };
