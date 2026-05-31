@@ -211,7 +211,7 @@
     $('displayTeamName').textContent = team.team_name;
     $('displayContestLabel').textContent = contest.name;
     $('displayContestName').textContent = contest.name;
-    $('displayContestDate').textContent = contest.com_date || '日期未定';
+    $('displayContestDate').textContent = (contest.com_date) ? contest.com_date.split('T')[0] : '日期未定';
     $('displayContestInfo').textContent = contest.com_intro || '尚未填寫比賽資訊。';
     $('displayMemberCount').textContent = team.current_member_count;
     $('displayMaxSlots').textContent = team.num_limit;

@@ -1,143 +1,156 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>履歷查看</title>
-    <link rel="stylesheet" href="/profile.css">
-  </head>
-  <body>
-    <!-- 頁首：保留通知與帳號選單入口。 -->
-    <header class="topbar">
-      <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
-      <div class="actions">
-          <!--右上的通知和個人icon圖示-->
-<button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-       fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="8" r="4"/>
-    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-  </svg>
-</button>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>履歷查看</title>
+  <link rel="stylesheet" href="/profile.css">
+</head>
+
+<body>
+  <!-- 頁首：保留通知與帳號選單入口。 -->
+  <header class="topbar">
+    <a class="logo-link" href="/team.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
+    <div class="actions">
+      <!--右上的通知和個人icon圖示-->
+      <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 履歷查看區 -->
+  <main class="layout" style="grid-template-columns: 1fr; max-width: 840px; margin: 0 auto; padding: 40px 20px;">
+    <section class="content">
+
+      <!-- 上方標題與導航欄 -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+        <h2 class="page-title" style="margin: 0; font-size: 24px; color: #3f342c; font-weight: 800;">履歷詳細資料</h2>
+        <button id="backBtnResume" class="btn outline"
+          style="height: 42px; display: flex; align-items: center; gap: 6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          返回上一頁
+        </button>
       </div>
-    </header>
 
-    <!-- 履歷查看區 -->
-    <main class="layout" style="grid-template-columns: 1fr; max-width: 840px; margin: 0 auto; padding: 40px 20px;">
-      <section class="content">
-        
-        <!-- 上方標題與導航欄 -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
-          <h2 class="page-title" style="margin: 0; font-size: 24px; color: #3f342c; font-weight: 800;">履歷詳細資料</h2>
-          <button id="backBtnResume" class="btn outline" style="height: 42px; display: flex; align-items: center; gap: 6px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-            返回上一頁
-          </button>
-        </div>
+      <!-- 履歷主體卡片 -->
+      <div class="resume-template" id="resumeView"></div>
 
-        <!-- 履歷主體卡片 -->
-        <div class="resume-template" id="resumeView"></div>
-
-        <!-- ★ 經驗履歷連結區塊 ★ -->
-        <div id="expLinkBlock" style="margin-top: 24px; display: none;">
-          <div class="card" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; background: #fff; border: 1px solid #eadfd2; border-radius: 16px;">
-            <div>
-              <div style="font-weight: 800; color: #4f3827; margin-bottom: 6px; font-size: 15px; display: flex; align-items: center; gap: 6px;">
-                <span>📋</span> 經驗履歷檔案已連動
-              </div>
-              <div id="expLinkSummary" style="color: #7b6a59; font-size: 13px; line-height: 1.4;"></div>
+      <!-- ★ 經驗履歷連結區塊 ★ -->
+      <div id="expLinkBlock" style="margin-top: 24px; display: none;">
+        <div class="card"
+          style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; background: #fff; border: 1px solid #eadfd2; border-radius: 16px;">
+          <div>
+            <div
+              style="font-weight: 800; color: #4f3827; margin-bottom: 6px; font-size: 15px; display: flex; align-items: center; gap: 6px;">
+              <span>📋</span> 經驗履歷檔案已連動
             </div>
-            <a id="expLinkBtn" href="#" class="btn primary" style="white-space: nowrap; height: 42px; line-height: 42px; padding: 0 20px; text-decoration: none; display: inline-flex; align-items: center;">查看完整經驗 →</a>
+            <div id="expLinkSummary" style="color: #7b6a59; font-size: 13px; line-height: 1.4;"></div>
           </div>
+          <a id="expLinkBtn" href="#" class="btn primary"
+            style="white-space: nowrap; height: 42px; line-height: 42px; padding: 0 20px; text-decoration: none; display: inline-flex; align-items: center;">查看完整經驗
+            →</a>
         </div>
-      </section>
-    </main>
-    <script src="/account-menu.js"></script>
-    <script>
-      const qs = new URLSearchParams(location.search);
-      const userId = qs.get('userId') || 'unknown';
-      document.querySelector('.logo-link').href = '/user.html?userId=' + encodeURIComponent(userId);
+      </div>
+    </section>
+  </main>
+  <script src="/resume-view.js"></script>
+  <script>
+    // const qs = new URLSearchParams(location.search);
+    // const userId = qs.get('userId') || 'unknown';
+    // document.querySelector('.logo-link').href = '/user.html?userId=' + encodeURIComponent(userId);
 
-      const resumeId = qs.get('resumeId');
-      const profiles = JSON.parse(localStorage.getItem('profiles') || '[]');
-      const profile = profiles.find(p => String(p.id) === String(resumeId)) || profiles.find(p => String(p.id) === String(localStorage.getItem('activeProfileId'))) || profiles[0];
-      const data = profile?.data || {};
+    // const resumeId = qs.get('resumeId');
+    // const profiles = JSON.parse(localStorage.getItem('profiles') || '[]');
+    // const profile = profiles.find(p => String(p.id) === String(resumeId)) || profiles.find(p => String(p.id) === String(localStorage.getItem('activeProfileId'))) || profiles[0];
+    // const data = profile?.data || {};
 
-      function esc(value){
-        return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    // function esc(value) {
+    //   return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    // }
+
+    // // 將履歷資料套入全新優化的制式履歷版型
+    // document.getElementById('resumeView').innerHTML = profile ? `
+    //     <!-- 1. 履歷名片式頂部 Header -->
+    //     <div class="resume-template-head" style="background: linear-gradient(135deg, #fffcf7 0%, #fcf7f0 100%); padding: 36px 40px; display: flex; gap: 28px; align-items: center;">
+    //       <div class="resume-avatar" style="width: 90px; height: 90px; border-radius: 50%; background: #f3ede4; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex-shrink: 0;">
+    //         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#a17851" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    //           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+    //           <circle cx="12" cy="7" r="4"></circle>
+    //         </svg>
+    //       </div>
+    //       <div style="flex: 1;">
+    //         <h3 style="margin: 0 0 8px 0; font-size: 28px; font-weight: 800; color: #3f342c;">
+    //           ${data.name ? esc(data.name) : '<span class="no-data" style="color: #b1a79b; font-weight: 400; font-style: italic;">
+    // </span>'}
+    //         </h3>
+    //         <p style="margin: 0; color: #7b6a59; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+    //           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path></svg>
+    //           ${data.school ? esc(data.school) : '<span class="no-data" style="color: #b1a79b;">未填寫學校</span>'} 
+    //           ${data.grade ? `<span style="color: #7b6a59; font-weight: 500; margin-left: 2px;">${esc(data.grade)}</span>` : ''}
+    //         </p>
+    //       </div>
+    //     </div>
+
+    //     <!-- 2. 下方內文區 -->
+    //     <div style="padding: 40px; display: flex; flex-direction: column; gap: 32px; background: #fff;">
+
+    //       <!-- 專長區塊 -->
+    //       <section class="view-section">
+    //         <h4 style="margin: 0 0 14px 0; font-size: 15px; color: #a17851; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; border-left: 3px solid #d4b188; padding-left: 10px;">專業技能 / 專長</h4>
+    //         <div class="template-tags" style="display: flex; flex-wrap: wrap; gap: 8px;">
+    //           ${(data.tags || []).length ? data.tags.map(tag => `<span style="background: #fbf6ef; border: 1px solid #efe1cf; color: #5d4937; padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 600;">${esc(tag)}</span>`).join('') : '<p class="no-data" style="color: #b1a79b; margin: 0; font-size: 14px; font-style: italic;">暫無填寫專長技能</p>'}
+    //         </div>
+    //       </section>
+
+    //       <!-- 自我介紹（已移除外層背景方框與內襯距，樣式與經歷摘要完全統一） -->
+    //       <section class="view-section">
+    //         <h4 style="margin: 0 0 14px 0; font-size: 15px; color: #a17851; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; border-left: 3px solid #d4b188; padding-left: 10px;">自我介紹</h4>
+    //         <div style="padding: 4px 12px;">
+    //           ${data.intro ? `<p style="margin:0; color: #332d28; line-height: 1.8; font-size: 15px; white-space: pre-line;">${esc(data.intro)}</p>` : '<p class="no-data" style="color: #b1a79b; margin: 0; font-size: 14px; font-style: italic;">尚未填寫自我介紹...</p>'}
+    //         </div>
+    //       </section>
+
+    //       <!-- 個人經歷 -->
+    //       <section class="view-section">
+    //         <h4 style="margin: 0 0 14px 0; font-size: 15px; color: #a17851; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; border-left: 3px solid #d4b188; padding-left: 10px;">個人經歷摘要</h4>
+    //         <div style="padding: 4px 12px;">
+    //           ${data.experience ? `<p style="margin:0; color: #332d28; line-height: 1.8; font-size: 15px; white-space: pre-line;">${esc(data.experience)}</p>` : '<p class="no-data" style="color: #b1a79b; margin: 0; font-size: 14px; font-style: italic;">尚未填寫相關經歷...</p>'}
+    //         </div>
+    //       </section>
+
+    //     </div>
+    //   ` : '<div class="empty-note" style="padding: 40px; text-align: center; color: #b1a79b;">尚未建立履歷檔案</div>';
+
+    // (function () {
+    //   const expList = JSON.parse(localStorage.getItem('experiences:' + userId) || '[]');
+    //   if (!expList.length) return;
+    //   const block = document.getElementById('expLinkBlock');
+    //   const summary = document.getElementById('expLinkSummary');
+    //   const btn = document.getElementById('expLinkBtn');
+    //   block.style.display = '';
+    //   summary.textContent = `共 ${expList.length} 筆經歷，包含：${expList.slice(0, 3).map(e => e.title || '未命名').join('、')}${expList.length > 3 ? ' 等' : ''}`;
+    //   const base = location.protocol === 'file:' ? 'experience-view.html' : '/experience-view.html';
+    //   btn.href = base + '?userId=' + encodeURIComponent(userId);
+    // })();
+
+    document.getElementById('backBtnResume').addEventListener('click', function () {
+      if (window.history && window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = '/profile.html';
       }
+    });
+  </script>
+</body>
 
-      // 將履歷資料套入全新優化的制式履歷版型
-      document.getElementById('resumeView').innerHTML = profile ? `
-        <!-- 1. 履歷名片式頂部 Header -->
-        <div class="resume-template-head" style="background: linear-gradient(135deg, #fffcf7 0%, #fcf7f0 100%); padding: 36px 40px; display: flex; gap: 28px; align-items: center;">
-          <div class="resume-avatar" style="width: 90px; height: 90px; border-radius: 50%; background: #f3ede4; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex-shrink: 0;">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#a17851" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </div>
-          <div style="flex: 1;">
-            <h3 style="margin: 0 0 8px 0; font-size: 28px; font-weight: 800; color: #3f342c;">
-              ${data.name ? esc(data.name) : '<span class="no-data" style="color: #b1a79b; font-weight: 400; font-style: italic;">未填寫姓名</span>'}
-            </h3>
-            <p style="margin: 0; color: #7b6a59; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 8px;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path></svg>
-              ${data.school ? esc(data.school) : '<span class="no-data" style="color: #b1a79b;">未填寫學校</span>'} 
-              ${data.grade ? `<span style="color: #7b6a59; font-weight: 500; margin-left: 2px;">${esc(data.grade)}</span>` : ''}
-            </p>
-          </div>
-        </div>
-
-        <!-- 2. 下方內文區 -->
-        <div style="padding: 40px; display: flex; flex-direction: column; gap: 32px; background: #fff;">
-          
-          <!-- 專長區塊 -->
-          <section class="view-section">
-            <h4 style="margin: 0 0 14px 0; font-size: 15px; color: #a17851; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; border-left: 3px solid #d4b188; padding-left: 10px;">專業技能 / 專長</h4>
-            <div class="template-tags" style="display: flex; flex-wrap: wrap; gap: 8px;">
-              ${(data.tags || []).length ? data.tags.map(tag => `<span style="background: #fbf6ef; border: 1px solid #efe1cf; color: #5d4937; padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 600;">${esc(tag)}</span>`).join('') : '<p class="no-data" style="color: #b1a79b; margin: 0; font-size: 14px; font-style: italic;">暫無填寫專長技能</p>'}
-            </div>
-          </section>
-
-          <!-- 自我介紹（已移除外層背景方框與內襯距，樣式與經歷摘要完全統一） -->
-          <section class="view-section">
-            <h4 style="margin: 0 0 14px 0; font-size: 15px; color: #a17851; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; border-left: 3px solid #d4b188; padding-left: 10px;">自我介紹</h4>
-            <div style="padding: 4px 12px;">
-              ${data.intro ? `<p style="margin:0; color: #332d28; line-height: 1.8; font-size: 15px; white-space: pre-line;">${esc(data.intro)}</p>` : '<p class="no-data" style="color: #b1a79b; margin: 0; font-size: 14px; font-style: italic;">尚未填寫自我介紹...</p>'}
-            </div>
-          </section>
-
-          <!-- 個人經歷 -->
-          <section class="view-section">
-            <h4 style="margin: 0 0 14px 0; font-size: 15px; color: #a17851; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; border-left: 3px solid #d4b188; padding-left: 10px;">個人經歷摘要</h4>
-            <div style="padding: 4px 12px;">
-              ${data.experience ? `<p style="margin:0; color: #332d28; line-height: 1.8; font-size: 15px; white-space: pre-line;">${esc(data.experience)}</p>` : '<p class="no-data" style="color: #b1a79b; margin: 0; font-size: 14px; font-style: italic;">尚未填寫相關經歷...</p>'}
-            </div>
-          </section>
-
-        </div>
-      ` : '<div class="empty-note" style="padding: 40px; text-align: center; color: #b1a79b;">尚未建立履歷檔案</div>';
-
-      (function () {
-        const expList = JSON.parse(localStorage.getItem('experiences:' + userId) || '[]');
-        if (!expList.length) return;
-        const block = document.getElementById('expLinkBlock');
-        const summary = document.getElementById('expLinkSummary');
-        const btn = document.getElementById('expLinkBtn');
-        block.style.display = '';
-        summary.textContent = `共 ${expList.length} 筆經歷，包含：${expList.slice(0, 3).map(e => e.title || '未命名').join('、')}${expList.length > 3 ? ' 等' : ''}`;
-        const base = location.protocol === 'file:' ? 'experience-view.html' : '/experience-view.html';
-        btn.href = base + '?userId=' + encodeURIComponent(userId);
-      })();
-
-      document.getElementById('backBtnResume').addEventListener('click', function (){
-        if (window.history && window.history.length > 1) {
-          window.history.back();
-        } else {
-          window.location.href = '/profile.html';
-        }
-      });
-    </script>
-  </body>
 </html>
