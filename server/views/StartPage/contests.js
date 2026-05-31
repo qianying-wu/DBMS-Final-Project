@@ -9,13 +9,12 @@ const $ = id => document.getElementById(id);
 let contests = [];
 let currentPreferences = [];
 
-// 檢查 sessionStorage 有沒有進站紀錄
+// 檢查 sessionStorage 有沒有進站紀錄，清掉token 和 userId，確保每次新開分頁都要重新登入一次，避免舊分頁的 token 影響新分頁的使用
 if (!sessionStorage.getItem('hasVisited')) {
   // 如果沒有，代表這是「新開的分頁」或是「剛關掉重開」
   localStorage.removeItem('token');
   localStorage.removeItem('userId');
 
-  // 標記已經進站了，接下來在站內怎麼跳轉，都不會再觸發上面這段
   sessionStorage.setItem('hasVisited', 'true');
   console.log('[AUTH] 檢測到新工作階段，已清空舊的 localStorage');
 }
@@ -41,23 +40,24 @@ function withUserParam(path) {
 function isLoggedIn() {
   const token = localStorage.getItem('token'); // 或是 sessionStorage.getItem('token')
   const id = localStorage.getItem('userId') || new URLSearchParams(location.search).get('userId');
-  
+
   // 👑 關鍵核心：只有當 token 存在，且 id 不是髒資料時，才算真正登入
-  return Boolean(
-    token && 
-    token.trim() !== "" && 
-    id && 
-    id !== 'unknown' && 
-    id !== 'null' && 
-    id !== 'undefined'
-  );
+  return Boolean(token && token.trim() !== "");
+
+  // token &&
+  // token.trim() !== "" &&
+  // id &&
+  // id !== 'unknown' &&
+  // id !== 'null' &&
+  // id !== 'undefined'
+  // );
 }
 
 // 未登入時的彈出提示或跳轉
 function showLoginPrompt() {
   const loginPromptModal = $('loginPromptModal');
   const loginPromptMessage = $('loginPromptMessage');
-  
+
   if (loginPromptMessage) loginPromptMessage.textContent = '此功能需要登入後才能使用。';
   if (loginPromptModal) {
     loginPromptModal.classList.remove('hidden');
@@ -82,17 +82,18 @@ async function loadContests() {
     const res = await fetch('/api/contests/competitions');
     if (!res.ok) throw new Error('無法取得比賽資料');
     const result = await res.json();
-    
+
     contests = result.competitions || result;
     console.log('成功載入比賽資料：', contests);
-    
-    return contests; 
+
+    return contests;
   } catch (err) {
     console.error('讀取比賽失敗:', err);
     contests = [];
     return [];
   }
 }
+
 
 // 依照比賽名稱與說明做簡單分類
 function inferCategory(contest) {
@@ -215,7 +216,7 @@ function renderContests(dataList = []) {
     // 💡 修正原本 com_date 為 null 時可能引發的 .includes 報錯問題
     const rawDate = contest.com_date || '';
     const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
-                        
+
     return `
       <article class="contest-card" data-id="${contest.com_id}">
         <div class="card-tag">${categoryLabel(category)}</div>
@@ -235,13 +236,13 @@ function renderContests(dataList = []) {
 function applyFilters() {
   const q = $('contestSearch')?.value.trim().toLowerCase() || '';
   const category = $('categoryFilter')?.value || 'all';
-  
+
   const filtered = contests.filter(contest => {
     const matchedText = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase().includes(q);
     const matchedCategory = category === 'all' || inferCategory(contest) === category;
     return matchedText && matchedCategory;
   });
-  
+
   renderContests(filtered);
 }
 
@@ -253,7 +254,7 @@ function applyFilters() {
 function bindNotify() {
   const btn = $('notifyBtn');
   if (!btn) return;
-  
+
   btn.addEventListener('click', (e) => {
     if (!isLoggedIn()) { showLoginPrompt(); return; }
     if (window.AppNotifications && typeof window.AppNotifications.bind === 'function') {
@@ -269,7 +270,7 @@ function bindNotify() {
 function bindAvatar() {
   const btn = $('avatarBtn');
   if (!btn) return;
-  
+
   btn.addEventListener('click', (e) => {
     if (!isLoggedIn()) { showLoginPrompt(); return; }
     if (window.AccountMenu && typeof window.AccountMenu.open === 'function') {
