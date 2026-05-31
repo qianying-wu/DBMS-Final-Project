@@ -318,25 +318,25 @@ export const getTeamMember = async (req, res) => {
     if (!teamId) return res.status(400).json({ message: '缺少 teamId' });
 
     // 1. 撈取隊伍基本資料
-    const [teamRows] = await db.execute(
-      `SELECT * FROM teams WHERE team_id = ?`, 
+    const [teamRows] = await pool.execute(
+      `SELECT * FROM Team WHERE team_id = ?`, 
       [teamId]
     );
     if (teamRows.length === 0) return res.status(404).json({ message: '找不到該隊伍' });
 
     // 2. 👑 關鍵：撈取該隊伍的所有 Membership 成員，並 JOIN 填入使用者與履歷名稱
     // 這樣前端過濾 mem_status === '申請中' 才有資料可用！
-    const [memberRows] = await db.execute(`
+    const [memberRows] = await pool.execute(`
       SELECT 
         m.user_id,
         m.role,
         m.mem_status,
         m.resume_id,
-        u.user_name,
-        p.name AS resume_name
-      FROM membership m
-      LEFT JOIN users u ON m.user_id = u.user_id
-      LEFT JOIN profiles p ON m.resume_id = p.id
+        u.userName,
+        p.resume_name
+      FROM Membership m
+      LEFT JOIN user u ON m.user_id = u.user_id
+      LEFT JOIN Resumes p ON m.resume_id = p.resume_id
       WHERE m.team_id = ?
     `, [teamId]);
 
@@ -363,8 +363,8 @@ export const reviewApplication = async (req, res) => {
 
     // 🌟 動作一：審核通過
     if (action === 'pass') {
-      await db.execute(
-        `UPDATE membership SET mem_status = '通過' WHERE team_id = ? AND user_id = ?`,
+      await pool.execute(
+        `UPDATE Membership SET mem_status = '通過' WHERE team_id = ? AND user_id = ?`,
         [team_id, user_id]
       );
       
@@ -376,8 +376,8 @@ export const reviewApplication = async (req, res) => {
 
     // 🌟 動作二：拒絕申請（從資料庫直接拔掉）
     if (action === 'reject') {
-      await db.execute(
-        `DELETE FROM membership WHERE team_id = ? AND user_id = ? AND mem_status = '申請中'`,
+      await pool.execute(
+        `DELETE FROM Membership WHERE team_id = ? AND user_id = ? AND mem_status = '申請中'`,
         [team_id, user_id]
       );
       return res.status(200).json({ message: '已成功拒絕並刪除申請紀錄' });
