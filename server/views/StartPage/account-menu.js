@@ -2,14 +2,11 @@
 
   const $ = id => document.getElementById(id);
 
-  // 將目前網址上的 userId 附加到導頁連結。
   function withUser(path){
-    // 有些頁面回首頁時不一定會把 userId 放在網址上，所以要同步支援 localStorage。
     const userId = new URLSearchParams(location.search).get('userId') || localStorage.getItem('userId');
     return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
   }
 
-  // 判斷是否登入：登入後 token/userId 主要存在 localStorage，網址參數只當輔助來源。
   function isLoggedIn(){
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId') || new URLSearchParams(location.search).get('userId');
@@ -28,7 +25,6 @@
     const loginPromptMessage = document.getElementById('loginPromptMessage');
     if (loginPromptMessage) loginPromptMessage.textContent = '這個功能需要先登入，是否前往登入頁？';
     if (loginPromptModal) {
-      // show modal
       loginPromptModal.classList.remove('hidden');
       document.body.classList.add('modal-open');
 
@@ -51,16 +47,13 @@
       document.getElementById('loginPromptLogin')?.addEventListener('click', onLogin);
       return;
     }
-    // fallback: go directly to auth page if the shared modal is missing
     location.href = '/auth.html';
   }
 
-  // 關閉已存在的帳號選單。
   function closeMenu(){
     document.getElementById('accountMenu')?.remove();
   }
 
-  // 在頭像按鈕下方建立帳號選單。
   function openMenu(button){
     closeMenu();
     const menu = document.createElement('div');
@@ -78,30 +71,81 @@
     menu.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
   }
 
+  // 🌟 全站共用的漂亮確認彈窗
+  function showLogoutConfirm(onConfirm) {
+    const existingModal = document.getElementById('customConfirmModal');
+    if (existingModal) existingModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'customConfirmModal';
+    modal.className = 'modal';
+    modal.style.zIndex = '9999';
+
+    modal.innerHTML = `
+      <div class="modal-card" style="text-align: center; min-width: 320px; padding: 36px 24px;">
+        <div style="font-size: 56px; margin-bottom: 12px; line-height: 1;">👋</div>
+        <h3 style="margin: 0 0 12px 0; color: #D9534F; font-size: 22px;">準備離開了嗎？</h3>
+        <p style="color: #5C4F42; margin: 0 0 24px 0; font-size: 15px; line-height: 1.6;">確定要登出你的帳號嗎？</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button id="cancelLogoutBtn" style="flex: 1; border-radius: 99px; font-size: 15px; background: #F2EEE9; color: #5C4F42; border: none; padding: 12px 0; cursor: pointer; font-weight: 600;">取消</button>
+          <button id="okLogoutBtn" style="flex: 1; border-radius: 99px; font-size: 15px; background: #D9534F; border: none; color: #fff; padding: 12px 0; cursor: pointer; font-weight: 600;">確定登出</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    document.getElementById('cancelLogoutBtn').addEventListener('click', () => modal.remove());
+    document.getElementById('okLogoutBtn').addEventListener('click', () => {
+      modal.remove();
+      onConfirm(); 
+    });
+  }
+
+  // 🌟 新增：登出成功後的自動導航彈窗
+  function showLogoutSuccess(onComplete) {
+    const modal = document.createElement('div');
+    modal.id = 'customSuccessModal';
+    modal.className = 'modal';
+    modal.style.zIndex = '9999';
+
+    modal.innerHTML = `
+      <div class="modal-card" style="text-align: center; min-width: 320px; padding: 36px 24px;">
+        <div style="font-size: 56px; margin-bottom: 12px; line-height: 1;">✨</div>
+        <h3 style="margin: 0 0 12px 0; color: #D48C5B; font-size: 22px;">您已成功登出</h3>
+        <p style="color: #5C4F42; margin: 0; font-size: 15px; line-height: 1.6;">正在為您導向首頁，請稍候...</p>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 設定 2 秒後自動執行跳轉動作
+    setTimeout(() => {
+      modal.remove();
+      onComplete();
+    }, 2000);
+  }
+
   // 🚀 定義全域 logout 函式
   window.logout = function() {
-    // 1. 彈出確認視窗（選配，可以增加使用者體驗）
-    if (!confirm('確定要登出嗎？')) return;
+    showLogoutConfirm(() => {
+      // 1. 清除登入狀態
+      localStorage.removeItem('token');
+      localStorage.removeItem('userId'); 
 
-    // 2. 清除登入狀態
-    localStorage.removeItem('token');
-    localStorage.removeItem('userId'); // 檢查你們存的是什麼 key，如果不確定就用 localStorage.clear();
-
-    // 🚀 新增：把畫面上所有的紅色愛心變回灰色/空心
-    // 假設你的愛心標籤是 <i class="fav-btn active"> 或 <div class="fav-btn red">
-    const activeHearts = document.querySelectorAll('.fav-btn.active, .fav-btn.red');
-    activeHearts.forEach(heart => {
-        heart.classList.remove('active', 'red');
+      // 2. 把畫面上所有的紅色愛心變回灰色/空心
+      const activeHearts = document.querySelectorAll('.fav-btn.active, .fav-btn.red');
+      activeHearts.forEach(heart => {
+          heart.classList.remove('active', 'red');
+      });
+      
+      // 3. 呼叫成功彈窗，並在 2 秒後自動跳轉
+      showLogoutSuccess(() => {
+        window.location.href = 'contests.html'; 
+      });
     });
-    
-    // 3. 提示並跳轉
-    alert('您已成功登出');
-    
-    // 4. 強制跳轉回首頁，且不帶任何使用者參數 (解決跳轉問題)
-    window.location.href = 'contests.html'; 
   };
 
-  // 動態注入帳號選單樣式，避免每個頁面重複寫 CSS。
   function injectStyle(){
     if (document.getElementById('accountMenuStyle')) return;
     const style = document.createElement('style');
@@ -115,7 +159,6 @@
     document.head.appendChild(style);
   }
 
-  // 綁定頭像按鈕與選單關閉事件。
   function bind(){
     injectStyle();
 
@@ -138,7 +181,6 @@
     window.addEventListener('resize', closeMenu);
   }
 
-  // DOM 完成後再綁定，確保頁面元素已存在。
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
   else bind();
 })();
