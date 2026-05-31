@@ -1,317 +1,357 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>帳號資訊</title>
-    <link rel="stylesheet" href="/profile.css">
-    <style>
-      /* 帳號資訊主流現代化樣式 */
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>帳號資訊</title>
+  <link rel="stylesheet" href="/profile.css">
+  <style>
+    /* 帳號資訊主流現代化樣式 */
+    .account-container {
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 20px;
+      display: flex;
+      gap: 32px;
+    }
+
+    .account-sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      background: #fff;
+      border: 1px solid #eadfd2;
+      border-radius: 20px;
+      padding: 32px 24px;
+      text-align: center;
+      height: fit-content;
+      box-shadow: 0 4px 12px rgba(95, 71, 52, 0.03);
+    }
+
+    .large-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #fdfbf7 0%, #f5ece1 100%);
+      border: 3px solid #fff;
+      box-shadow: 0 8px 24px rgba(107, 79, 58, 0.12);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      color: #6b4f3a;
+    }
+
+    .sidebar-name {
+      font-size: 20px;
+      font-weight: 800;
+      color: #3f342c;
+      margin: 0 0 4px 0;
+    }
+
+    .sidebar-email {
+      font-size: 13px;
+      color: #8c7b6c;
+      margin: 0 0 16px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-badge {
+      display: inline-block;
+      background: #f4ebe1;
+      color: #6b4f3a;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    .account-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .settings-card {
+      background: #fff;
+      border: 1px solid #eadfd2;
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 4px 12px rgba(95, 71, 52, 0.03);
+    }
+
+    .card-title {
+      margin: 0 0 20px 0;
+      font-size: 18px;
+      color: #4f3827;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* 讓帳號欄位單獨佔滿整排，使底下的密碼能對齊在同一橫排 */
+    .form-group:first-child {
+      grid-column: span 2;
+    }
+
+    .form-group label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #5f4734;
+    }
+
+    .form-group input {
+      height: 46px;
+      padding: 0 16px;
+      border: 1px solid #dfcfbd;
+      border-radius: 10px;
+      background: #faf8f5;
+      color: #333;
+      font-size: 15px;
+      transition: all 0.2s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #ba9675;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(186, 150, 117, 0.15);
+    }
+
+    .form-group input:disabled {
+      background: #eee;
+      color: #888;
+      cursor: not-allowed;
+    }
+
+    .preference-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .preference-chip {
+      border: 1px solid #dfcfbd;
+      background: #fff;
+      color: #5f4734;
+      border-radius: 20px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .preference-chip:hover {
+      background: #faf6f0;
+      border-color: #ba9675;
+    }
+
+    .preference-chip.active {
+      background: #6b4f3a;
+      color: #fff;
+      border-color: #6b4f3a;
+      font-weight: 600;
+      box-shadow: 0 4px 10px rgba(107, 79, 58, 0.2);
+    }
+
+    .received-review-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .received-review-card {
+      border: 1px solid #eadfd2;
+      background: #fffdfa;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .received-review-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      color: #4f3827;
+      font-weight: 800;
+    }
+
+    .received-review-date {
+      color: #9b8065;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .received-review-stars {
+      color: #d9a95f;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+
+    .received-review-meta {
+      color: #9b8065;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .received-review-text {
+      color: #5f4734;
+      line-height: 1.6;
+      margin: 0;
+      white-space: pre-line;
+    }
+
+    .received-review-empty {
+      color: #8c7b6c;
+      font-size: 14px;
+      padding: 10px 0;
+    }
+
+    .btn-container {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .preference-status {
+      font-size: 13px;
+      color: #7b6a59;
+      margin-left: 12px;
+    }
+
+    @media (max-width: 768px) {
       .account-container {
-        max-width: 960px;
-        margin: 40px auto;
-        padding: 0 20px;
-        display: flex;
-        gap: 32px;
-      }
-      .account-sidebar {
-        width: 280px;
-        flex-shrink: 0;
-        background: #fff;
-        border: 1px solid #eadfd2;
-        border-radius: 20px;
-        padding: 32px 24px;
-        text-align: center;
-        height: fit-content;
-        box-shadow: 0 4px 12px rgba(95, 71, 52, 0.03);
-      }
-      .large-avatar {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #fdfbf7 0%, #f5ece1 100%);
-        border: 3px solid #fff;
-        box-shadow: 0 8px 24px rgba(107, 79, 58, 0.12);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 16px;
-        color: #6b4f3a;
-      }
-      .sidebar-name { font-size: 20px; font-weight: 800; color: #3f342c; margin: 0 0 4px 0; }
-      .sidebar-email { font-size: 13px; color: #8c7b6c; margin: 0 0 16px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .status-badge { display: inline-block; background: #f4ebe1; color: #6b4f3a; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
-
-      .account-main { flex: 1; display: flex; flex-direction: column; gap: 24px; }
-      .settings-card { background: #fff; border: 1px solid #eadfd2; border-radius: 20px; padding: 32px; box-shadow: 0 4px 12px rgba(95, 71, 52, 0.03); }
-      .card-title { margin: 0 0 20px 0; font-size: 18px; color: #4f3827; font-weight: 800; display: flex; align-items: center; gap: 8px; }
-      
-      .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-      .form-group { display: flex; flex-direction: column; gap: 8px; }
-      .form-group label { font-size: 14px; font-weight: 700; color: #5f4734; }
-      .form-group input { height: 46px; padding: 0 16px; border: 1px solid #dfcfbd; border-radius: 10px; background: #faf8f5; color: #333; font-size: 15px; transition: all 0.2s ease; }
-      .form-group input:focus { outline: none; border-color: #ba9675; background: #fff; box-shadow: 0 0 0 3px rgba(186, 150, 117, 0.15); }
-      .form-group input:disabled { background: #eee; color: #888; cursor: not-allowed; }
-
-      .preference-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-      .preference-chip { border: 1px solid #dfcfbd; background: #fff; color: #5f4734; border-radius: 20px; padding: 8px 16px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s ease; }
-      .preference-chip:hover { background: #faf6f0; border-color: #ba9675; }
-      .preference-chip.active { background: #6b4f3a; color: #fff; border-color: #6b4f3a; font-weight: 600; box-shadow: 0 4px 10px rgba(107, 79, 58, 0.2); }
-
-      .received-review-list { display: flex; flex-direction: column; gap: 14px; }
-      .received-review-card { border: 1px solid #eadfd2; background: #fffdfa; border-radius: 12px; padding: 16px; }
-      .received-review-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: #4f3827; font-weight: 800; }
-      .received-review-date { color: #9b8065; font-size: 12px; font-weight: 700; }
-      .received-review-stars { color: #d9a95f; letter-spacing: 2px; margin-bottom: 6px; }
-      .received-review-meta { color: #9b8065; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
-      .received-review-text { color: #5f4734; line-height: 1.6; margin: 0; white-space: pre-line; }
-      .received-review-empty { color: #8c7b6c; font-size: 14px; padding: 10px 0; }
-
-      .btn-container { display: flex; justify-content: flex-end; align-items: center; margin-top: 12px; }
-      .preference-status { font-size: 13px; color: #7b6a59; margin-left: 12px; }
-      .account-save-btn {
-        min-width: 180px;
-        height: 56px !important;
-        line-height: 56px !important;
-        padding: 0 34px !important;
-        border: 0 !important;
-        border-radius: 22px !important;
-        background: linear-gradient(90deg, #d8b789, #c99d69) !important;
-        color: #ffffff !important;
-        font-size: 18px;
-        font-weight: 900;
-        letter-spacing: 0;
-        box-shadow: 0 14px 26px rgba(154, 111, 66, 0.18);
-      }
-      .account-save-btn:hover {
-        filter: brightness(1.03);
-        transform: translateY(-1px);
-      }
-
-      @media (max-width: 768px) {
-        .account-container { flex-direction: column; }
-        .account-sidebar { width: 100%; }
-        .form-grid { grid-template-columns: 1fr; }
-      }
-
-      /* 互動式帳號中心：預設置中，點選功能後入口區向左收，右側展開操作頁。 */
-      .account-container {
-        min-height: calc(100dvh - 120px);
-        max-width: 1120px;
-        display: grid;
-        grid-template-columns: minmax(320px, 420px) minmax(0, 0fr);
-        justify-content: center;
-        align-items: center;
-        transition: grid-template-columns 0.35s ease, max-width 0.35s ease;
-      }
-
-      .account-container.panel-open {
-        grid-template-columns: 300px minmax(0, 760px);
-        align-items: start;
+        flex-direction: column;
       }
 
       .account-sidebar {
-        width: auto;
-        transition: transform 0.35s ease, border-radius 0.25s ease;
-      }
-
-      .account-main {
-        min-width: 0;
-        opacity: 0;
-        transform: translateX(24px);
-        pointer-events: none;
-        overflow: hidden;
-        transition: opacity 0.25s ease, transform 0.35s ease;
-      }
-
-      .account-container.panel-open .account-main {
-        opacity: 1;
-        transform: translateX(0);
-        pointer-events: auto;
-      }
-
-      .feature-menu {
-        display: grid;
-        gap: 12px;
-        margin-top: 26px;
-        text-align: left;
-      }
-
-      .feature-tile {
         width: 100%;
-        border: 1px solid #eadfd2;
-        background: #fffdfa;
-        border-radius: 14px;
-        padding: 16px;
-        display: grid;
-        grid-template-columns: 42px 1fr;
-        gap: 12px;
-        align-items: center;
-        color: #4f3827;
-        cursor: pointer;
-        transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
       }
 
-      .feature-tile:hover,
-      .feature-tile.active {
-        transform: translateY(-1px);
-        border-color: #caa77a;
-        background: #fff8ec;
-        box-shadow: 0 10px 22px rgba(107, 79, 58, 0.08);
+      .form-grid {
+        grid-template-columns: 1fr;
       }
+    }
+  </style>
+</head>
 
-      .feature-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
-        background: #f2e5d2;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: #7a5c40;
-      }
-
-      .feature-icon svg { width: 21px; height: 21px; }
-      .feature-title { display: block; font-size: 15px; font-weight: 900; }
-      .feature-desc { display: block; margin-top: 3px; font-size: 12px; color: #8c7b6c; line-height: 1.4; }
-
-      .settings-card[hidden] { display: none; }
-      .settings-card { animation: panelFade 0.22s ease; }
-
-      @keyframes panelFade {
-        from { opacity: 0; transform: translateY(8px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-
-      @media (max-width: 768px) {
-        .account-container,
-        .account-container.panel-open {
-          grid-template-columns: 1fr;
-          min-height: auto;
-        }
-        .account-main {
-          opacity: 1;
-          transform: none;
-          pointer-events: auto;
-          overflow: visible;
-        }
-        .account-container:not(.panel-open) .account-main { display: none; }
-      }
-    </style>
-  </head>
-  <body>
-    <header class="topbar">
-      <a class="homeLink" href="/contests.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
-      <div class="actions">
-        <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-        </button>
-      </div>
-    </header>
-
-    <div class="account-container">
-      <aside class="account-sidebar">
-        <div class="large-avatar">
-          <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-        </div>
-        <h2 class="sidebar-name" id="sideName">載入中...</h2>
-        <p class="sidebar-email" id="sideEmail">loading...</p>
-        <span class="status-badge">已登入會員</span>
-        <div class="feature-menu" aria-label="帳號功能">
-          <button class="feature-tile" type="button" data-account-panel="security">
-            <span class="feature-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            </span>
-            <span>
-              <span class="feature-title">帳號與安全設定</span>
-              <span class="feature-desc">暱稱、信箱與密碼</span>
-            </span>
-          </button>
-          <button class="feature-tile" type="button" data-account-panel="preferences">
-            <span class="feature-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-            </span>
-            <span>
-              <span class="feature-title">個人化競賽偏好設定</span>
-              <span class="feature-desc">推薦比賽依據</span>
-            </span>
-          </button>
-          <button class="feature-tile" type="button" data-account-panel="reviews">
-            <span class="feature-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"></path></svg>
-            </span>
-            <span>
-              <span class="feature-title">別人對我的評價</span>
-              <span class="feature-desc">隊友留下的回饋</span>
-            </span>
-          </button>
-        </div>
-      </aside>
-
-      <main class="account-main">
-        <section class="settings-card" data-panel-content="security" hidden>
-          <h3 class="card-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            帳號與安全設定
-          </h3>
-          <form id="profileForm" onsubmit="saveAccountSettings(event)">
-            <div class="form-grid">
-              <div class="form-group">
-                <label for="username">主要帳號 / 信箱 (不可更改)</label>
-                <input type="text" id="username" disabled value="正在讀取資料庫...">
-              </div>
-              <div class="form-group">
-                <label for="nickname">顯示名稱 (暱稱)</label>
-                <input type="text" id="nickname" required placeholder="請輸入欲顯示的暱稱">
-              </div>
-              <div class="form-group">
-                <label for="newPassword">變更密碼 (若不修改請留空)</label>
-                <input type="password" id="newPassword" placeholder="填寫新密碼" minlength="6">
-              </div>
-              <div class="form-group">
-                <label for="confirmPassword">確認新密碼</label>
-                <input type="password" id="confirmPassword" placeholder="再次輸入新密碼">
-              </div>
-            </div>
-            <div class="btn-container" style="margin-top: 24px;">
-              <span id="accountStatus" class="preference-status" style="margin-right: auto; margin-left: 0;"></span>
-              <button class="btn primary account-save-btn" type="submit">儲存修改</button>
-            </div>
-          </form>
-        </section>
-
-        <section class="settings-card" data-panel-content="preferences" hidden>
-          <h3 class="card-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-            個人化競賽偏好設定
-          </h3>
-          <p style="margin: 0; color: #7b6a59; font-size: 14px; line-height: 1.5;">選擇您感興趣的競賽類型，系統將根據您的喜好進行個人化推薦。</p>
-          <div class="preference-tags" id="preferenceTags"></div>
-          <div class="btn-container" style="border-top: 1px solid #f2ece5; padding-top: 20px; margin-top: 20px;">
-            <button class="btn primary account-save-btn" id="savePreferences">儲存偏好設定</button>
-            <span id="preferenceStatus" class="preference-status"></span>
-          </div>
-        </section>
-
-        <section class="settings-card" data-panel-content="reviews" hidden>
-          <h3 class="card-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"></path></svg>
-            別人對我的評價
-          </h3>
-          <div id="receivedReviewList" class="received-review-list">
-            <div class="received-review-empty">目前尚未收到隊友評價。</div>
-          </div>
-        </section>
-      </main>
+<body>
+  <header class="topbar">
+    <a class="homeLink" href="/contests.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
+    <div class="actions">
+      <button id="avatarBtn" class="avatar-btn" aria-label="個人檔案">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg>
+      </button>
     </div>
+  </header>
 
-    <script src="/account-menu.js"></script>
-    <script src="/account-info.js"></script>
-  </body>
+  <div class="account-container">
+    <aside class="account-sidebar">
+      <div class="large-avatar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg>
+      </div>
+      <h2 class="sidebar-name" id="sideName">載入中...</h2>
+      <!-- <p class="sidebar-email" id="sideEmail">loading...</p> -->
+      <span class="status-badge">已登入會員</span>
+    </aside>
+
+    <main class="account-main">
+      <section class="settings-card">
+        <h3 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          帳號與安全設定
+        </h3>
+        <form id="profileForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="username">帳號(不可更改)</label>
+              <input type="text" id="username" disabled value="正在讀取資料庫...">
+            </div>
+            <!-- <div class="form-group">
+              <label for="nickname">顯示名稱 (暱稱)</label>
+              <input type="text" id="nickname" required placeholder="請輸入欲顯示的暱稱">
+            </div> -->
+            <div class="form-group">
+              <label for="newPassword">變更密碼 (若不修改請留空)</label>
+              <input type="password" id="newPassword" placeholder="填寫新密碼" minlength="6">
+            </div>
+            <div class="form-group">
+              <label for="confirmPassword">確認新密碼</label>
+              <input type="password" id="confirmPassword" placeholder="再次輸入新密碼">
+            </div>
+          </div>
+          <div class="btn-container" style="margin-top: 24px;">
+            <span id="accountStatus" class="preference-status" style="margin-right: auto; margin-left: 0;"></span>
+            <button class="btn primary" type="submit"
+              style="padding: 0 24px; height: 44px; line-height: 44px;">儲存修改</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="settings-card">
+        <h3 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z">
+            </path>
+          </svg>
+          個人化競賽偏好設定
+        </h3>
+        <p style="margin: 0; color: #7b6a59; font-size: 14px; line-height: 1.5;">選擇您感興趣的競賽類型，系統將根據您的喜好進行個人化推薦。</p>
+        <div class="preference-tags" id="preferenceTags"></div>
+        <div class="btn-container" style="border-top: 1px solid #f2ece5; padding-top: 20px; margin-top: 20px;">
+          <button class="btn outline" id="savePreferences"
+            style="padding: 0 20px; height: 42px; line-height: 42px;">儲存偏好設定</button>
+          <span id="preferenceStatus" class="preference-status"></span>
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <h3 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 6 9 17l-5-5"></path>
+          </svg>
+          別人對我的評價
+        </h3>
+        <div id="receivedReviewList" class="received-review-list">
+          <div class="received-review-empty">目前尚未收到隊友評價。</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/account-menu.js"></script>
+  <script src="/account-info.js"></script>
+</body>
+
 </html>

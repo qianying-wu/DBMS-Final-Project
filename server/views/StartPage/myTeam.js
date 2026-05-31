@@ -6,8 +6,8 @@ import * as tabFavContests from './modules/tabFavContests.js';
 import * as tabHistory from './modules/tabHistory.js';
 
 const $ = id => document.getElementById(id);
-let allContestsData = []; 
-let activeTab = 'my-teams'; 
+let allContestsData = [];
+let activeTab = 'my-teams';
 
 const tabMeta = {
   'my-teams': { title: '我的隊伍', icon: `<svg viewBox="0 0 24 24"><path d="M16 20v-1.5c0-2.2-1.8-4-4-4H7c-2.2 0-4 1.8-4 4V20"/><circle cx="9.5" cy="7.5" r="3.5"/><path d="M21 20v-1.2c0-1.8-1.2-3.3-2.8-3.8"/><path d="M16.5 4.4a3.4 3.4 0 0 1 0 6.2"/></svg>` },
