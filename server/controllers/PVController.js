@@ -59,7 +59,12 @@ export const saveResume = async (req, res) => {
         }
         // --- 步驟 2：清除舊的標籤連線 ---
         // 不管是新是舊，先把這份履歷在 Resume_tags 裡的舊資料清空，等一下重新建立，最乾淨！
+
+        console.log('=== 準備寫入標籤關聯 ===');
+        console.log('當前履歷 ID (currentResumeId):', currentResumeId);
+        console.log('前端傳來的標籤陣列 (tags):', tags);
         await connection.query('DELETE FROM Resume_tags WHERE resume_id = ?', [currentResumeId]);
+
         // --- 步驟 3 & 4：處理專長標籤 (多對多處理) ---
         if (tags && tags.length > 0) {
             for (let tagName of tags) {
@@ -170,8 +175,8 @@ export const deleteResume = async (req, res) => {
 // 獲取特定使用者的最新履歷 (給評價頁面或別人看的)
 export const getTargetResume = async (req, res) => {
     // 這個 API 是要看別人的，所以從網址列抓取要查詢的 userId，而不是從 token 抓
-    const targetUserId = req.query.userId; 
-    
+    const targetUserId = req.query.userId;
+
     if (!targetUserId) {
         return res.status(400).json({ ok: false, message: '必須提供 userId' });
     }
@@ -205,7 +210,7 @@ export const getTargetResume = async (req, res) => {
         }
 
         const row = rows[0];
-        
+
         // 把格式整理得跟之前前端 extractResume 期待的形狀一樣
         const formattedResume = {
             id: row.resume_id,

@@ -203,6 +203,11 @@ import * as Data from './team-data.js';
       const activeId = getActiveProfileId();
       const ps = await loadProfiles();
       const profile = ps.find(x => String(x.id) === String(activeId)) || ps[0] || null;
+
+      // 🚀【防禦修正】如果 data 裡面沒 tags，就去外層把 tags 借過來用！
+      if (profile && !profile.data.tags && profile.tags) {
+        profile.data.tags = profile.tags;
+      }
       const data = profile ? profile.data : {}; // 現在DB中的東西
 
       if (profile && !activeId) setActiveProfileId(profile.id);
@@ -214,6 +219,7 @@ import * as Data from './team-data.js';
       $('intro').value = data.intro || '';
       const tags = data.tags || []; renderTags(tags);
       window._tags = tags;
+      renderTags(window._tags);
     }
 
     // ================== ⚡ 事件綁定與控制邏輯 ==========================    
