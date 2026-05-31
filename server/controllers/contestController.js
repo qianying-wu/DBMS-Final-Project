@@ -17,56 +17,57 @@ export const getAllContests = async (req, res) => {
 
 // 收藏 / 取消收藏
 export const toggleFavorite = async (req, res) => {
-    const { userId, teamId } = req.body;
+    // 💡 調整：將 teamId 改為 comId
+    const { userId, comId } = req.body;
 
     // 1. 基本安全檢查：確保前端有把這兩個重要的 ID 傳過來
-    if (!userId || !teamId) {
-        return res.status(400).json({ success: false, message: '缺少必要參數 userId 或 teamId' });
+    if (!userId || !comId) {
+        return res.status(400).json({ success: false, message: '缺少必要參數 userId 或 comId' });
     }
 
     try {
-        // 2. 🚀 精準查詢：[favRows] 加括號解構，確保拿到的是資料陣列
+        // 2. 🚀 精準查詢：對準新表 user_favorites_com 與 com_id
         const [favRows] = await pool.execute(
-            'SELECT * FROM user_favorites_team WHERE user_id = ? AND team_id = ?',
-            [Number(userId), Number(teamId)]
+            'SELECT * FROM user_favorites_com WHERE user_id = ? AND com_id = ?',
+            [Number(userId), Number(comId)]
         );
 
-        console.log(`[收藏除錯] 查詢 user_id: ${userId}, team_id: ${teamId} 找到的資料筆數: ${favRows.length}`);
+        console.log(`[比賽收藏除錯] 查詢 user_id: ${userId}, com_id: ${comId} 找到的資料筆數: ${favRows.length}`);
 
         // 3. 核心偵測機制
         if (favRows && favRows.length > 0) {
             // 🎯 後端明確偵測到：這筆收藏「已經存在」了 -> 代表使用者現在點擊是要「取消收藏」
-            console.log('👉 狀態：已存在，執行 [取消收藏] DELETE 動作');
+            console.log('👉 狀態：已存在，執行 [取消比賽收藏] DELETE 動作');
 
             await pool.execute(
-                'DELETE FROM user_favorites_team WHERE user_id = ? AND team_id = ?',
-                [Number(userId), Number(teamId)]
+                'DELETE FROM user_favorites_com WHERE user_id = ? AND com_id = ?',
+                [Number(userId), Number(comId)]
             );
 
             return res.status(200).json({
                 success: true,
                 action: 'unfavorite',
-                message: '已成功從資料庫取消收藏！'
+                message: '已成功從資料庫取消收藏該比賽！'
             });
 
         } else {
             // 🎯 後端明確偵測到：這筆收藏「不存在」 -> 代表使用者現在點擊是要「新增收藏」
-            console.log('👉 狀態：不存在，執行 [新增收藏] INSERT 動作');
+            console.log('👉 狀態：不存在，執行 [新增比賽收藏] INSERT 動作');
 
             await pool.execute(
-                'INSERT INTO user_favorites_team (user_id, team_id) VALUES (?, ?)',
-                [Number(userId), Number(teamId)]
+                'INSERT INTO user_favorites_com (user_id, com_id) VALUES (?, ?)',
+                [Number(userId), Number(comId)]
             );
 
             return res.status(201).json({
                 success: true,
                 action: 'favorite',
-                message: '已成功寫入資料庫收藏！'
+                message: '已成功將比賽寫入資料庫收藏！'
             });
         }
 
     } catch (error) {
-        console.error('❌ 後端偵測/切換收藏時發生 SQL 錯誤:', error);
+        console.error('❌ 後端偵測/切換比賽收藏時發生 SQL 錯誤:', error);
         res.status(500).json({ success: false, message: '伺服器內部錯誤，請檢查資料庫欄位' });
     }
 };
