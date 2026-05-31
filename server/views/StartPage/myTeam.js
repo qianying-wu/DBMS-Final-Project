@@ -9,6 +9,15 @@ let activeTab = 'my-teams'; // 預設當前分頁
 
 // 🚀 四大分頁 Meta 資訊設定（包含右側主畫面大標題與動態 SVG 圖標）
 const tabMeta = {
+    'search-talent': {
+    title: '探索人才與隊伍',
+    icon: `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        <path d="M11 8a3 3 0 0 0-3 3"></path>
+      </svg>`
+  },
   'my-teams': {
     title: '我的隊伍',
     icon: `
@@ -45,6 +54,21 @@ const tabMeta = {
   }
 };
 
+// 未來搜尋出來後的卡片範例
+function renderTalentCard(item) {
+    return `
+      <div class="team-card-style"> 
+        <h3>${item.name}</h3>
+        <hr>
+        <p>技術專長：${item.skills}</p>
+        <p>目前狀態：${item.status}</p>
+        <button class="btn-search-style" style="width: 100%; margin-top: 15px;">
+            查看詳情
+        </button>
+      </div>
+    `;
+}
+
 /**
  * 👑 1. 初始化管理控制台的所有事件監聽
  */
@@ -69,6 +93,114 @@ export function initManageDashboard() {
   });
 }
 
+// 🚀 處理搜尋動作
+/*window.handleTalentSearchAction = async function() {
+    const input = document.getElementById('talentSearchInput');
+    const resultArea = document.getElementById('talentSearchResults');
+    const query = input.value.trim();
+
+    if (!query) {
+        alert("請輸入關鍵字再進行搜尋喔！");
+        return;
+    }
+
+    resultArea.innerHTML = '<div class="loading-placeholder">正在搜尋媒合人才...</div>';
+
+    try {
+        // 這裡未來對接你的搜尋 API
+        // const results = await fetchTalentSearch(query);
+        // renderTalentResults(results);
+        
+        // 暫時模擬沒找到資料的樣子
+        setTimeout(() => {
+// 在 handleTalentSearchAction 裡修改顯示邏輯：
+const statusMsg = document.getElementById('searchStatusMsg');
+if (noResult) {
+    statusMsg.innerText = `找不到與「${query}」相關的人才或隊伍，換個關鍵字試試看？`;
+}        }, 800);
+    } catch (err) {
+        resultArea.innerHTML = '<div class="empty-text">搜尋失敗，請稍後再試。</div>';
+    }
+
+    // 1. 清空之前的結果，並顯示「正在搜尋」
+    if (resultGrid) resultGrid.innerHTML = ''; 
+    statusMsg.innerText = '正在搜尋媒合人才...';
+    statusMsg.style.display = 'block'; // 確保它是顯示的
+
+    try {
+        // --- 這裡預留未來 API 對接 ---
+        // const results = await fetchTalentSearch(query); 
+        
+        // 2. 模擬延遲判斷 (2秒後執行)
+        setTimeout(() => {
+            // 目前先模擬搜尋不到的情況
+            const hasResults = false; 
+
+            if (!hasResults) {
+                statusMsg.innerText = `找不到與「${query}」相關的人才或隊伍，換個關鍵字試試看？`;
+            } else {
+                // 如果有結果，就隱藏提示字並渲染卡片
+                statusMsg.innerText = '';
+                // renderTalentResults(results); 
+            }
+        }, 2000); // 🚀 設定 2 秒後跳出提示
+
+    } catch (err) {
+        console.error("搜尋發生錯誤:", err);
+        statusMsg.innerText = '搜尋服務暫時無法連線，請稍後再試。';
+    }
+};*/
+
+window.handleTalentSearchAction = async function() {
+    // 1. 重新抓取所有需要的元素（確保 ID 沒寫錯）
+    const input = document.getElementById('talentSearchInput');
+    const statusMsg = document.getElementById('searchStatusMsg');
+    const resultGrid = document.getElementById('resultsGrid');
+    
+    // 檢查元素是否存在，避免 JS 報錯
+    if (!statusMsg) {
+        console.error("找不到 ID 為 searchStatusMsg 的標籤，請檢查 HTML！");
+        return;
+    }
+
+    const query = input.value.trim();
+
+    if (!query) {
+        alert("請輸入關鍵字再進行搜尋喔！");
+        return;
+    }
+
+    // 2. 初始化畫面：清空舊卡片，顯示「正在搜尋」
+    if (resultGrid) resultGrid.innerHTML = ''; 
+    statusMsg.innerText = '正在搜尋媒合人才...';
+    statusMsg.style.display = 'block';
+
+    try {
+        // --- 未來串接 API 的地方 ---
+        // const results = await fetchTalentSearch(query); 
+        
+        // 3. 核心修正：強制延遲判定
+        // 我們先模擬搜尋，過 1.5 秒後如果沒資料，就強制寫入提示詞
+        setTimeout(() => {
+            // 目前強制設定為沒結果 (false)，測試提示詞是否出現
+            const hasResults = false; 
+
+            if (!hasResults) {
+                // 🚀 關鍵：這裡直接操作 DOM
+                statusMsg.innerText = `找不到與「${query}」相關的人才或隊伍，換個關鍵字試試看？`;
+                console.log("提示詞已成功寫入狀態欄");
+            } else {
+                statusMsg.innerText = '';
+                // renderTalentResults(results); 
+            }
+        }, 1500); // 1.5秒後觸發
+
+    } catch (err) {
+        console.error("搜尋發生錯誤:", err);
+        statusMsg.innerText = '搜尋服務暫時無法連線。';
+    }
+};
+
 /**
  * 👑 2. 驅動並渲染中央主畫面的網格 (核心四大模式切換與渲染)
  */
@@ -76,7 +208,7 @@ export async function renderTeamsGridSection() {
   const gridContainer = $('teamsGrid');
   if (!gridContainer) return;
 
-  gridContainer.innerHTML = '<div class="loading-placeholder">動態資料加載中...</div>';
+  /*gridContainer.innerHTML = '<div class="loading-placeholder">動態資料加載中...</div>';
 
   const token = localStorage.getItem('token');
   const userId = getCurrentUserId();
@@ -84,7 +216,42 @@ export async function renderTeamsGridSection() {
   if (!isLoggedIn() || !userId || userId === 'unknown') {
     gridContainer.innerHTML = '<div class="empty-text">請先登入以檢視您的資料。</div>';
     return;
+  }*/
+
+  // 1. 基礎權限檢查
+  const token = localStorage.getItem('token');
+  const userId = getCurrentUserId();
+
+  if (!isLoggedIn() || !userId || userId === 'unknown') {
+    gridContainer.innerHTML = '<div class="empty-text">請先登入以檢視您的資料。</div>';
+    return;
   }
+
+  // 2. 🚀 新增：搜尋人才分頁攔截 (在 Loading 之前，因為搜尋頁不需要預載資料)
+  if (activeTab === 'search-talent') {
+    // 在 renderTeamsGridSection 的 search-talent 區塊改為：
+  gridContainer.innerHTML = `
+  <div class="talent-search-page">
+    <div class="search-main-area">
+      <p class="search-subtitle-full">輸入人名、專長或隊伍關鍵字，尋找志同道合的夥伴</p>
+      
+      <div class="search-input-group-expanded">
+        <input type="text" id="talentSearchInput" placeholder="請輸入關鍵字...">
+        <button class="btn-search-solid" onclick="handleTalentSearchAction()">立即搜尋</button>
+      </div>
+
+      <div id="talentSearchResults">
+        <p id="searchStatusMsg" class="status-msg-no-wrap"></p>
+        <div id="resultsGrid" class="teams-management-grid"></div>
+      </div>
+    </div>
+  </div>
+`;
+    return; // 🛑 渲染完搜尋介面後直接結束，不進入下方的 loading 與 try
+  }
+
+  // 3. 原本的 Loading 與 歷史紀錄檢查
+  gridContainer.innerHTML = '<div class="loading-placeholder">動態資料加載中...</div>';
 
   if (activeTab === 'history') {
     gridContainer.innerHTML = '<div class="empty-text">歷史紀錄隊伍目前尚未開放。</div>';
