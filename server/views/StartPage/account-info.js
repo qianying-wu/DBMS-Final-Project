@@ -3,6 +3,34 @@ const token = localStorage.getItem('token');
 const id = localStorage.getItem('userId');
 const $ = id => document.getElementById(id);
 
+// 控制帳號資訊頁的左右滑動版型：點選左側功能後才顯示右側操作內容。
+function initAccountPanels() {
+const container = document.querySelector('.account-container');
+const tiles = document.querySelectorAll('[data-account-panel]');
+const panels = document.querySelectorAll('[data-panel-content]');
+
+if (!container || tiles.length === 0 || panels.length === 0) return;
+
+function openPanel(panelName) {
+    container.classList.add('panel-open');
+
+    tiles.forEach(tile => {
+    const isActive = tile.dataset.accountPanel === panelName;
+    tile.classList.toggle('active', isActive);
+    tile.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+
+    panels.forEach(panel => {
+    panel.hidden = panel.dataset.panelContent !== panelName;
+    });
+}
+
+tiles.forEach(tile => {
+    tile.setAttribute('aria-pressed', 'false');
+    tile.addEventListener('click', () => openPanel(tile.dataset.accountPanel));
+});
+}
+
 function escapeHtml(value) {
 return String(value ?? '').replace(/[&<>"']/g, match => ({
     '&': '&amp;',
@@ -221,6 +249,7 @@ list.innerHTML = reviews.map(review => {
 }
 
 // 初始化啟動
+initAccountPanels();
 fetchAccountDataFromServer();
 initPreferences();
 renderReceivedReviews();
