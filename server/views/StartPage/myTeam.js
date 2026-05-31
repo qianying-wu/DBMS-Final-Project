@@ -9,7 +9,7 @@ let activeTab = 'my-teams'; // 預設當前分頁
 
 // 🚀 四大分頁 Meta 資訊設定（包含右側主畫面大標題與動態 SVG 圖標）
 const tabMeta = {
-    'search-talent': {
+  'search-talent': {
     title: '探索人才與隊伍',
     icon: `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -56,7 +56,7 @@ const tabMeta = {
 
 // 未來搜尋出來後的卡片範例
 function renderTalentCard(item) {
-    return `
+  return `
       <div class="team-card-style"> 
         <h3>${item.name}</h3>
         <hr>
@@ -151,54 +151,54 @@ if (noResult) {
     }
 };*/
 
-window.handleTalentSearchAction = async function() {
-    // 1. 重新抓取所有需要的元素（確保 ID 沒寫錯）
-    const input = document.getElementById('talentSearchInput');
-    const statusMsg = document.getElementById('searchStatusMsg');
-    const resultGrid = document.getElementById('resultsGrid');
-    
-    // 檢查元素是否存在，避免 JS 報錯
-    if (!statusMsg) {
-        console.error("找不到 ID 為 searchStatusMsg 的標籤，請檢查 HTML！");
-        return;
-    }
+window.handleTalentSearchAction = async function () {
+  // 1. 重新抓取所有需要的元素（確保 ID 沒寫錯）
+  const input = document.getElementById('talentSearchInput');
+  const statusMsg = document.getElementById('searchStatusMsg');
+  const resultGrid = document.getElementById('resultsGrid');
 
-    const query = input.value.trim();
+  // 檢查元素是否存在，避免 JS 報錯
+  if (!statusMsg) {
+    console.error("找不到 ID 為 searchStatusMsg 的標籤，請檢查 HTML！");
+    return;
+  }
 
-    if (!query) {
-        alert("請輸入關鍵字再進行搜尋喔！");
-        return;
-    }
+  const query = input.value.trim();
 
-    // 2. 初始化畫面：清空舊卡片，顯示「正在搜尋」
-    if (resultGrid) resultGrid.innerHTML = ''; 
-    statusMsg.innerText = '正在搜尋媒合人才...';
-    statusMsg.style.display = 'block';
+  if (!query) {
+    alert("請輸入關鍵字再進行搜尋喔！");
+    return;
+  }
 
-    try {
-        // --- 未來串接 API 的地方 ---
-        // const results = await fetchTalentSearch(query); 
-        
-        // 3. 核心修正：強制延遲判定
-        // 我們先模擬搜尋，過 1.5 秒後如果沒資料，就強制寫入提示詞
-        setTimeout(() => {
-            // 目前強制設定為沒結果 (false)，測試提示詞是否出現
-            const hasResults = false; 
+  // 2. 初始化畫面：清空舊卡片，顯示「正在搜尋」
+  if (resultGrid) resultGrid.innerHTML = '';
+  statusMsg.innerText = '正在搜尋媒合人才...';
+  statusMsg.style.display = 'block';
 
-            if (!hasResults) {
-                // 🚀 關鍵：這裡直接操作 DOM
-                statusMsg.innerText = `找不到與「${query}」相關的人才或隊伍，換個關鍵字試試看？`;
-                console.log("提示詞已成功寫入狀態欄");
-            } else {
-                statusMsg.innerText = '';
-                // renderTalentResults(results); 
-            }
-        }, 1500); // 1.5秒後觸發
+  try {
+    // --- 未來串接 API 的地方 ---
+    // const results = await fetchTalentSearch(query); 
 
-    } catch (err) {
-        console.error("搜尋發生錯誤:", err);
-        statusMsg.innerText = '搜尋服務暫時無法連線。';
-    }
+    // 3. 核心修正：強制延遲判定
+    // 我們先模擬搜尋，過 1.5 秒後如果沒資料，就強制寫入提示詞
+    setTimeout(() => {
+      // 目前強制設定為沒結果 (false)，測試提示詞是否出現
+      const hasResults = false;
+
+      if (!hasResults) {
+        // 🚀 關鍵：這裡直接操作 DOM
+        statusMsg.innerText = `找不到與「${query}」相關的人才或隊伍，換個關鍵字試試看？`;
+        console.log("提示詞已成功寫入狀態欄");
+      } else {
+        statusMsg.innerText = '';
+        // renderTalentResults(results); 
+      }
+    }, 1500); // 1.5秒後觸發
+
+  } catch (err) {
+    console.error("搜尋發生錯誤:", err);
+    statusMsg.innerText = '搜尋服務暫時無法連線。';
+  }
 };
 
 /**
@@ -230,7 +230,7 @@ export async function renderTeamsGridSection() {
   // 2. 🚀 新增：搜尋人才分頁攔截 (在 Loading 之前，因為搜尋頁不需要預載資料)
   if (activeTab === 'search-talent') {
     // 在 renderTeamsGridSection 的 search-talent 區塊改為：
-  gridContainer.innerHTML = `
+    gridContainer.innerHTML = `
   <div class="talent-search-page">
     <div class="search-main-area">
       <p class="search-subtitle-full">輸入人名、專長或隊伍關鍵字，尋找志同道合的夥伴</p>
@@ -442,62 +442,79 @@ export async function renderTeamsGridSection() {
       });
 
       // ----------------------------------------------------------------------
-      // 分頁三：我收藏的比賽 (讀取總大賽庫與 localStorage 對照)
+      // 分頁三：我收藏的比賽 (🚀 修正版：大括號與 catch 完全對齊)
       // ----------------------------------------------------------------------
     } else if (activeTab === 'favorites-com') {
-      if (!allContestsData || allContestsData.length === 0) {
-        const res = await fetch('/api/contests/competitions');
-        if (res.ok) {
-          const result = await res.json();
-          allContestsData = result.competitions || result || [];
-        }
-      }
 
-      const contestFavs = JSON.parse(localStorage.getItem('favoriteContests') || '[]');
-      const favContests = allContestsData.filter(c => contestFavs.includes(Number(c.id || c.com_id)));
-
-      if (favContests.length === 0) {
-        gridContainer.innerHTML = `<div class="empty-text">目前暫無收藏的比賽。快去首頁逛逛吧！</div>`;
+      if (!isLoggedIn()) {
+        gridContainer.innerHTML = `<div class="empty-text">請先登入以查看收藏比賽。</div>`;
         return;
       }
 
-      gridContainer.innerHTML = favContests.map(c => {
-        const cId = c.com_id || c.id;
-        const cName = c.com_name || c.name || '未命名比賽';
-        const cIntro = c.com_intro || '尚未填寫比賽說明';
+      function getAuthHeader() {
+        const token = localStorage.getItem('token');
+        return token ? { 'Authorization': `${token}` } : {};
+      }
 
-        return `
-          <div class="team-manage-card" style="border-left: 4px solid #caa77a;">
-              <div class="card-top">
-                  <h3 class="team-title" style="margin-top: 5px;">${Data.escapeHtml(cName)}</h3>
-              </div>
-              <div class="card-mid">
-                  <div class="info-row">
-                    <span class="label">簡介：</span>
-                    <span class="val" style="font-weight:400; color:#666;">${Data.escapeHtml(cIntro.substring(0, 50))}...</span>
-                  </div>
-              </div>
-              <div class="card-bottom">
-                  <button class="btn-contest-action" data-contest-id="${cId}" style="width: 100%; background-color: #caa77a; color: white; border: none; padding: 10px 0; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
-                    前往比賽詳情 →
-                  </button>
-              </div>
-          </div>
-        `;
-      }).join('');
 
-      gridContainer.querySelectorAll('.btn-contest-action').forEach(btn => {
-        btn.addEventListener('click', () => {
-          location.href = Data.withUserParam(`/contest.html?id=${btn.dataset.contestId}`);
+      gridContainer.innerHTML = `<div class="empty-text">正在載入收藏比賽...</div>`;
+
+      try { // 👈 內層 try 開始
+        // 💡 1. 戳你寫好的這支雙表聯查 API
+        const response = await fetch('/api/contests/getFavorites', {
+          method: 'GET',
+          headers: {
+            ...getAuthHeader(),
+            'Content-Type': 'application/json'
+          }
         });
-      });
-    }
 
-    gridContainer.querySelectorAll('[data-owned-action]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        renderOwnedTeamPanel(btn.dataset.teamId, btn.dataset.teamName, btn.dataset.ownedAction);
-      });
-    });
+        if (!response.ok) throw new Error('伺服器回應錯誤');
+        const resResult = await response.json();
+        // 💡 2. 拿到你 Controller 回傳的 data
+        const favContests = resResult.data || [];
+        if (favContests.length === 0) {
+          gridContainer.innerHTML = `<div class="empty-text">目前暫無收藏的比賽。快去首頁逛逛吧！</div>`;
+          return;
+        }
+        // 💡 3. 直接對齊你 SQL 查出來的欄位
+        gridContainer.innerHTML = favContests.map(c => {
+          const cId = c.com_id;
+          const cName = c.com_name || '未命名比賽';
+          const cIntro = c.com_intro || '尚未填寫比賽說明';
+
+          return `
+            <div class="team-manage-card" style="border-left: 4px solid #caa77a;">
+                <div class="card-top">
+                    <h3 class="team-title" style="margin-top: 5px;">${Data.escapeHtml(cName)}</h3>
+                </div>
+                <div class="card-mid">
+                    <div class="info-row">
+                      <span class="label">簡介：</span>
+                      <span class="val" style="font-weight:400; color:#666;">${Data.escapeHtml(cIntro.substring(0, 50))}...</span>
+                    </div>
+                </div>
+                <div class="card-bottom">
+                    <button class="btn-contest-action" data-contest-id="${cId}" style="width: 100%; background-color: #caa77a; color: white; border: none; padding: 10px 0; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                      前往比賽詳情 →
+                    </button>
+                </div>
+            </div>
+          `;
+        }).join('');
+
+        // 💡 4. 綁定「前往比賽詳情」點擊事件
+        gridContainer.querySelectorAll('.btn-contest-action').forEach(btn => {
+          btn.addEventListener('click', () => {
+            location.href = Data.withUserParam(`/contest.html?id=${btn.dataset.contestId}`);
+          });
+        });
+
+      } catch (favErr) { // ✅ 修正：把漏掉的內層 catch 補回來封口！
+        console.error('❌ 從資料庫載入比賽收藏清單失敗:', favErr);
+        gridContainer.innerHTML = '<div class="empty-text" style="color:red;">無法載入收藏清單，請稍後再試。</div>';
+      } // 👈 內層 catch 結束
+    }
 
   } catch (error) {
     console.error('❌ 中央管理網格驅動失敗:', error);
@@ -648,8 +665,8 @@ function renderMembersPanel(panel, teamId, teamName) {
     </div>
     <div class="local-members-list">
       ${members.map(member => {
-        const canReview = String(member.userId) !== String(currentUserId);
-        return `
+    const canReview = String(member.userId) !== String(currentUserId);
+    return `
         <article class="local-member-card">
           <div>
             <strong>${Data.escapeHtml(member.applicantName)}</strong>
@@ -664,7 +681,7 @@ function renderMembersPanel(panel, teamId, teamName) {
           ` : ''}
         </article>
       `;
-      }).join('')}
+  }).join('')}
     </div>
   `;
 }
