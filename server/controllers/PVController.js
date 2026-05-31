@@ -98,10 +98,6 @@ export const saveResume = async (req, res) => {
 // ======================================================================
 // 拿資料
 export const loadResumes = async (req, res) => {
-    console.log("============== [DEBUG 開始] ==============");
-    console.log("1. 前端傳過來的 Authorization Header 長這樣 ->", req.headers.authorization);
-    console.log("2. Passport 解析完塞給 req.user 的資料長這樣 ->", req.user);
-    console.log("=========================================");
     const userId = req.user.user_id; // 從 JWT Token 辨識是誰在要資料
     try {
         // 使用正確的 table/column 名稱（與 saveResume 中使用的一致）
