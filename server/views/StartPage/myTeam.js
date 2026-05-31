@@ -5,6 +5,7 @@ const $ = id => document.getElementById(id);
 
 // 核心狀態管理
 let allContestsData = []; // 快取比賽資料，供收藏比賽使用
+let allTeamsData = []; // 快取完整隊伍資料，補齊 my-owned / my-favorites 沒回傳的比賽 ID
 let activeTab = 'my-teams'; // 預設當前分頁
 
 // 🚀 四大分頁 Meta 資訊設定（包含右側主畫面大標題與動態 SVG 圖標）
@@ -259,6 +260,9 @@ export async function renderTeamsGridSection() {
   }
 
   try {
+    // my-owned / my-favorites API 回傳欄位較少，先載入完整隊伍與比賽資料來補齊卡片資訊。
+    await ensureReferenceData();
+
     // ----------------------------------------------------------------------
     // 分頁一：我的隊伍 (混合我建立的、我加入的，前端安全標記去重)
     // ----------------------------------------------------------------------
@@ -333,24 +337,25 @@ export async function renderTeamsGridSection() {
 
       // 渲染「精緻的隊伍字卡框框」
       const cardsHtml = teams.map(t => {
+        const fullTeam = enrichTeam(t);
         // 判斷是不是隊伍建立者；只有建立者才顯示審核申請與隊友名單入口。
-        const isCreator = t.isApiOwner === true || activeTab === 'owned' || String(t.owner_id) === String(userId);
-        const teamId = t.team_id || t.id;
+        const isCreator = t.isApiOwner === true || activeTab === 'owned' || String(fullTeam.owner_id) === String(userId);
+        const teamId = getTeamId(fullTeam);
         const pendingCount = getLocalApplications(teamId).filter(app => app.status === 'pending').length;
         const badgeHtml = isCreator
           ? `<span class="role-badge creator">我創立</span>`
           : `<span class="role-badge member">已加入</span>`;
 
-        // 預留容錯欄位名 (後端欄位可能為 t.competition_name 或 t.com_name)
-        const contestName = t.competition_name || t.com_name || t.contestName || '未指定特定競賽';
-        const currentCount = t.current_member_count ?? t.current_members ?? t.member_count ?? 1;
-        const maxCount = t.num_limit ?? t.max_members ?? 5;
+        // 透過完整 Team.com_id 對到 Competition.com_name，補上原 API 沒回傳的比賽名稱。
+        const contestName = getContestNameForTeam(fullTeam);
+        const currentCount = getTeamDisplayCount(fullTeam);
+        const maxCount = fullTeam.num_limit ?? fullTeam.max_members ?? 5;
 
         return `
         <div class="team-manage-card">
             <div class="card-top">
                 ${badgeHtml}
-                <h3 class="team-title">${Data.escapeHtml(t.team_name)}</h3>
+                <h3 class="team-title">${Data.escapeHtml(fullTeam.team_name)}</h3>
             </div>
             <div class="card-mid">
                 <div class="info-row">
@@ -359,7 +364,7 @@ export async function renderTeamsGridSection() {
                 </div>
                 <div class="info-row">
                   <span class="label">目前人數：</span>
-                  <span class="val">${currentCount} / ${maxCount} 人</span>
+                  <span class="val" data-member-count-team-id="${teamId}">${currentCount} / ${maxCount} 人</span>
                 </div>
             </div>
             <div class="card-bottom">
@@ -368,10 +373,10 @@ export async function renderTeamsGridSection() {
                 </button>
                 ${isCreator ? `
                   <div class="owned-action-row">
-                    <button class="btn-secondary-action" data-owned-action="applications" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">
+                    <button class="btn-secondary-action" data-owned-action="applications" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(fullTeam.team_name)}">
                       申請審核${pendingCount ? ` (${pendingCount})` : ''}
                     </button>
-                    <button class="btn-secondary-action" data-owned-action="members" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">
+                    <button class="btn-secondary-action" data-owned-action="members" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(fullTeam.team_name)}">
                       隊友名單
                     </button>
                   </div>
@@ -407,14 +412,16 @@ export async function renderTeamsGridSection() {
       }
 
       gridContainer.innerHTML = favTeams.map(t => {
-        const contestName = t.com_name || '未指定特定競賽';
-        const currentCount = t.current_member_count ?? t.current_members ?? t.member_count ?? 1;
-        const maxCount = t.num_limit ?? t.max_members ?? 5;
+        const fullTeam = enrichTeam(t);
+        const teamId = getTeamId(fullTeam);
+        const contestName = getContestNameForTeam(fullTeam);
+        const currentCount = getTeamDisplayCount(fullTeam);
+        const maxCount = fullTeam.num_limit ?? fullTeam.max_members ?? 5;
 
         return `
           <div class="team-manage-card">
               <div class="card-top">
-                  <h3 class="team-title" style="margin-top: 5px;">${Data.escapeHtml(t.team_name)}</h3>
+                  <h3 class="team-title" style="margin-top: 5px;">${Data.escapeHtml(fullTeam.team_name)}</h3>
               </div>
               <div class="card-mid">
                   <div class="info-row">
@@ -423,11 +430,11 @@ export async function renderTeamsGridSection() {
                   </div>
                   <div class="info-row">
                     <span class="label">目前人數：</span>
-                    <span class="val">${currentCount} / ${maxCount} 人</span>
+                    <span class="val" data-member-count-team-id="${teamId}">${currentCount} / ${maxCount} 人</span>
                   </div>
               </div>
               <div class="card-bottom">
-                  <button class="btn-manage-action" data-team-id="${t.team_id || t.id}">
+                  <button class="btn-manage-action" data-team-id="${teamId}">
                     查看隊伍
                   </button>
               </div>
@@ -508,6 +515,77 @@ export async function renderTeamsGridSection() {
 function isLoggedIn() {
   const token = localStorage.getItem("token");
   return Boolean(token && token.trim() !== "");
+}
+
+async function ensureReferenceData() {
+  const [teams, contests] = await Promise.all([
+    loadAllTeamsData(),
+    loadAllContestsData()
+  ]);
+  allTeamsData = teams;
+  allContestsData = contests;
+}
+
+async function loadAllTeamsData() {
+  if (allTeamsData.length) return allTeamsData;
+
+  try {
+    const res = await fetch('/api/teams/all');
+    if (!res.ok) throw new Error('無法取得完整隊伍資料');
+    const result = await res.json();
+    return result.data || result.teams || (Array.isArray(result) ? result : []);
+  } catch (error) {
+    console.error('❌ 補齊隊伍資料失敗:', error);
+    return [];
+  }
+}
+
+async function loadAllContestsData() {
+  if (allContestsData.length) return allContestsData;
+
+  try {
+    const res = await fetch('/api/contests/competitions');
+    if (!res.ok) throw new Error('無法取得完整比賽資料');
+    const result = await res.json();
+    return result.competitions || result.contests || (Array.isArray(result) ? result : []);
+  } catch (error) {
+    console.error('❌ 補齊比賽資料失敗:', error);
+    return [];
+  }
+}
+
+function getTeamId(team) {
+  return team?.team_id || team?.id;
+}
+
+function enrichTeam(team) {
+  const teamId = getTeamId(team);
+  const fullTeam = allTeamsData.find(item => Number(getTeamId(item)) === Number(teamId)) || {};
+  // 後端不同 API 回傳欄位不一致，所以用完整隊伍資料當底，再保留原 API 的角色標記。
+  return { ...fullTeam, ...team, com_id: team.com_id || fullTeam.com_id };
+}
+
+function getContestNameForTeam(team) {
+  const contestId = team.com_id || team.contestId || team.contest_id;
+  const contest = allContestsData.find(item => Number(item.com_id || item.id) === Number(contestId));
+  return team.competition_name || team.com_name || team.contestName || contest?.com_name || contest?.name || '未指定特定競賽';
+}
+
+function getTeamDisplayCount(team) {
+  const teamId = getTeamId(team);
+  // local 通過審核的隊友不會立刻同步後端，所以這裡把隊長 1 人 + local 成員一起算進顯示人數。
+  const localApprovedCount = 1 + getLocalMembers(teamId).length;
+  const dbCount = Number(team.current_member_count ?? team.current_members ?? team.member_count ?? 1) || 1;
+  return Math.max(dbCount, localApprovedCount);
+}
+
+function refreshTeamCountBadge(teamId) {
+  const el = document.querySelector(`[data-member-count-team-id="${teamId}"]`);
+  if (!el) return;
+
+  const fullTeam = enrichTeam({ team_id: teamId });
+  const maxCount = fullTeam.num_limit ?? fullTeam.max_members ?? 5;
+  el.textContent = `${getTeamDisplayCount(fullTeam)} / ${maxCount} 人`;
 }
 
 function getLocalApplications(teamId) {
@@ -629,6 +707,7 @@ function handleLocalApplication(teamId, applicationId, action, teamName) {
       members.push({ ...target, role: '組員' });
       saveLocalMembers(teamId, members);
     }
+    refreshTeamCountBadge(teamId);
   }
 
   renderApplicationsPanel($('ownedTeamPanel'), teamId, teamName);
