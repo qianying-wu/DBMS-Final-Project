@@ -131,52 +131,6 @@ import * as Data from './team-data.js';
         </div>
         `;
 
-        //  點擊標題可以直接編輯名稱，失焦後自動儲存變更並更新畫面。
-        // const title = card.querySelector('.resume-title');
-        // const renameBtn = card.querySelector('.rename-btn');
-        // title.addEventListener('click', event => event.stopPropagation());
-        // // title.addEventListener('input', async () => {
-        //   const next = await loadProfiles();
-        //   const idx = next.findIndex(item => String(item.id) === String(p.id));
-        //   if (idx >= 0) {
-        //     p.resume_name = title.textContent.trim() || '未命名履歷';
-        //     // p.updatedAt = new Date().toISOString();
-
-        //     // 若此為目前開啟的履歷，同步編輯器標題
-        //     const openId = document.querySelector('.resume-card.open')?.dataset.id;
-        //     if (String(p.id) === String(openId)) editorTitle.textContent = p.resume_name;
-        //   }
-        // });
-        // if (renameBtn) {
-        //   renameBtn.addEventListener('click', event => {
-        //     event.stopPropagation();
-        //     // focus the title for editing and move caret to end
-        //     title.focus();
-        //     try {
-        //       const range = document.createRange();
-        //       range.selectNodeContents(title);
-        //       range.collapse(false);
-        //       const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
-        //     } catch (err) { /* ignore selection errors */ }
-        //   });
-        // }
-        // title.addEventListener('blur', async () => {
-        //   try {
-        //     await saveProfileToDB({
-        //       resume_id: Number(p.id),
-        //       resume_name: p.resume_name,
-        //       user_pv_name: p.user_pv_name,
-        //       user_school: p.school,
-        //       department_grade: p.grade,
-        //       user_intro: p.intro,
-        //       tags: p.tags
-        //     });
-        //     await renderResumeGallery();
-        //   } catch (err) {
-        //     console.error('更新名稱失敗', err);
-        //   }
-        // });
-
         resumeGallery.appendChild(card);
       });
 
@@ -205,11 +159,6 @@ import * as Data from './team-data.js';
     //   renderPhoto();
     // }
 
-    // 將使用者輸入轉成安全文字，避免插入 HTML 時破壞畫面。
-    function escapeHtml(value) {
-      return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-
     // 將 ISO 時間字串轉成台灣常用的日期時間格式。
     function formatDateTime(value) {
       const date = value ? new Date(value) : new Date();
@@ -217,10 +166,10 @@ import * as Data from './team-data.js';
       return date.toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     }
 
-    // 以下通知功能是備援：若共用 notifications.js 未載入，仍可顯示基本通知。
-    function loadNotifications() {
-      return JSON.parse(localStorage.getItem('notifications') || '[]');
-    }
+    // // 以下通知功能是備援：若共用 notifications.js 未載入，仍可顯示基本通知。
+    // function loadNotifications() {
+    //   return JSON.parse(localStorage.getItem('notifications') || '[]');
+    // }
 
     // function updateNotificationBadge() {
     //   const notifyBtn = document.getElementById('notifyBtn');
@@ -266,75 +215,6 @@ import * as Data from './team-data.js';
       const tags = data.tags || []; renderTags(tags);
       window._tags = tags;
     }
-
-    // 編輯區的標題可 inline 編輯；變更時同步到當前履歷名稱
-    if (editorTitle) {
-      // editorTitle.addEventListener('blur', async () => {
-      //   const activeId = getActiveProfileId();
-      //   if (!activeId) return;
-
-      //   const ps = await loadProfiles();
-      //   const idx = ps.findIndex(p => String(p.id) === String(activeId));
-      //   if (idx >= 0) {
-      //     const v = editorTitle.textContent.trim() || '未命名履歷';
-      //     ps[idx].name = v;
-      //     ps[idx].updatedAt = new Date().toISOString();
-      //     saveProfileToDB(ps);
-      //     // also update gallery render title in-place
-      //     const card = document.querySelector(`.resume-card[data-id="${activeId}"]`);
-      //     if (card) {
-      //       const t = card.querySelector('.resume-title');
-      //       if (t) t.textContent = v;
-      //     }
-      //   }
-      // });
-
-      // editorTitle.addEventListener('blur', async () => {
-      //   const activeId = getActiveProfileId();
-      //   if (!activeId) return;
-
-      //   // const newName = editorTitle.textContent.trim() || '未命名履歷';
-      //   try {
-      //     await saveProfileToDB({
-      //       resume_id: Number(activeId),
-      //       resume_name: editorTitle.textContent.trim() || '未命名履歷', // 履歷名稱
-      //       user_pv_name: $('name').value.trim(), // 使用者名稱
-      //       user_school: $('school').value.trim(),
-      //       department_grade: $('grade').value.trim(),
-      //       user_intro: $('bio') ? $('bio').value.trim() : '',
-      //       tags: window._tags || []
-      //     });
-
-      // const card = document.querySelector(`.resume-card[data-id="${activeId}"]`);
-      // if (card) {
-      //   const t = card.querySelector('.resume-title');
-      //   if (t) t.textContent = newName;
-      // }
-
-      //     await renderResumeGallery();
-      //   } catch (err) {
-      //     console.error('編輯器標題儲存失敗', err);
-      //   }
-      // });
-
-      // make sure clicking title in editor doesn't accidentally navigate
-      //   editorTitle.addEventListener('click', e => e.stopPropagation());
-      //   // editor header rename button focuses the title for quick editing
-      //   const editorRenameBtn = document.getElementById('editorRenameBtn');
-      //   if (editorRenameBtn) {
-      //     editorRenameBtn.addEventListener('click', e => {
-      //       e.preventDefault(); e.stopPropagation();
-      //       try {
-      //         editorTitle.focus();
-      //         const range = document.createRange();
-      //         range.selectNodeContents(editorTitle);
-      //         range.collapse(false);
-      //         const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
-      //       } catch (err) { /* ignore */ }
-      //     });
-      //   }
-    }
-
 
     // ================== ⚡ 事件綁定與控制邏輯 ==========================    
     // 顯示履歷列表首頁。
@@ -389,8 +269,9 @@ import * as Data from './team-data.js';
       try {
         // 1. 先準備一份要送給後端的全新空履歷格式
         const newProfilePayload = {
-          resume_id: undefined,        // 🌟 傳 undefined，後端看到就知道這是「全新建立」
-          user_pv_name: ' ',
+          resume_id: undefined,
+          resume_name: '履歷',      // 🌟 傳 undefined，後端看到就知道這是「全新建立」
+          user_pv_name: '',
           user_school: '',
           department_grade: '',
           user_intro: '',
@@ -453,28 +334,6 @@ import * as Data from './team-data.js';
         alert('刪除失敗，請檢查資料庫連線');
       }
     });
-
-    // exportBtn.addEventListener('click', () => {
-    //   // Inline validation: clear old errors
-    //   const clearErrors = () => { $('error-name').textContent = ''; $('error-school').textContent = ''; $('error-intro').textContent = ''; };
-    //   clearErrors();
-    //   const nameVal = $('name').value.trim();
-    //   const schoolVal = $('school').value.trim();
-    //   const introVal = $('intro').value.trim();
-    //   const invalids = [];
-    //   if (!nameVal) { $('error-name').textContent = '姓名為必填'; invalids.push($('name')); }
-    //   if (!schoolVal) { $('error-school').textContent = '學校為必填'; invalids.push($('school')); }
-    //   if (!introVal) { $('error-intro').textContent = '請簡短介紹自己'; invalids.push($('intro')); }
-    //   if (invalids.length) { invalids[0].focus(); return; }
-    //   const data = {
-    //     name: nameVal, school: schoolVal, grade: $('grade').value,
-    //     experience: $('experience').value, intro: introVal, tags: window._tags || [],
-    //   };
-    //   const s = JSON.stringify(data, null, 2);
-    //   const blob = new Blob([s], { type: 'application/json' });
-    //   const url = URL.createObjectURL(blob);
-    //   const a = document.createElement('a'); a.href = url; a.download = 'profile.json'; a.click(); URL.revokeObjectURL(url);
-    // });
 
     saveBtn.addEventListener('click', async () => {
       // Inline validation on save: show errors and focus first empty
