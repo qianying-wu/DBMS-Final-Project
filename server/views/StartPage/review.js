@@ -268,7 +268,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       try {
         const token = localStorage.getItem('token');
-        // 這裡對齊你們的 api route (假設有掛上 /api)
         const response = await fetch('/api/review/submit-review', {
           method: 'POST',
           headers: {
@@ -278,6 +277,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           body: JSON.stringify(reviewPayload)
         });
 
+        // 先檢查是不是被 401 擋在門外
+        if (response.status === 401) {
+          throw new Error('登入已過期或未登入，請重新登入後再試一次！');
+        }
+
+        // 確認沒被擋，再來解析 JSON
         const data = await response.json();
         
         if (!response.ok || !data.ok) {
@@ -290,7 +295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setSubmitState(false);
         
         alert('評價發布成功！');
-        // loadReviews(); 
+        await loadReviews(); 
         
       } catch (error) {
         console.error('發送評價失敗：', error);
