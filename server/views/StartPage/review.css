@@ -68,6 +68,7 @@
 
 .resume-body {
   padding: 0;
+  display: block; /* 新增這行，解除網格限制 */
 }
 
 .resume-section {

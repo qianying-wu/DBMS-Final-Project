@@ -1,12 +1,15 @@
 import * as Data from './team-data.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+// 這裡加上了 async，才能在內部使用 await 等待資料
+document.addEventListener('DOMContentLoaded', async () => {
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(window.location.search);
 
   // targetUserId 是「被評價的人」，userId 則保留給目前登入者，避免兩者混在一起。
   const currentUserId = localStorage.getItem('userId') || params.get('userId') || Data.currentUserId || '';
   const targetUserId = params.get('targetUserId') || params.get('revieweeId') || currentUserId || 'default_user';
+  // 新增：嘗試從網址抓履歷 ID（例如 ?resumeId=xxx）
+  const resumeId = params.get('resumeId') || ''; 
   const mode = params.get('mode') || 'write';
   const teamId = params.get('teamId') || '';
   const teamName = params.get('teamName') || '';
@@ -71,30 +74,32 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  function findProfileFromLocalData() {
-    // 先從隊伍申請與已核准隊友資料找，讓審核申請時能看到同一位申請者的資料。
-    const applications = readJson('teamApplications:v1', []);
-    const matchedApplication = applications.find(app => String(app.userId) === String(targetUserId));
-    if (matchedApplication) return extractResume(matchedApplication);
+  // 新增：透過 API 向後端獲取目標用戶的履歷資料
+  async function fetchTargetUserResume() {
+    try {
+      let url = `/api/pv/getTargetResume?userId=${targetUserId}`;
+      if (resumeId) {
+        url += `&resumeId=${resumeId}`; // 如果網址有傳履歷 ID，就一起帶給後端
+      }
 
-    const memberKeys = Object.keys(localStorage).filter(key => key.startsWith('teamMembers:v1:'));
-    for (const key of memberKeys) {
-      const matchedMember = readJson(key, []).find(member => String(member.userId) === String(targetUserId));
-      if (matchedMember) return extractResume(matchedMember);
+      // 如果拿別人的履歷也需要你的登入驗證，就把 token 塞進去
+      const token = localStorage.getItem('token');
+      const headers = token ? { 'Authorization': token } : {};
+
+      const response = await fetch(url, { headers });
+      if (!response.ok) throw new Error('無法取得該用戶履歷');
+
+      const data = await response.json();
+      return extractResume(data);
+
+    } catch (error) {
+      console.error('抓取履歷失敗：', error);
+      // 萬一壞掉（例如後端掛了或找不到），給個預設值，畫面才不會一片白
+      return extractResume({
+        name: localStorage.getItem(`nickname:${targetUserId}`) || `使用者 ${targetUserId}`,
+        intro: '目前無法取得履歷資料，可能已被隱藏或刪除。'
+      });
     }
-
-    // 若是在看自己的評價，補抓個人履歷 gallery 中目前啟用的履歷。
-    if (String(currentUserId) === String(targetUserId)) {
-      const profiles = readJson('profiles', []);
-      const activeProfileId = localStorage.getItem('activeProfileId');
-      const activeProfile = profiles.find(item => String(item.id) === String(activeProfileId)) || profiles[0];
-      if (activeProfile) return extractResume(activeProfile);
-    }
-
-    return extractResume({
-      name: localStorage.getItem(`nickname:${targetUserId}`) || `使用者 ${targetUserId}`,
-      intro: '目前尚未留下更多個人資料'
-    });
   }
 
   function safeSetText(id, text) {
@@ -102,8 +107,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) el.textContent = text || '-';
   }
 
-  function loadResumeData() {
-    targetProfile = findProfileFromLocalData();
+  // 改為非同步函式 (async)
+  async function loadResumeData() {
+    // 這裡變成等待後端回傳資料
+    targetProfile = await fetchTargetUserResume();
+
     safeSetText('r-title', targetProfile.title);
     safeSetText('r-school', targetProfile.school);
     safeSetText('r-name', targetProfile.name);
@@ -188,7 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
       return data.flagged === true;
     } catch (error) {
-      // 外部審查服務失敗時，不阻擋使用者送出，避免整個評價功能不可用。
       console.error('評價內容審查服務連線失敗:', error);
       return false;
     }
@@ -202,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function initMode() {
-    // mode=view 用在隊長審核申請者時，只看歷史評價，不顯示撰寫表單。
+    // mode=view 用在只看歷史評價，不顯示撰寫表單
     if (mode === 'view' && reviewFormCard) {
       reviewFormCard.hidden = true;
     }
@@ -225,44 +232,67 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      setSubmitState(true);
-      const isBad = await checkIsBadContent(comment);
+// ... 前面確認星星數量和留言內容的程式碼不變 ...
 
+      setSubmitState(true);
+      
+      const isBad = await checkIsBadContent(comment);
       if (isBad) {
         alert('系統檢測到您的留言包含不文明用語，請修改後再發布！');
         setSubmitState(false);
         return;
       }
 
-      // 先存 localStorage，未來後端 review API 完整後可以在這裡同步送出資料庫。
-      const reviews = readJson(storageKey, []);
-      reviews.unshift({
-        rating: currentRating,
-        content: comment,
-        date: new Date().toISOString(),
-        reviewerId: currentUserId,
-        reviewerName: getReviewerName(),
-        targetUserId,
-        targetName: targetProfile?.name || `使用者 ${targetUserId}`,
-        teamId,
-        teamName
-      });
-      localStorage.setItem(storageKey, JSON.stringify(reviews));
+      // ==========================================
+      // 🌟 配合後端規定，打包新的評價資料格式
+      // ==========================================
+      const reviewPayload = {
+        com_id: teamId || 1, // ⚠️ 注意：你們後端必填 com_id(比賽ID)，如果你從網址抓不到，可能要先塞個預設值(如 1)避免報錯
+        userWrite_id: currentUserId,
+        userRec_id: targetUserId,
+        star: currentRating,
+        rev_content: comment
+      };
 
-      currentRating = 0;
-      updateStars(0);
-      reviewComment.value = '';
-      setSubmitState(false);
+      try {
+        const token = localStorage.getItem('token');
+        // 這裡對齊你們的 api route (假設有掛上 /api)
+        const response = await fetch('/api/submit-review', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? token : '' 
+          },
+          body: JSON.stringify(reviewPayload)
+        });
 
-      alert('評價發布成功！');
-      loadReviews();
+        const data = await response.json();
+        
+        if (!response.ok || !data.ok) {
+           throw new Error(data.error || '後端儲存評價失敗');
+        }
+
+        currentRating = 0;
+        updateStars(0);
+        reviewComment.value = '';
+        setSubmitState(false);
+        
+        alert('評價發布成功！');
+        // loadReviews(); 
+        
+      } catch (error) {
+        console.error('發送評價失敗：', error);
+        alert(error.message || '評價送出失敗，請檢查網路連線或稍後再試。');
+        setSubmitState(false);
+      }
     });
   }
-
   const homeLink = document.querySelector('.logo-link');
   if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
 
-  loadResumeData();
   initMode();
   loadReviews();
+  
+
+  await loadResumeData();
 });
