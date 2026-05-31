@@ -426,6 +426,161 @@
     padding: 20px 0;
 }
 
+.talent-search-container {
+    padding: 40px 20px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.search-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.search-hint {
+    color: #8a7a6e;
+    margin-bottom: 20px;
+}
+
+.search-box-wrapper {
+    display: flex;
+    gap: 10px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.search-box-wrapper input {
+    flex: 1;
+    padding: 12px 18px;
+    border: 1px solid #d6c2ad;
+    border-radius: 8px;
+    font-size: 15px;
+}
+
+.search-bg-icon {
+    width: 64px;
+    height: 64px;
+    stroke: #eee;
+    fill: none;
+    stroke-width: 1;
+    margin-bottom: 10px;
+}
+
+.initial-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 0;
+    color: #bbb;
+}
+
+/* 讓整個搜尋頁面往右移一點，不要貼死左邊 */
+.talent-search-page {
+    width: 100%;
+}
+
+.search-main-area {
+    max-width: 900px; /* 🚀 限制最大寬度，避免在超大螢幕散掉 */
+}
+
+.search-header-container {
+    margin-bottom: 50px;
+}
+
+
+/* 2. 提示文字禁止換行 */
+.search-subtitle-full, .status-msg-no-wrap {
+    color: #8a7a6e;
+    margin-bottom: 25px;
+    font-size: 16px;
+    white-space: nowrap; /* 🚀 關鍵：絕對不換行 */
+    overflow: visible;   /* 確保文字長度超出時不會被切掉 */
+}
+
+/* 搜尋組：橫向排列不換行 */
+.search-input-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+}
+
+.search-input-group input {
+    width: 400px; /* 固定寬度防止縮小 */
+    padding: 12px 18px;
+    border: 1px solid #d6c2ad;
+    border-radius: 8px;
+    outline: none;
+    font-size: 15px;
+}
+
+/* 3. 搜尋組長度拉長 */
+.search-input-group-expanded {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%; /* 填滿 parent */
+    margin-bottom: 30px;
+}
+
+.search-input-group-expanded input {
+    flex: 1; /* 🚀 關鍵：讓輸入框自動吃掉所有剩餘寬度，變得很長 */
+    min-width: 450px; /* 確保在小螢幕也有一定長度 */
+    padding: 12px 20px;
+    border: 1px solid #d6c2ad;
+    border-radius: 10px;
+    font-size: 16px;
+    background: #fdfaf7; /* 淡淡的底色增加質感 */
+}
+
+/* 🚀 仿照圖 2 的按鈕樣式 */
+.btn-search-style {
+    background: #fff;
+    border: 1px solid #d6c2ad;
+    color: #8a7a6e;
+    padding: 10px 25px;
+    border-radius: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s;
+    font-weight: 500;
+}
+
+/* 4. 實心按鈕樣式 (顏色填滿) */
+.btn-search-solid {
+    background: #d6c2ad; /* 🚀 使用外框的主色調填滿 */
+    color: #ffffff;      /* 文字改為白色 */
+    border: 1px solid #d6c2ad;
+    padding: 11px 35px;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.btn-search-solid:hover {
+    background: #4f3827; /* 懸停時變深棕色，更有回饋感 */
+    border-color: #4f3827;
+    box-shadow: 0 4px 12px rgba(79, 56, 39, 0.2);
+}
+
+/* 搜尋結果區：沿用原本的 grid 樣式，確保卡片像圖 2 一樣 */
+.search-results-area {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* 狀態訊息：絕對不換行 */
+.status-msg-no-wrap {
+    color: #a09084;
+    font-size: 15px;
+    white-space: nowrap; /* 🚀 搜尋不到時的文字不換行 */
+    margin-top: 10px;
+}
+
 /* --- 6. 響應式相容 --- */
 @media (max-width: 768px) {
     .layout-manage {
