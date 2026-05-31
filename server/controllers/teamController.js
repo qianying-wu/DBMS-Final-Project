@@ -311,3 +311,82 @@ export const toggleFavorite = async (req, res) => {
       res.status(500).json({ success: false, message: '伺服器內部錯誤，請檢查資料庫欄位' });
     }
   };
+
+export const getTeamMember = async (req, res) => {
+  try {
+    const { teamId } = req.query;
+    if (!teamId) return res.status(400).json({ message: '缺少 teamId' });
+
+    // 1. 撈取隊伍基本資料
+    const [teamRows] = await db.execute(
+      `SELECT * FROM teams WHERE team_id = ?`, 
+      [teamId]
+    );
+    if (teamRows.length === 0) return res.status(404).json({ message: '找不到該隊伍' });
+
+    // 2. 👑 關鍵：撈取該隊伍的所有 Membership 成員，並 JOIN 填入使用者與履歷名稱
+    // 這樣前端過濾 mem_status === '申請中' 才有資料可用！
+    const [memberRows] = await db.execute(`
+      SELECT 
+        m.user_id,
+        m.role,
+        m.mem_status,
+        m.resume_id,
+        u.user_name,
+        p.name AS resume_name
+      FROM membership m
+      LEFT JOIN users u ON m.user_id = u.user_id
+      LEFT JOIN profiles p ON m.resume_id = p.id
+      WHERE m.team_id = ?
+    `, [teamId]);
+
+    // 回傳給前端
+    return res.status(200).json({
+      team: teamRows[0],
+      members: memberRows
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: '伺服器內部錯誤' });
+  }
+};
+
+export const reviewApplication = async (req, res) => {
+  try {
+    const { team_id, user_id, action } = req.body;
+    // 安全檢查：實務上這裡還要額外驗證「發出請求的人是不是該隊伍的隊長」
+
+    if (!team_id || !user_id || !action) {
+      return res.status(400).json({ message: '參數不完整' });
+    }
+
+    // 🌟 動作一：審核通過
+    if (action === 'pass') {
+      await db.execute(
+        `UPDATE membership SET mem_status = '通過' WHERE team_id = ? AND user_id = ?`,
+        [team_id, user_id]
+      );
+      
+      // (選擇性) 如果你們的 teams table 有記錄目前人數，記得在這邊 +1 喔！
+      // await db.execute(`UPDATE teams SET current_member_count = current_member_count + 1 WHERE team_id = ?`, [team_id]);
+
+      return res.status(200).json({ message: '已成功核准加入隊伍' });
+    }
+
+    // 🌟 動作二：拒絕申請（從資料庫直接拔掉）
+    if (action === 'reject') {
+      await db.execute(
+        `DELETE FROM membership WHERE team_id = ? AND user_id = ? AND mem_status = '申請中'`,
+        [team_id, user_id]
+      );
+      return res.status(200).json({ message: '已成功拒絕並刪除申請紀錄' });
+    }
+
+    return res.status(400).json({ message: '未知的審核動作' });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: '伺服器審核失敗' });
+  }
+};
