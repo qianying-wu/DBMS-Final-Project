@@ -54,6 +54,8 @@ export const getReviews = async (req, res) => {
         // 去 Review 表格撈出該用戶的所有評價，順便去 user 表格關聯出「留言者」的名字
         const sql = `
             SELECT 
+                r.rev_id,
+                r.userWrite_id,
                 r.star, 
                 r.rev_content, 
                 u.userName AS reviewer_name 
@@ -66,6 +68,26 @@ export const getReviews = async (req, res) => {
         res.json({ ok: true, data: rows });
     } catch (error) {
         console.error('讀取歷史評價失敗:', error);
+        res.status(500).json({ ok: false, error: '伺服器資料庫錯誤' });
+    }
+};
+
+export const deleteReview = async (req, res) => {
+    const { revId } = req.params; // 從網址抓取要刪除的留言 ID
+    const currentUserId = req.user.user_id; // 從 JWT Token 抓取目前登入者的 ID
+
+    try {
+        // SQL 條件加上 userWrite_id = ?，確保只能刪除「自己寫的」評價
+        const sql = 'DELETE FROM Review WHERE rev_id = ? AND userWrite_id = ?';
+        const [result] = await pool.execute(sql, [revId, currentUserId]);
+
+        if (result.affectedRows === 0) {
+            return res.status(403).json({ ok: false, error: '無權限刪除此評價，或評價不存在' });
+        }
+
+        res.json({ ok: true, message: '評價已成功刪除' });
+    } catch (error) {
+        console.error('刪除評價失敗:', error);
         res.status(500).json({ ok: false, error: '伺服器資料庫錯誤' });
     }
 };

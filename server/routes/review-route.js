@@ -9,9 +9,8 @@ const router = express.Router();
 // 公開 API：取得目標使用者的歷史評價
 router.get('/list/:userId', reviewController.getReviews);
 
-//  這些是保護 API（必須登入）
 router.use(passport.authenticate("jwt", { session: false }));    // 驗證 Token 並注入 req.user
-
 router.post('/submit-review', reviewController.submitReview);
+router.delete('/delete/:revId', reviewController.deleteReview);
 
 export default router;

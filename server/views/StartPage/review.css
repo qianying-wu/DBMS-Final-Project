@@ -152,3 +152,24 @@
 .review-item-stars { color: #f58228; font-size: 16px; letter-spacing: 2px; margin-bottom: 8px; }
 .review-item-content { color: #55483d; line-height: 1.6; margin: 0; white-space: pre-line; }
 .empty-note { color: #8a735e; padding: 16px; }
+
+/* --- 刪除按鈕樣式 --- */
+.delete-review-btn {
+  float: right;
+  font-size: 13px;
+  padding: 6px 12px;
+  background-color: #fff0f0; /* 淺紅底色 */
+  color: #d9534f;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px; /* 圖示跟文字的間距 */
+}
+
+.delete-review-btn:hover {
+  background-color: #d9534f; /* 游標移入變深紅底 */
+  color: #fff;
+}

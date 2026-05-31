@@ -24,6 +24,75 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentRating = 0;
   let targetProfile = null;
 
+  function showCustomAlert(message, type = 'success') {
+    // 檢查是不是已經有打開的視窗，有的話先清掉
+    const existingModal = document.getElementById('customAlertModal');
+    if (existingModal) existingModal.remove();
+
+    // 建立外層的半透明黑色背景
+    const modal = document.createElement('div');
+    modal.id = 'customAlertModal';
+    modal.className = 'modal'; 
+    modal.style.zIndex = '9999'; 
+
+    // 根據成功或失敗，決定圖示跟顏色
+    const icon = type === 'error' ? '🥺' : '✨';
+    const title = type === 'error' ? '哎呀！' : '太棒了！';
+    const titleColor = type === 'error' ? '#d9534f' : '#a17851';
+
+    // 塞入裡面的卡片內容
+    modal.innerHTML = `
+      <div class="modal-card" style="text-align: center; min-width: 320px; padding: 36px 24px;">
+        <div style="font-size: 56px; margin-bottom: 12px; line-height: 1;">${icon}</div>
+        <h3 style="margin: 0 0 12px 0; color: ${titleColor}; font-size: 22px;">${title}</h3>
+        <p style="color: #55483d; margin: 0 0 24px 0; font-size: 16px; line-height: 1.6;">${message}</p>
+        <button id="closeAlertBtn" class="btn primary" style="width: 100%; border-radius: 99px; font-size: 16px;">我知道了</button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 綁定「我知道了」按鈕，點下去就把視窗關掉
+    document.getElementById('closeAlertBtn').addEventListener('click', () => {
+      modal.remove();
+    });
+  }
+
+  function showCustomConfirm(message, onConfirm) {
+    const existingModal = document.getElementById('customConfirmModal');
+    if (existingModal) existingModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'customConfirmModal';
+    modal.className = 'modal';
+    modal.style.zIndex = '9999';
+
+    modal.innerHTML = `
+      <div class="modal-card" style="text-align: center; min-width: 320px; padding: 36px 24px;">
+        <div style="font-size: 56px; margin-bottom: 12px; line-height: 1;">🗑️</div>
+        <h3 style="margin: 0 0 12px 0; color: #d9534f; font-size: 22px;">確認刪除？</h3>
+        <p style="color: #55483d; margin: 0 0 24px 0; font-size: 16px; line-height: 1.6;">${message}</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button id="cancelConfirmBtn" class="btn" style="flex: 1; border-radius: 99px; font-size: 16px; background: #f1e8dd; color: #55483d; border: none;">取消</button>
+          <button id="okConfirmBtn" class="btn primary" style="flex: 1; border-radius: 99px; font-size: 16px; background: #d9534f; border: none; color: #fff;">確定刪除</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 按下取消：直接關閉視窗，什麼都不做
+    document.getElementById('cancelConfirmBtn').addEventListener('click', () => {
+      modal.remove();
+    });
+
+    // 按下確定：關閉視窗，並執行傳進來的刪除邏輯
+    document.getElementById('okConfirmBtn').addEventListener('click', () => {
+      modal.remove();
+      onConfirm(); 
+    });
+  }
+
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, match => ({
       '&': '&amp;',
@@ -186,9 +255,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rating = Math.max(0, Math.min(5, Number(review.star) || 0));
         const starString = '★'.repeat(rating) + '☆'.repeat(5 - rating);
 
+        // 邏輯：判斷這則留言的作者，是不是現在正在看網頁的人
+        const isMyReview = String(review.userWrite_id) === String(currentUserId);
+        
+        const deleteBtnHtml = isMyReview 
+          ? `<button class="delete-review-btn" data-revid="${review.rev_id}">🗑️ 刪除</button>` 
+          : '';
+
         item.innerHTML = `
           <div class="review-item-header">
             <span class="review-item-author">${escapeHtml(review.reviewer_name || '匿名隊友')}</span>
+            ${deleteBtnHtml}
           </div>
           <div class="review-item-stars">${starString}</div>
           <p class="review-item-content">${escapeHtml(review.rev_content)}</p>
@@ -196,22 +273,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         reviewList.appendChild(item);
       });
 
+      const deleteBtns = reviewList.querySelectorAll('.delete-review-btn');
+      deleteBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const revId = e.target.getAttribute('data-revid');
+          
+          // 呼叫自訂確認視窗，把 fetch 刪除的動作包進去
+          showCustomConfirm('確定要刪除這則評價嗎？此動作無法復原。', async () => {
+            try {
+              const token = localStorage.getItem('token');
+              const response = await fetch(`/api/review/delete/${revId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': token ? token : '' }
+              });
+
+              if (response.status === 401) {
+                throw new Error('登入已過期，請重新登入！');
+              }
+              const data = await response.json();
+              if (!response.ok || !data.ok) throw new Error(data.error || '刪除失敗');
+              
+              showCustomAlert('評價已成功刪除！');
+              await loadReviews(); 
+
+            } catch (error) {
+              console.error('刪除評價失敗:', error);
+              showCustomAlert(error.message, 'error');
+            }
+          });
+        });
+      });
+
     } catch (error) {
       console.error('讀取歷史評價失敗：', error);
       reviewList.innerHTML = '<div class="empty-note">目前無法載入評價，請稍後再試。</div>';
-    }
-  }
-
-  async function checkIsBadContent(text) {
-    const gasUrl = 'https://script.google.com/macros/s/AKfycbz4ifJzx6YFG7SroCncE5gcbXp17GyYeGbqJPXGWAeRIMazlifaeJT3ijeDZ5cVqnu-Lw/exec';
-
-    try {
-      const response = await fetch(`${gasUrl}?text=${encodeURIComponent(text)}`);
-      const data = await response.json();
-      return data.flagged === true;
-    } catch (error) {
-      console.error('評價內容審查服務連線失敗:', error);
-      return false;
     }
   }
 
@@ -234,32 +329,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       const comment = reviewComment.value.trim();
 
       if (String(currentUserId) === String(targetUserId)) {
-        alert('不能評價自己，請選擇隊友進行評價。');
+        showCustomAlert('不能評價自己，請選擇隊友進行評價。', 'error');
         return;
       }
       if (currentRating === 0) {
-        alert('請先選擇星級評分！');
+        showCustomAlert('請先選擇星級評分！', 'error');
         return;
       }
       if (!comment) {
-        alert('請輸入評價內容！');
+        showCustomAlert('請輸入評價內容！', 'error');
         return;
       }
 
       setSubmitState(true);
       
-      const isBad = await checkIsBadContent(comment);
-      if (isBad) {
-        alert('系統檢測到您的留言包含不文明用語，請修改後再發布！');
-        setSubmitState(false);
-        return;
-      }
-
-      // ==========================================
-      // 🌟 配合後端規定，打包新的評價資料格式
-      // ==========================================
       const reviewPayload = {
-        com_id: teamId || 1, // ⚠️ 注意：你們後端必填 com_id(比賽ID)，如果你從網址抓不到，可能要先塞個預設值(如 1)避免報錯
+        com_id: teamId || 1, // 端必填 com_id(比賽ID)，如果你從網址抓不到，可能要先塞個預設值(如 1)避免報錯
         userWrite_id: currentUserId,
         userRec_id: targetUserId,
         star: currentRating,
@@ -294,12 +379,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         reviewComment.value = '';
         setSubmitState(false);
         
-        alert('評價發布成功！');
+        showCustomAlert('評價發布成功！');
         await loadReviews(); 
         
       } catch (error) {
         console.error('發送評價失敗：', error);
-        alert(error.message || '評價送出失敗，請檢查網路連線或稍後再試。');
+        showCustomAlert(error.message || '評價送出失敗，請檢查網路連線或稍後再試。', 'error');
         setSubmitState(false);
       }
     });
@@ -308,8 +393,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
 
   initMode();
-  loadReviews();
   
+  // 已經拿掉多餘的 loadReviews() 呼叫
   await loadReviews();
   await loadResumeData();
 });

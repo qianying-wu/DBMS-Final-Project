@@ -44,12 +44,12 @@ const mintEn = new MintFilter(englishWords);
  */
 export const checkContent = (text) => {
     if (!text) return { isBad: false, cleanText: '' };
+    const normalizedText = text.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
 
-    // mint-filter 的 verify 回傳 true 代表「字眼乾淨」
-    const isChClean = mintCh.verify(text);
-    const isEnClean = mintEn.verify(text);
+    const isChClean = mintCh.verify(normalizedText);
+    const isEnClean = mintEn.verify(normalizedText);
 
-    // 進行過濾（把髒話變星號）
+    // 進行過濾（把髒話變星號，保留原本的 text 格式）
     const chFiltered = mintCh.filter(text).text;
     const finalFiltered = mintEn.filter(chFiltered).text;
 
