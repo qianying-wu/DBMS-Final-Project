@@ -442,47 +442,31 @@ export async function renderTeamsGridSection() {
       });
 
       // ----------------------------------------------------------------------
-      // 分頁三：我收藏的比賽 (讀取後端 /api/contests/getFavorites)
+      // 分頁三：我收藏的比賽 (讀取總大賽庫與 localStorage 對照)
       // ----------------------------------------------------------------------
     } else if (activeTab === 'favorites-com') {
-      console.log('成功進入收藏比賽分頁分歧！'); // 確保有進來
-      let favContests = [];
-      function getAuthHeader() {
-        const token = localStorage.getItem('token');
-        return token ? { 'Authorization': ` ${token}` } : {};
-      }
-      async function loadMyFavCom() {
-        try {
-          const path = '/api/contests/getFavorites';
-          console.log('準備送出 fetch 請求，路徑為:', path);
-          const res = await fetch(path, { headers: { ...getAuthHeader() } });
-          console.log('收到後端回應狀態碼:', res.status); // 看看是 200, 401 還是 404
-          if (!res.ok) throw new Error(`HTTP 錯誤！狀態碼: ${res.status}`);
-
+      if (!allContestsData || allContestsData.length === 0) {
+        const res = await fetch('/api/contests/competitions');
+        if (res.ok) {
           const result = await res.json();
-          favContests = result.data || result.competitions || (Array.isArray(result) ? result : []);
-        } catch (err) {
-          console.error(err);
-          alert('讀取資料庫失敗');
-          return [];
+          allContestsData = result.competitions || result || [];
         }
       }
-      try {
-        await loadMyFavCom();
 
-        // 2. 檢查是否有收藏資料
-        if (!favContests || favContests.length === 0) {
-          gridContainer.innerHTML = `<div class="empty-text">目前暫無收藏的比賽。快去首頁逛逛吧！</div>`;
-          return;
-        }
+      const contestFavs = JSON.parse(localStorage.getItem('favoriteContests') || '[]');
+      const favContests = allContestsData.filter(c => contestFavs.includes(Number(c.id || c.com_id)));
 
-        // 3. 渲染畫面
-        gridContainer.innerHTML = favContests.map(c => {
-          const cId = c.com_id || c.id;
-          const cName = c.com_name || c.name || '未命名比賽';
-          const cIntro = c.com_intro || '尚未填寫比賽說明';
+      if (favContests.length === 0) {
+        gridContainer.innerHTML = `<div class="empty-text">目前暫無收藏的比賽。快去首頁逛逛吧！</div>`;
+        return;
+      }
 
-          return `
+      gridContainer.innerHTML = favContests.map(c => {
+        const cId = c.com_id || c.id;
+        const cName = c.com_name || c.name || '未命名比賽';
+        const cIntro = c.com_intro || '尚未填寫比賽說明';
+
+        return `
           <div class="team-manage-card" style="border-left: 4px solid #caa77a;">
               <div class="card-top">
                   <h3 class="team-title" style="margin-top: 5px;">${Data.escapeHtml(cName)}</h3>
@@ -500,35 +484,26 @@ export async function renderTeamsGridSection() {
               </div>
           </div>
         `;
-        }).join('');
+      }).join('');
 
-        // 4. 綁定事件
-        gridContainer.querySelectorAll('.btn-contest-action').forEach(btn => {
-          btn.addEventListener('click', () => {
-            location.href = Data.withUserParam(`/contest.html?id=${btn.dataset.contestId}`);
-          });
-        });
-        // 🛠️ 【就是這裡！！】你原本漏掉的後半段 catch 區塊與 if-else 的右大括號：
-      } catch (innerError) {
-        console.error('渲染收藏比賽時發生錯誤:', innerError);
-      }
-
-
-      // ----------------------------------------------------------------------
-      // 後續原有的通用事件綁定與 Catch 區塊
-      // ----------------------------------------------------------------------
-      gridContainer.querySelectorAll('[data-owned-action]').forEach(btn => {
+      gridContainer.querySelectorAll('.btn-contest-action').forEach(btn => {
         btn.addEventListener('click', () => {
-          renderOwnedTeamPanel(btn.dataset.teamId, btn.dataset.teamName, btn.dataset.ownedAction);
+          location.href = Data.withUserParam(`/contest.html?id=${btn.dataset.contestId}`);
         });
       });
     }
+
+    gridContainer.querySelectorAll('[data-owned-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        renderOwnedTeamPanel(btn.dataset.teamId, btn.dataset.teamName, btn.dataset.ownedAction);
+      });
+    });
+
   } catch (error) {
     console.error('❌ 中央管理網格驅動失敗:', error);
     gridContainer.innerHTML = '<div class="empty-text" style="color:red;">資料載入失敗，請確認網路連線。</div>';
   }
 }
-
 
 function isLoggedIn() {
   const token = localStorage.getItem("token");
@@ -673,8 +648,8 @@ function renderMembersPanel(panel, teamId, teamName) {
     </div>
     <div class="local-members-list">
       ${members.map(member => {
-    const canReview = String(member.userId) !== String(currentUserId);
-    return `
+        const canReview = String(member.userId) !== String(currentUserId);
+        return `
         <article class="local-member-card">
           <div>
             <strong>${Data.escapeHtml(member.applicantName)}</strong>
@@ -689,7 +664,7 @@ function renderMembersPanel(panel, teamId, teamName) {
           ` : ''}
         </article>
       `;
-  }).join('')}
+      }).join('')}
     </div>
   `;
 }
@@ -720,5 +695,3 @@ if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
 // --- 🚀 初始自動啟動流程 ---
 initManageDashboard();
 renderTeamsGridSection();
-
-
