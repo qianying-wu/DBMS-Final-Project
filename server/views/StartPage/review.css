@@ -329,3 +329,38 @@ body {
   }
 }
 
+/* --- 綜合評價區塊 --- */
+.avg-rating-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fdfaf6;
+  border: 1px solid #e8e2d9;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.avg-score {
+  font-size: 36px;
+  font-weight: 800;
+  color: #f58228;
+  line-height: 1;
+}
+
+.avg-stars-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.avg-stars {
+  font-size: 18px;
+  color: #f58228;
+  letter-spacing: 2px;
+}
+
+.avg-count {
+  font-size: 13px;
+  color: #8a735e;
+  font-weight: 500;
+}

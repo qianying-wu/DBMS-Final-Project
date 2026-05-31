@@ -241,6 +241,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const reviews = result.data;
+      
+      // ==========================================
+      // 🌟 新增：計算並顯示平均星數
+      // ==========================================
+      let totalStars = 0;
+      reviews.forEach(r => {
+        totalStars += (Number(r.star) || 0); // 把每個人給的星數加總
+      });
+      
+      // 算出平均值 (算到小數點第一位)
+      const avgStar = reviews.length > 0 ? (totalStars / reviews.length).toFixed(1) : 0;
+      const roundedStar = Math.round(avgStar); // 四捨五入用來畫星星
+
+      // 把算好的數字塞進剛寫好的 HTML 裡
+      const scoreEl = document.getElementById('r-avg-score');
+      const starsEl = document.getElementById('r-avg-stars');
+      const countEl = document.getElementById('r-avg-count');
+
+      if (scoreEl) scoreEl.textContent = avgStar > 0 ? avgStar : '-.-';
+      if (starsEl) starsEl.textContent = avgStar > 0 ? '★'.repeat(roundedStar) + '☆'.repeat(5 - roundedStar) : '☆☆☆☆☆';
+      if (countEl) countEl.textContent = `(${reviews.length} 則評價)`;
+      // ==========================================
+
       reviewList.innerHTML = '';
 
       if (reviews.length === 0) {
