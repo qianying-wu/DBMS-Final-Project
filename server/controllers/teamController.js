@@ -221,9 +221,16 @@ export const getMyJoinedTeams = async (req, res) => {
 
   try {
     const [teams] = await pool.execute(
-      `SELECT t.team_id, t.team_name, t.current_member_count, t.num_limit
+      `SELECT 
+        t.team_id, 
+        t.team_name, 
+        t.current_member_count, 
+        t.num_limit, 
+        t.teamStatus,
+        c.com_name AS com_name -- 👑 關鍵：把競賽名稱撈出來
        FROM Membership m
        JOIN Team t ON m.team_id = t.team_id
+       LEFT JOIN Competition c ON t.com_id = c.com_id -- 👑 關鍵：關聯到你的競賽表 (請依實際欄位修改)
        WHERE m.user_id = ? AND m.mem_status = '通過'`,
       [userId]
     );
@@ -271,9 +278,16 @@ export const getMyOwnedTeams = async (req, res) => {
 
   try {
     const [teams] = await pool.execute(
-      `SELECT t.team_id, t.team_name, t.current_member_count, t.num_limit
+      `SELECT 
+        t.team_id, 
+        t.team_name, 
+        t.current_member_count, 
+        t.num_limit, 
+        t.teamStatus,
+        c.com_name AS com_name -- 👑 關鍵：把競賽名稱撈出來
        FROM Membership m
        JOIN Team t ON m.team_id = t.team_id
+       LEFT JOIN Competition c ON t.com_id = c.com_id -- 👑 關鍵：關聯到你的競賽表 (請依實際欄位修改)
        WHERE m.user_id = ? AND m.role = '建立人'`,
       [userId]
     );
@@ -452,3 +466,52 @@ export const checkApplyStatus = async (req, res) => {
     res.status(500).json({ success: false, message: '伺服器內部錯誤' });
   }
 };
+
+export const updateStatus = async (req, res) => {
+  const { team_id, status } = req.body;
+  const userId = req.user.id; // 💡 從 verifyToken 解析出來的目前登入用戶 ID
+
+  // 1. 基本安全驗證：防呆與檢查參數
+  if (!team_id || !status) {
+    return res.status(400).json({ success: false, message: '缺少必要參數 team_id 或 status' });
+  }
+
+  // 只允許變更為 completed 或 disbanded，防止前端惡意傳入非法字串
+  if (status !== 'completed' && status !== 'disbanded') {
+    return res.status(400).json({ success: false, message: '不合法的隊伍狀態變更行為' });
+  }
+
+  try {
+
+    if (teamRows.length === 0) {
+      return res.status(404).json({ success: false, message: '找不到該隊伍資料' });
+    }
+
+
+    // 3. 核心操作：直接更新資料庫中 Teams 表的 team_status 欄位
+    await pool.query(
+      'UPDATE Team SET team_status = ? WHERE team_id = ?', 
+      [status, team_id]
+    );
+
+    // 4. (選填/優化) 如果隊伍解散或完賽，你可能也會想把 Membership 裡面還在「申請中」的人自動改成「拒絕」
+    if (status === 'disbanded' || status === 'completed') {
+      await pool.query(
+        "UPDATE Membership SET mem_status = '已結束' WHERE team_id = ? AND mem_status = '申請中'",
+        [team_id]
+      );
+    }
+
+    // 5. 成功回應前端
+    return res.status(200).json({ 
+      success: true, 
+      message: `隊伍狀態已成功變更為 ${status}` 
+    });
+
+  } catch (error) {
+    console.error('❌ 後端變更隊伍狀態失敗:', error);
+    return res.status(500).json({ success: false, message: '伺服器內部錯誤，請稍後再試' });
+  }
+
+
+}
