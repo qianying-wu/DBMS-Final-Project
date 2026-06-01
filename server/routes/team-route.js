@@ -17,7 +17,6 @@ router.get('/my-favorites', teamController.getMyFavoriteTeams);
 router.post('/toggle-favorite', teamController.toggleFavorite);
 router.get('/detail', teamController.getTeamMember);
 router.post('/review', teamController.reviewApplication);
-router.post('/update-status', teamController.updateStatus);
 router.get('/apply-status', teamController.checkApplyStatus);
 router.post('/update-status', teamController.updateTeamStatus);
 
