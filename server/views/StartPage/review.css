@@ -36,6 +36,53 @@ body {
   align-items: start;
 }
 
+.review-error {
+  background: #FFF6F5;
+  border: 1px solid #F2D7D5;
+  border-radius: 14px;
+  padding: 24px 28px;
+  margin-bottom: 32px;
+  color: #6C3B34;
+}
+
+.review-error-card {
+  display: grid;
+  gap: 16px;
+}
+
+.review-error-card h3 {
+  margin: 0;
+  font-size: 22px;
+  color: #A63C32;
+}
+
+.review-error-card p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #5B3F3A;
+}
+
+.review-error-card .error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.review-error-card .btn-error {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  border: 1px solid #A63C32;
+  background: #FFF0EF;
+  color: #A63C32;
+  text-decoration: none;
+  font-weight: 700;
+}
+
 .resume-sidebar {
   position: sticky;
   top: 90px;
