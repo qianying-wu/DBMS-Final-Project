@@ -3,7 +3,8 @@
 
     // DOM 元素選擇器簡寫
     const $ = id => document.getElementById(id);
-    // 控制帳號資訊頁的左右滑動版型：點選左側功能後才顯示右側操作內容。
+
+    // 控制帳號資訊頁的左右滑動版型
     function initAccountPanels() {
         const container = document.querySelector('.account-container');
         const tiles = document.querySelectorAll('[data-account-panel]');
@@ -33,32 +34,19 @@
 
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>"']/g, match => ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;'
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         })[match]);
     }
     initAccountPanels();
+
     // 🔑 關鍵串接：直接從登入成功的驗證快取中抓取真實狀態
     const token = localStorage.getItem('token');
     const id = localStorage.getItem('userId');
 
-    // 🔧 修正：確保帶上 Bearer 與空格，讓後端 Passport 認得出來
+    // 🔧 核心修正：確保帶上 Bearer 與空格，讓後端 Passport 認得出來
     function getAuthHeader() {
         const token = localStorage.getItem('token');
         return token ? { 'Authorization': `${token}` } : {};
-    }
-
-    function escapeHtml(value) {
-        return String(value ?? '').replace(/[&<>"']/g, match => ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;'
-        })[match]);
     }
 
     function readJson(key, fallback) {
@@ -68,7 +56,6 @@
             return fallback;
         }
     }
-
 
     // 安全機制：若完全沒有登入資訊，強制引導回登入頁
     if (!id || id === 'unknown') {
@@ -80,21 +67,32 @@
     async function getAccount() {
         try {
             const path = '/api/auth/account';
-            // 💡 透過修正後的 getAuthHeader 帶上標準 Token 
             const response = await fetch(path, { headers: { ...getAuthHeader() } });
             if (!response.ok) throw new Error('無法取得履歷資料');
 
             const serverData = await response.json();
-            // 假設後端回傳：{ account: "xxx@mail.com" }
             if ($('username')) $('username').value = serverData.account || id;
-            if ($('sideName')) $('sideName').textContent = serverData.account || id;
             return serverData;
         } catch (err) {
             console.error("無法連線至後端資料庫 API", err);
         }
     }
 
-    // 2. 【寫入資料庫】儲存修改密碼（新增成功通知）
+    async function getUserName() {
+        try {
+            const path = '/api/auth/userName';
+            const response = await fetch(path, { headers: { ...getAuthHeader() } });
+            if (!response.ok) throw new Error('無法取得使用者名稱');
+
+            const serverData = await response.json();
+            if ($('sideName')) $('sideName').textContent = serverData.userName || id;
+            return serverData;
+        } catch (err) {
+            console.error("無法連線至後端資料庫 API", err);
+        }
+    }
+
+    // 2. 【寫入資料庫】儲存修改密碼
     async function saveAccountSettings(event) {
         event.preventDefault();
         console.log('🚀🚀🚀 成功觸發 saveAccountSettings 函式！');
@@ -122,10 +120,7 @@
                     'Content-Type': 'application/json',
                     ...getAuthHeader()
                 },
-                body: JSON.stringify({
-                    user_id: id,
-                    userPsw: newPassword
-                })
+                body: JSON.stringify({ user_id: id, userPsw: newPassword })
             });
 
             if (response.ok) {
@@ -134,17 +129,13 @@
                 statusEl.textContent = '✅ 資料庫同步成功！';
                 statusEl.style.color = '#5d7a59';
 
-                // 🔔 成功時觸發前端系統通知
                 if (window.AppNotifications && typeof window.AppNotifications.addNotification === 'function') {
                     window.AppNotifications.addNotification({
                         type: 'system',
                         message: '🔒 安全通知：您的帳號密碼已成功更新！',
                         action: null
                     });
-                } else {
-                    console.log('🔔 密碼已變更成功（AppNotifications 未載入）');
                 }
-
             } else {
                 const errorRes = await response.json().catch(() => ({}));
                 statusEl.textContent = `❌ 儲存失敗: ${errorRes.message || '伺服器錯誤'}`;
@@ -156,69 +147,105 @@
         }
     }
 
-    // 🔧 核心修正：對齊 HTML 中的 form id="profileForm"
     const accountForm = $('profileForm');
     if (accountForm) {
-        console.log('【表單綁定成功】已掛載 submit 監聽器！');
         accountForm.addEventListener('submit', saveAccountSettings);
-    } else {
-        console.error('【表單綁定失敗】找不到 id="profileForm" 的 Form 元素！');
     }
 
-    // 3. 原本的競賽個人化標籤設定與防禦機制
-    let selectedPreferences = [];
+    // ======================================================================
+    // 3. 競賽個人化標籤設定 (🚀 補齊全域變數與點擊事件完全體)
+    // ======================================================================
+    let selectedPreferences = []; // 儲存使用者目前選中的 Key 清單
+    let allDbTags = [];           // 🚀 核心修正：補上先前不小心遺失的總表變數宣告！
+
     const preferenceTags = $('preferenceTags');
     const preferenceStatus = $('preferenceStatus');
 
-    const defaultTags = [
-        { key: 'hackathon', label: '黑客松 (Hackathon)' },
-        { key: 'business', label: '商業創新 / 創業競賽' },
-        { key: 'ai-data', label: 'AI 人工智慧 & 資料科學' },
-        { key: 'uiux', label: 'UI/UX 介面設計' },
-        { key: 'app-web', label: '網頁與行動 App 開發' }
-    ];
-
-    async function getAvailableTags() {
+    // 🚀 網址已精準對齊你新設定的 /api/pref/allPrefTags
+    async function fetchAllDbTags() {
         try {
-            if (window.AppPreferences && typeof window.AppPreferences.loadTags === 'function') {
-                return await window.AppPreferences.loadTags();
+            const path = '/api/pref/allPrefTags';
+            const res = await fetch(path);
+            if (res.ok) {
+                const result = await res.json();
+                if (result.success && Array.isArray(result.data)) return result.data;
             }
-        } catch (e) { }
-        return defaultTags;
+        } catch (e) {
+            console.error("無法從資料庫讀取 Com_type 總表", e);
+        }
+        return [];
     }
 
+    // 🚀【連線資料庫版】一進網頁，從 DB 撈取該使用者先前勾選的偏好
     async function getUserSavedPreferences() {
         try {
-            if (window.AppPreferences && typeof window.AppPreferences.loadUserPreferences === 'function') {
-                return await window.AppPreferences.loadUserPreferences(id);
+            const path = '/api/pref/getpref';
+            const response = await fetch(path, { headers: { ...getAuthHeader() } });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && Array.isArray(result.data)) return result.data;
             }
-        } catch (e) { }
+        } catch (e) {
+            console.error("無法從資料庫讀取偏好偏好設定，採用本機快取作為備援", e);
+        }
         return JSON.parse(localStorage.getItem(`userPref:${id}`) || '[]');
     }
 
-    async function renderPreferences() {
-        if (!preferenceTags) return;
-        const tags = await getAvailableTags();
-        preferenceTags.innerHTML = tags.map(tag => `
-      <button class="preference-chip ${selectedPreferences.includes(tag.key) ? 'active' : ''}" type="button" data-preference="${tag.key}">
-        ${tag.label}
-      </button>
-    `).join('');
+    // 🚀 標籤 Key 歸位！保持選擇狀態（active 變深）
+    function renderPreferences() {
+        if (!preferenceTags || allDbTags.length === 0) return;
+
+        preferenceTags.innerHTML = allDbTags.map(tag => {
+            const isSelected = selectedPreferences.includes(tag.comType_key);
+            return `
+              <button class="preference-chip ${isSelected ? 'active' : ''}" 
+                      type="button" 
+                      data-preference="${tag.comType_key}">
+                ${escapeHtml(tag.comType)}
+              </button>
+            `;
+        }).join('');
     }
 
+    // 🚀 初始化時，同時解開總表與使用者偏好
     async function initPreferences() {
-        selectedPreferences = await getUserSavedPreferences();
-        await renderPreferences();
+        if (preferenceTags) preferenceTags.innerHTML = '<div>競賽分類載入中...</div>';
+
+        try {
+            const [dbTags, userPrefs] = await Promise.all([
+                fetchAllDbTags(),
+                getUserSavedPreferences()
+            ]);
+
+            allDbTags = dbTags;
+            selectedPreferences = userPrefs;
+
+            renderPreferences();
+
+        } catch (err) {
+            console.error("初始化競賽偏好失敗:", err);
+            if (preferenceTags) preferenceTags.innerHTML = '<div>⚠️ 無法載入競賽分類標籤</div>';
+        }
     }
 
+    // 🚀【全新補回】綁定標籤晶片的點擊切換事件，點下去按鈕才會動態變色！
     if (preferenceTags) {
         preferenceTags.addEventListener('click', event => {
             const chip = event.target.closest('[data-preference]');
             if (!chip) return;
+
             const key = chip.dataset.preference;
+
+            // 💡 偵錯用 log，你可以打開 F12 Console 觀察點擊動態
+            console.log(`🎯 【點擊晶片】識別碼 Key: ${key}`);
+
+            // 如果陣列裡已經有這個 key 就剔除它，沒有就塞進去
             selectedPreferences = selectedPreferences.includes(key)
                 ? selectedPreferences.filter(item => item !== key)
                 : [...selectedPreferences, key];
+
+            // 🚀 重點：更新完陣列後，立刻重刷 HTML，讓 active 類別在畫面上即時切換！
             renderPreferences();
         });
     }
@@ -227,23 +254,39 @@
     if (savePreferencesBtn) {
         savePreferencesBtn.addEventListener('click', async () => {
             if (!preferenceStatus) return;
-            preferenceStatus.textContent = '儲存中...';
+            preferenceStatus.textContent = '同步資料庫中...';
+            preferenceStatus.style.color = '#7b6a59';
+
             localStorage.setItem(`userPref:${id}`, JSON.stringify(selectedPreferences));
 
             try {
-                if (window.AppPreferences && typeof window.AppPreferences.saveUserPreferences === 'function') {
-                    const result = await window.AppPreferences.saveUserPreferences(id, selectedPreferences);
-                    preferenceStatus.textContent = result.localOnly ? '已保存本機；登入正式帳號寫入資料庫' : (result.ok ? '✅ 已儲存偏好' : (result.error || '儲存失敗'));
+                const response = await fetch('/api/pref/savepref', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeader()
+                    },
+                    body: JSON.stringify({ preferences: selectedPreferences })
+                });
+
+                if (response.ok) {
+                    preferenceStatus.textContent = '✅ 已成功儲存偏好至資料庫！';
+                    preferenceStatus.style.color = '#5d7a59';
                 } else {
-                    preferenceStatus.textContent = '✅ 已成功儲存個人化偏好！';
+                    preferenceStatus.textContent = '❌ 伺服器儲存失敗';
+                    preferenceStatus.style.color = '#b64d45';
                 }
             } catch (e) {
-                preferenceStatus.textContent = '✅ 已成功儲存個人化偏好！';
+                console.error(e);
+                preferenceStatus.textContent = '❌ 連線失敗，已暫存於本機。';
+                preferenceStatus.style.color = '#b64d45';
             }
         });
     }
 
+    // =================================================
     // 4. 顯示別人對自己的評價
+    // ================================================
     function renderReceivedReviews() {
         const list = $('receivedReviewList');
         if (!list) return;
@@ -277,6 +320,7 @@
 
     // 初始化啟動
     getAccount();
+    getUserName();
     initPreferences();
     renderReceivedReviews();
 })();

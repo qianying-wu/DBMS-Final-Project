@@ -13,6 +13,7 @@ import reviewRouter from './routes/review-route.js';
 import teamRouter from './routes/team-route.js';
 import comRouter from './routes/com-route.js';
 import pvRouter from './routes/pv-route.js';
+import prefRouter from './routes/pref-route.js';
 
 import { requireLogin } from './middleware/auth-middleware.js';
 
@@ -70,6 +71,7 @@ app.use('/api/review', reviewRouter);
 app.use('/api/teams', teamRouter);
 app.use('/api/contests', comRouter);
 app.use('/api/pv', pvRouter); // 這條路由需要登入驗證
+app.use('/api/pref', prefRouter); // 這條路由需要登入驗證
 
 // 4. 啟動伺服器
 app.listen(port, () => {

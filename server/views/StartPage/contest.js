@@ -188,8 +188,7 @@
     // 渲染屬於該比賽的「所有隊伍卡片」
     $('teamCards').innerHTML = teams.length ? teams.map(team => {
       // 🚀 核心修正：精準比對資料庫陣列中有沒有包含目前的 team_id
-      const isFav = dbFavIds.includes(Number(team.team_id));
-      const formattedDemand = team.demand
+      const isFav = dbFavIds.includes(Number(team.team_id || team.id)); const formattedDemand = team.demand
         ? team.demand.replace(/(需求：)/g, '<br>$1')
         : '尚未填寫說明';
       /*return `
