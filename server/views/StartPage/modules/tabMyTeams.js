@@ -143,15 +143,15 @@ export async function render(gridContainer, token, userId) {
     <div id="disbandModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(79, 56, 39, 0.4); backdrop-filter: blur(4px); z-index:9999; align-items:center; justify-content:center;">
       <div style="background:#ffffff; padding:32px; border-radius:16px; width:90%; max-width:440px; box-shadow:0 12px 32px rgba(79, 56, 39, 0.15); color:#4f3827; border: 1px solid #eadfd2; box-sizing: border-box;">
         <h3 style="margin-top:0; margin-bottom:12px; border-bottom:1px solid #f0ebe5; padding-bottom:16px; font-size:20px; font-weight:800; color:#4f3827; display:flex; align-items:center; gap:8px;">請選擇變更原因</h3>
-        <p style="font-size:14px; color:#8a735e; line-height:1.6; margin-bottom:24px; margin-top:0;">這將會直接變更資料庫中的隊伍狀態。</p>
+        <p style="font-size:14px; color:#8a735e; line-height:1.6; margin-bottom:24px; margin-top:0;">順利完賽的隊伍會在歷史紀錄中留存且可互相評價。</p>
         <div style="display:flex; flex-direction:column; gap:14px; margin:24px 0;">
           <label style="display:flex; align-items:center; gap:12px; padding:14px 16px; background:#fdfbf9; border:2px solid #caa77a; border-radius:10px; cursor:pointer; font-weight:700; font-size:15px;">
             <input type="radio" name="disbandReason" value="completed" checked style="accent-color:#caa77a; width:18px; height:18px; margin:0;"> 
-            順利完賽 <span style="font-weight:normal; font-size:13px; color:#8a735e; margin-left:auto;">（變更狀態為 completed）</span>
+            順利完賽 <span style="font-weight:normal; font-size:13px; color:#8a735e; margin-left:auto;">（近到歷史紀錄評價隊友）</span>
           </label>
           <label style="display:flex; align-items:center; gap:12px; padding:14px 16px; background:#fbf9f6; border:2px solid #eadfd2; border-radius:10px; cursor:pointer; font-weight:700; font-size:15px;">
             <input type="radio" name="disbandReason" value="disbanded" style="accent-color:#caa77a; width:18px; height:18px; margin:0;"> 
-            解散隊伍 <span style="font-weight:normal; font-size:13px; color:#8a735e; margin-left:auto;">（變更狀態為 disbanded）</span>
+            解散隊伍 <span style="font-weight:normal; font-size:13px; color:#8a735e; margin-left:auto;">（其他原因）</span>
           </label>
         </div>
         <div style="display:flex; justify-content:end; gap:10px; margin-top:28px;">
@@ -315,8 +315,8 @@ function bindReviewActionButtons(panelContainer, refreshCallback) {
           viewCard.innerHTML = `
             <h4>📄 ${Data.escapeHtml(resume.name || '未命名履歷')}</h4>
             <p><strong>申請人姓名：</strong>${Data.escapeHtml(resume.applicantName)}</p>
-            <p><strong>學校科系：</strong>${Data.escapeHtml(resume.school || '未填寫')}</p>
-            <p><strong>年級班別：</strong>${Data.escapeHtml(resume.grade || '未填寫')}</p>
+            <p><strong>學校：</strong>${Data.escapeHtml(resume.school || '未填寫')}</p>
+            <p><strong>系級：</strong>${Data.escapeHtml(resume.grade || '未填寫')}</p>
             <p><strong>自我介紹：</strong></p>
             <div style="background:#fff; border:1px solid #eee; padding:10px; border-radius:4px; font-size:13px; max-height:150px; overflow-y:auto; color:#666; white-space: pre-line;">
               ${Data.escapeHtml(resume.intro || '這位夥伴很神秘，尚未填寫自我介紹。')}
