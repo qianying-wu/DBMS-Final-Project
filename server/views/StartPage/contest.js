@@ -7,12 +7,11 @@
   // 取得網址參數，設定目前的使用者 ID 以及當前頁面要顯示的「比賽 ID」
   const ME = { id: 9999, name: '你自己' };
   const params = new URLSearchParams(location.search);
-  // const currentUserId = params.get('userId') && params.get('userId') !== 'unknown' ? params.get('userId') : String(ME.id);
   const contestId = Number(params.get('contestId')) || Number(params.get('id')) || 10;
 
   // --- 資料讀寫輔助函式區塊 ---
 
-  // 🚀 從後端真實資料庫讀取全部比賽
+  // 🚀 從後端真實資料庫讀取全部比賽（升級版：支援多標籤解析）
   async function loadContests() {
     try {
       const res = await fetch('/api/contests/competitions');
@@ -21,22 +20,25 @@
       const result = await res.json();
       const dbContests = result.competitions || result;
 
-      const mappedContests = dbContests.map(contest => ({
-        id: contest.com_id,
-        name: contest.com_name,
+      const mappedContests = dbContests.map(contest => {
+        // 🚀【核心對線】精準抓取後端 GROUP_CONCAT 吐出來的 tags 字串，並拆解成陣列
+        const parsedTags = contest.tags && typeof contest.tags === 'string'
+          ? contest.tags.split(',')
+          : ['其他'];
 
-        /*com_date: contest.com_date || '日期未定',    
-        com_enroll_ddl: contest.com_enroll_ddl || '報名截止未定', 
-        com_intro: contest.com_intro || '尚未填寫說明',*/
-        com_date: contest.com_date ? contest.com_date.split('T')[0] : '日期未定',
-        com_enroll_ddl: contest.com_enroll_ddl ? contest.com_enroll_ddl.split('T')[0] : '截止日未定',
-
-        com_intro: contest.com_intro || '尚未填寫說明',
-        com_link: contest.com_link || '#',
-        com_location: contest.com_location || '地點未定',
-        com_reward: contest.com_reward || '獎勵未定',
-        com_fee: contest.com_fee || '費用未定'
-      }));
+        return {
+          id: contest.com_id,
+          name: contest.com_name,
+          com_date: contest.com_date ? contest.com_date.split('T')[0] : '日期未定',
+          com_enroll_ddl: contest.com_enroll_ddl ? contest.com_enroll_ddl.split('T')[0] : '截止日未定',
+          com_intro: contest.com_intro || '尚未填寫說明',
+          com_link: contest.com_link || '#',
+          com_location: contest.com_location || '地點未定',
+          com_reward: contest.com_reward || '獎勵未定',
+          com_fee: contest.com_fee || '費用未定',
+          tags: parsedTags // 🚀 成功保留完整的多標籤陣列
+        };
+      });
 
       return mappedContests;
     } catch (err) {
@@ -72,40 +74,24 @@
     }
   }
 
-  // 🚀【全新打造】重整網頁時，從資料庫撈取該使用者目前的「收藏隊伍 ID 清單」
+  // 🚀 從資料庫撈取該使用者目前的「收藏隊伍 ID 清單」
   async function loadDatabaseFavorites() {
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
-    if (!token || !userId) return []; // 未登入就回傳空陣列
+    if (!token || !userId) return [];
 
     try {
       const res = await fetch(`/api/teams/my-favorites?userId=${userId}`, {
-        headers: { 'Authorization': ` ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` } // 🔧 順手鎖緊 Bearer 機制
       });
       if (!res.ok) return [];
       const result = await res.json();
-      // 🚀 將撈回來的收藏物件陣列，精簡轉換成只有 ID 的純數字陣列，方便用 .includes() 比對
       return result.success ? result.data.map(item => Number(item.team_id)) : [];
     } catch (err) {
       console.error('❌ 載入資料庫收藏清單失敗:', err);
       return [];
     }
   }
-
-  // async function saveFavoriteContests() {
-  //   path = '/api/contests/';
-  //   const res = await fetch(path, {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //       ...getAuthHeader()
-  //     },
-  //     body: JSON.stringify({ userId: localStorage.getItem('userId'), comId })
-  //   });
-  //   if (!res.ok) throw new Error('無法更新收藏狀態');
-  // }
-
-  //===================================
 
   // 取得目前頁面指定的「特定比賽」物件資料
   async function getContest() {
@@ -128,20 +114,21 @@
 
   function createTeamHref() { return withUserParam(`/create-team.html?contestId=${encodeURIComponent(contestId)}`); }
   function teamInfoHref(id) { return withUserParam(`/team-info.html?teamId=${encodeURIComponent(id)}`); }
+
   function isLoggedIn() {
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId') || params.get('userId');
-    return Boolean(
-      token &&
-      token.trim() !== '' &&
-      userId &&
-      userId !== 'unknown' &&
-      userId !== 'null' &&
-      userId !== 'undefined'
-    );
+    return Boolean(token && token.trim() !== '');
   }
+
   function redirectToAuth() {
     location.href = '/auth.html';
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, match => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[match]);
   }
 
   // --- 核心畫面渲染邏輯 ---
@@ -151,12 +138,9 @@
       return;
     }
 
-    // 1. 使用 await 解開所有非同步資料
     const contest = await getContest();
     const teams = await contestTeams();
     const allContests = await loadContests();
-
-    // 🚀 核心修正：拋棄 LocalStorage，改從資料庫抓最即時的收藏隊伍 ID 陣列
     const dbFavIds = await loadDatabaseFavorites();
 
     if (!contest) {
@@ -167,9 +151,20 @@
     window.AppNotifications?.ensureContestNotifications(allContests);
     document.title = `${contest.name} / 組隊`;
 
-    // 渲染比賽摘要
+    // 🚀【全面解鎖多標籤】將這場比賽綁定的所有中文標籤，通通渲染成精緻的小晶片！
+    const tagsHtml = contest.tags && contest.tags.length
+      ? contest.tags.map(t => `<span class="contest-detail-tag" style="background: #fbf6ef; border: 1px solid #efe1cf; color: #5d4937; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; display: inline-block;">${escapeHtml(t)}</span>`).join('')
+      : '';
+
+    // 渲染比賽摘要（內含多標籤雲排版）
+    // 渲染比賽摘要（🚀 標籤已調整到標題正下方）
     $('contestSummary').innerHTML = `
-      <h2>${contest.name}</h2>
+      <h2 style="margin: 0 0 12px 0;">${contest.name}</h2>
+      
+      <div class="contest-tags-wrap" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+        ${tagsHtml}
+      </div>
+      
       <div class="summary-grid">
         <div class="summary-item"><span>隊伍數量</span><strong>${teams.length}</strong></div>
         <div class="summary-item"><span>比賽日期</span><strong>${contest.com_date}</strong></div>
@@ -188,39 +183,28 @@
 
     // 渲染屬於該比賽的「所有隊伍卡片」
     $('teamCards').innerHTML = teams.length ? teams.map(team => {
-      // 🚀 核心修正：精準比對資料庫陣列中有沒有包含目前的 team_id
-      const isFav = dbFavIds.includes(Number(team.team_id || team.id)); const formattedDemand = team.demand
+      const isFav = dbFavIds.includes(Number(team.team_id || team.id));
+      const formattedDemand = team.demand
         ? team.demand.replace(/(需求：)/g, '<br>$1')
         : '尚未填寫說明';
-      /*return `
-        <article class="team-card">
-          <h4>${team.team_name}</h4>
-          <div class="team-meta" style="white-space: pre-line;">${formattedDemand}</div>          
-          <div>成員 ${team.current_member_count} / ${team.num_limit}</div>
-          <div class="team-actions">
-            <button class="btn" data-id="${team.team_id}">查看 / 加入</button>
-            <button class="fav-btn ${isFav ? 'active' : ''}" data-fav="${team.team_id}" aria-pressed="${isFav}">${isFav ? '♥ 已收藏' : '♡ 收藏'}</button>
-          </div>
-        </article>*/
 
       return `
-    <article class="team-card">
-      <div class="team-body">
-        <h4>${team.team_name}</h4>
-        <div class="team-meta" style="white-space: pre-line;">${formattedDemand}</div>
-        <div class="recruitment-status">招募進度： ${team.current_member_count} / ${team.num_limit}</div>
-      </div>
-      
-      <div class="team-actions">
-        <button class="btn" data-id="${team.team_id}">查看 / 加入</button>
-        <button class="fav-btn ${isFav ? 'active' : ''}" 
-                data-fav="${team.team_id}" 
-                aria-pressed="${isFav}">
-          ${isFav ? '♥ 已收藏' : '♡ 收藏'}
-        </button>
-      </div>
-    </article>
-
+        <article class="team-card">
+          <div class="team-body">
+            <h4>${team.team_name}</h4>
+            <div class="team-meta" style="white-space: pre-line;">${formattedDemand}</div>
+            <div class="recruitment-status">招募進度： ${team.current_member_count} / ${team.num_limit}</div>
+          </div>
+          
+          <div class="team-actions">
+            <button class="btn" data-id="${team.team_id}">查看 / 加入</button>
+            <button class="fav-btn ${isFav ? 'active' : ''}" 
+                    data-fav="${team.team_id}" 
+                    aria-pressed="${isFav}">
+              ${isFav ? '♥ 已收藏' : '♡ 收藏'}
+            </button>
+          </div>
+        </article>
       `;
     }).join('') : '<div class="box">目前還沒有隊伍，先創建自己的隊伍吧。</div>';
   }
@@ -245,7 +229,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': ` ${token}`
+          'Authorization': `Bearer ${token}` // 🔧 鎖緊 Token 驗證
         },
         body: JSON.stringify({ userId: Number(userId), teamId: Number(teamId) })
       });
@@ -265,7 +249,6 @@
         favBtn.setAttribute('aria-pressed', 'false');
       }
 
-      // 成功後連動刷新右側邊欄
       if (typeof renderSidebarTeams === 'function') {
         await renderSidebarTeams();
       } else if (typeof UI !== 'undefined' && typeof UI.renderSidebarTeams === 'function') {
@@ -293,9 +276,7 @@
     location.href = teamInfoHref(id);
   }
 
-  //$('createBtn').addEventListener('click', () => { location.href = createTeamHref(); });
-
-  // 強制掛在視窗最頂層，誰都洗不掉它
+  // 強制掛在視窗最頂層
   window.handleCreateTeamClick = function (e) {
     if (e) e.preventDefault();
     console.log("創建隊伍按鈕成功觸發！");
@@ -303,16 +284,14 @@
     const token = localStorage.getItem('token');
 
     if (!token || token === 'undefined') {
-      // 🛑 沒登入：彈窗警告，然後絕對要 return！
       if (typeof requireLogin === 'function') {
         requireLogin('請先登入才能創建隊伍喔！');
       } else {
         alert('請先登入才能創建隊伍喔！');
       }
-      return; // 👈 這一行是保險絲，沒它就會繼續執行跳轉
+      return;
     }
 
-    // ✅ 有登入：才會跑到這裡執行跳轉
     const urlParams = new URLSearchParams(window.location.search);
     const contestId = urlParams.get('id') || "";
     const contestName = document.querySelector('#contestSummary h2')?.innerText || "";
@@ -320,17 +299,15 @@
     window.location.href = `create-team.html?id=${contestId}&name=${encodeURIComponent(contestName)}`;
   };
 
-  // --- 處理收藏競賽的邏輯 ---
-  // --- 處理收藏競賽的邏輯 ---
+  // 處理收藏競賽的邏輯
   window.handleFavoriteClick = async function (e) {
     if (e) {
       e.preventDefault();
-      e.stopPropagation(); // 防止事件干擾到下方的卡片點擊
+      e.stopPropagation();
     }
 
-    // 1. 權限檢查
     const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId'); // 💡 確保有拿到 userId
+    const userId = localStorage.getItem('userId');
 
     if (!token || token === 'undefined' || !userId) {
       if (typeof requireLogin === 'function') {
@@ -341,22 +318,19 @@
       return;
     }
 
-    // 2. 獲取按鈕元素與競賽 ID
     const btn = e.currentTarget || document.getElementById('favContestBtn');
     const urlParams = new URLSearchParams(window.location.search);
-    const contestId = urlParams.get('id'); // 網址上的比賽 ID
+    const contestId = urlParams.get('id');
 
     if (!contestId) {
       console.error("找不到競賽 ID");
       return;
     }
 
-    // 🔒 防止使用者連點：發送請求期間先禁用按鈕
     btn.disabled = true;
     const originalHTML = btn.innerHTML;
     const isNowActive = btn.classList.contains('active');
 
-    // 3. 樂觀 UI (Optimistic UI) 回饋：先讓使用者看到愛心切換
     btn.classList.toggle('active');
     if (!isNowActive) {
       btn.innerHTML = `<span class="heart-icon">♥</span> 已收藏`;
@@ -364,31 +338,24 @@
       btn.innerHTML = `<span class="heart-icon">♡</span> 收藏比賽`;
     }
 
-    // 4. 🚀 同步到資料庫
     try {
-      // 💡 修正一：路徑對齊後端的 /api/contests/toggle-favorite
       const response = await fetch('/api/contests/toggle-favorite', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // 💡 修正二：補上 Bearer 與空格，讓 Passport 認得出來
           'Authorization': `Bearer ${token}`
         },
-        // 💡 修正三：參數對齊後端的 userId 與 comId
         body: JSON.stringify({
           userId: Number(userId),
           comId: Number(contestId)
         })
       });
 
-      if (!response.ok) {
-        throw new Error('網路回應不正常，伺服器可能出錯');
-      }
+      if (!response.ok) throw new Error('網路回應不正常');
 
       const result = await response.json();
       console.log(`🎯 比賽收藏狀態同步成功：`, result.message);
 
-      // 根據後端真實結果，再次微調確保 UI 精準
       if (result.action === 'favorite') {
         btn.classList.add('active');
         btn.innerHTML = `<span class="heart-icon">♥</span> 已收藏`;
@@ -399,82 +366,13 @@
 
     } catch (err) {
       console.error("❌ 收藏比賽同步失敗:", err);
-      // 彈回原本的 UI 狀態並提醒使用者
       btn.classList.toggle('active');
       btn.innerHTML = originalHTML;
       alert('抱歉，收藏功能暫時無法連線，請稍後再試。');
     } finally {
-      // 請求結束，還原按鈕點擊功能
       btn.disabled = false;
     }
   };
-  // window.handleFavoriteClick = async function (e) {
-  //   if (e) {
-  //     e.preventDefault();
-  //     e.stopPropagation(); // 防止事件干擾到下方的卡片點擊
-  //   }
-
-  //   // 1. 權限檢查
-  //   const token = localStorage.getItem('token');
-
-  //   if (!token || token === 'undefined') {
-  //     // 🛑 沒登入：彈窗警告，然後絕對要 return！
-  //     if (typeof requireLogin === 'function') {
-  //       requireLogin('請先登入才能收藏比賽喔！');
-  //     } else {
-  //       alert('請先登入才能收藏比賽喔！');
-  //     }
-  //     return;
-  //   }
-
-  //   // 2. 獲取按鈕元素與競賽 ID
-  //   const btn = e.currentTarget || document.getElementById('favContestBtn');
-  //   const urlParams = new URLSearchParams(window.location.search);
-  //   const contestId = urlParams.get('id');
-
-  //   if (!contestId) {
-  //     console.error("找不到競賽 ID");
-  //     return;
-  //   }
-
-  //   // 3. 即時 UI 回饋 (Optimistic UI)
-  //   // 切換 active 類別，並根據狀態更改圖示與文字
-  //   const isNowActive = btn.classList.toggle('active');
-
-  //   if (isNowActive) {
-  //     btn.innerHTML = `<span class="heart-icon">♥</span> 已收藏`;
-  //     console.log(`已將競賽 ${contestId} 加入收藏清單`);
-  //   } else {
-  //     btn.innerHTML = `<span class="heart-icon">♡</span> 收藏比賽`;
-  //     console.log(`已將競賽 ${contestId} 從收藏清單移除`);
-  //   }
-
-  //   // 4. 同步到資料庫
-  //   try {
-  //     // 這裡對應你們後端的 API 路徑，例如 /api/favorites/contest
-  //     const response = await fetch('/api/contests/favorite', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Authorization': `Bearer ${token}`
-  //       },
-  //       body: JSON.stringify({ contestId: contestId })
-  //     });
-
-  //     if (!response.ok) {
-  //       throw new Error('網路回應不正常');
-  //     }
-
-  //     const result = await response.json();
-  //     // 成功後可以根據後端回傳訊息做進一步處理
-  //   } catch (err) {
-  //     console.error("收藏同步失敗:", err);
-  //     // 如果後端失敗，把 UI 狀態彈回去並提醒使用者
-  //     btn.classList.toggle('active');
-  //     btn.innerHTML = !isNowActive ? `<span class="heart-icon">♥</span> 已收藏` : `<span class="heart-icon">♡</span> 收藏比賽`;
-  //     alert('抱歉，收藏功能暫時無法連線，請稍後再試。');
-  //   }
-  // };
 
   // 事件委派：監聽隊伍列表的點擊
   $('teamCards').addEventListener('click', e => {

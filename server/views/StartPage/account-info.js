@@ -179,7 +179,7 @@
     // 🚀【連線資料庫版】一進網頁，從 DB 撈取該使用者先前勾選的偏好
     async function getUserSavedPreferences() {
         try {
-            const path = '/api/pref/getpref';
+            const path = '/api/pref/preferences';
             const response = await fetch(path, { headers: { ...getAuthHeader() } });
 
             if (response.ok) {
