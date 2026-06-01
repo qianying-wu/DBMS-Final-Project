@@ -452,6 +452,38 @@
 
 .resume-item-btn:hover { background: #f4eee6; border-color: #caa77a; }
 
+.resume-item-btn.is-incomplete {
+  opacity: 0.62;
+  cursor: not-allowed;
+  background: #f3f1ee;
+  border-style: dashed;
+  color: #8a735e;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resume-item-btn.is-incomplete:hover {
+  background: #f3f1ee;
+  border-color: #eadfd2;
+}
+
+.resume-item-btn small {
+  font-size: 12px;
+  color: #a05a48;
+  font-weight: 700;
+}
+
+.resume-incomplete-note {
+  color: #a05a48;
+  background: #fff7f4;
+  border: 1px solid #e3c1b9;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 /* 👑 當該份履歷被選取時的強烈視覺效果 */
 .resume-item-btn.selected {
   background: #caa77a; color: white; border-color: #b59369; box-shadow: 0 2px 8px rgba(202,167,122,0.4);

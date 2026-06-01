@@ -125,6 +125,45 @@
     location.href = '/auth.html';
   }
 
+  function setContestFavoriteButton(isFavorite) {
+    const btn = document.getElementById('favContestBtn');
+    if (!btn) return;
+
+    btn.classList.toggle('active', isFavorite);
+    btn.setAttribute('aria-pressed', isFavorite ? 'true' : 'false');
+    btn.innerHTML = isFavorite
+      ? `<span class="heart-icon">♥</span> 已收藏`
+      : `<span class="heart-icon">♡</span> 收藏比賽`;
+  }
+
+  async function syncContestFavoriteButton() {
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId') || params.get('userId');
+
+    if (!token || !userId) {
+      setContestFavoriteButton(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/contests/getFavorites', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('無法取得收藏比賽清單');
+
+      const result = await response.json();
+      const favoriteContests = result.data || result.contests || [];
+      const isFavorite = favoriteContests.some(item => Number(item.com_id || item.id) === Number(contestId));
+      setContestFavoriteButton(isFavorite);
+    } catch (error) {
+      console.error('❌ 初始化比賽收藏狀態失敗:', error);
+
+      // 資料庫狀態讀不到時，至少保留 localStorage 的舊快取當備援。
+      const localFavorites = JSON.parse(localStorage.getItem('favoriteContests') || '[]').map(Number);
+      setContestFavoriteButton(localFavorites.includes(Number(contestId)));
+    }
+  }
+
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, match => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -150,6 +189,7 @@
 
     window.AppNotifications?.ensureContestNotifications(allContests);
     document.title = `${contest.name} / 組隊`;
+    await syncContestFavoriteButton();
 
     // 🚀【全面解鎖多標籤】將這場比賽綁定的所有中文標籤，通通渲染成精緻的小晶片！
     const tagsHtml = contest.tags && contest.tags.length
@@ -161,7 +201,7 @@
     $('contestSummary').innerHTML = `
       <h2 style="margin: 0 0 12px 0;">${contest.name}</h2>
       
-      <div class="contest-tags-wrap" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 20px;">
+      <div class="contest-tags-wrap" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
         ${tagsHtml}
       </div>
       
@@ -359,9 +399,17 @@
       if (result.action === 'favorite') {
         btn.classList.add('active');
         btn.innerHTML = `<span class="heart-icon">♥</span> 已收藏`;
+        btn.setAttribute('aria-pressed', 'true');
+        const localFavorites = JSON.parse(localStorage.getItem('favoriteContests') || '[]').map(Number);
+        if (!localFavorites.includes(Number(contestId))) {
+          localStorage.setItem('favoriteContests', JSON.stringify([...localFavorites, Number(contestId)]));
+        }
       } else if (result.action === 'unfavorite') {
         btn.classList.remove('active');
         btn.innerHTML = `<span class="heart-icon">♡</span> 收藏比賽`;
+        btn.setAttribute('aria-pressed', 'false');
+        const localFavorites = JSON.parse(localStorage.getItem('favoriteContests') || '[]').map(Number);
+        localStorage.setItem('favoriteContests', JSON.stringify(localFavorites.filter(id => id !== Number(contestId))));
       }
 
     } catch (err) {

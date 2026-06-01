@@ -12,23 +12,9 @@
   const out = document.getElementById('out');
   const username = document.getElementById('username');
   const userEmail = document.getElementById('userEmail');
-  const preferencePanel = document.getElementById('preferencePanel');
-  const preferenceTags = document.getElementById('preferenceTags');
 
   // mode 控制目前畫面是登入或註冊。
   let mode = 'login';
-  let selectedPreferences = [];
-
-  // 渲染註冊時可選的個人化標籤。
-  async function renderPreferenceTags(){
-    if (!window.AppPreferences || typeof window.AppPreferences.loadTags !== 'function') return;
-    const tags = await window.AppPreferences.loadTags();
-    preferenceTags.innerHTML = tags.map(tag => `
-      <button class="preference-chip ${selectedPreferences.includes(tag.key) ? 'active' : ''}" type="button" data-preference="${tag.key}">
-        ${tag.label}
-      </button>
-    `).join('');
-  }
 
   // 依照目前模式更新標題、按鈕文字、欄位顯示與分頁樣式。
   function render() {
@@ -41,7 +27,6 @@
       // 登入模式隱藏不需要的欄位
       username.classList.add('hide');
       userEmail.classList.add('hide');
-      preferencePanel.classList.add('hide');
     } else {
       title.textContent = '建立新帳號';
       submit.textContent = '註冊並登入';
@@ -51,8 +36,6 @@
       // 註冊模式顯示完整欄位
       username.classList.remove('hide');
       userEmail.classList.remove('hide');
-      preferencePanel.classList.remove('hide');
-      renderPreferenceTags();
     }
     out.textContent = '';
   }
@@ -60,19 +43,6 @@
   // 監聽分頁切換按鈕
   toLogin.addEventListener('click', () => { mode = 'login'; render(); });
   toRegister.addEventListener('click', () => { mode = 'register'; render(); });
-
-  // 點擊個人化標籤時切換選取狀態
-  preferenceTags.addEventListener('click', event => {
-    const chip = event.target.closest('[data-preference]');
-    if (!chip) return;
-    const key = chip.dataset.preference;
-    if (selectedPreferences.includes(key)) {
-      selectedPreferences = selectedPreferences.filter(item => item !== key);
-    } else {
-      selectedPreferences.push(key);
-    }
-    renderPreferenceTags();
-  });
 
   // 處理返回首頁或重導向路徑
   function buildLoginTarget(userId) {
@@ -103,7 +73,6 @@
     
     const path = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
     const payload = { account: a, userName: u, userPsw: p, userEmail: e };
-    if (mode === 'register') payload.preferences = selectedPreferences;
 
     try {
       const resp = await fetch(path, { 
@@ -125,9 +94,6 @@
           out.textContent = '🎉 登入成功！正在導向首頁...';
           setTimeout(() => location.href = buildLoginTarget(id), 800);
         } else {
-          if (json.userId && window.AppPreferences) {
-            window.AppPreferences.setFallbackPreferences(selectedPreferences, json.userId);
-          }
           mode = 'login'; 
           render();
           out.style.color = '#2f7a44';

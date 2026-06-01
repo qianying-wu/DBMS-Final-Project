@@ -77,6 +77,34 @@
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
   }
 
+  function getResumeField(resume, keys) {
+    for (const key of keys) {
+      const value = key.split('.').reduce((obj, part) => obj?.[part], resume);
+      if (String(value ?? '').trim()) return String(value).trim();
+    }
+    return '';
+  }
+
+  function validateResumeComplete(resume) {
+    const missing = [];
+    if (!getResumeField(resume, ['name', 'resume_name', 'data.resume_name'])) missing.push('履歷名稱');
+    if (!getResumeField(resume, ['user_pv_name', 'applicantName', 'data.user_pv_name'])) missing.push('姓名');
+    if (!getResumeField(resume, ['user_school', 'school', 'data.school'])) missing.push('學校');
+    if (!getResumeField(resume, ['user_intro', 'intro', 'data.intro'])) missing.push('自我介紹');
+    return { ok: missing.length === 0, missing };
+  }
+
+  async function loadCompleteResumeListForApply() {
+    const token = localStorage.getItem('token');
+    const headers = token ? { 'Authorization': token } : {};
+    let res = await fetch('/api/pv/loadPV', { headers });
+    if (!res.ok && token && !String(token).startsWith('Bearer ')) {
+      res = await fetch('/api/pv/loadPV', { headers: { 'Authorization': `Bearer ${token}` } });
+    }
+    if (!res.ok) throw new Error('無法取得您的完整履歷資料');
+    return await res.json();
+  }
+
   function showTeamInfoAlert(message, type = 'success', onClose) {
     const existingModal = document.getElementById('teamInfoAlertModal');
     if (existingModal) existingModal.remove();
@@ -160,7 +188,8 @@
         realMembers = membersArray.filter(m => m.mem_status === '通過' || m.status === '通過' || m.role === '建立人').map(m => ({
           id: m.user_id,
           name: m.userName || m.name || m.user_name || `使用者 ${m.user_id}`,
-          role: m.role || '組員'
+          role: m.role || '組員',
+          resumeId: m.resume_id || ''
         }));
       }
     } catch (err) {
@@ -179,9 +208,16 @@
     if(countEl) countEl.textContent = realMembers.length;
 
     // 簡化卡片內容，移除履歷和評價提示，保留點擊跳轉功能
-    memberList.innerHTML = realMembers.map(member => `
+    memberList.innerHTML = realMembers.map(member => {
+      const reviewParams = new URLSearchParams({
+        targetUserId: String(member.id),
+        teamId: String(team.team_id)
+      });
+      if (member.resumeId) reviewParams.set('resumeId', String(member.resumeId));
+
+      return `
       <li style="padding: 0; overflow: hidden; border: 1px solid #e6ddd3; border-radius: 8px;">
-        <a href="/review.html?targetUserId=${member.id}&teamId=${team.team_id}" 
+        <a href="/review.html?${reviewParams.toString()}" 
            class="member-card" 
            style="text-decoration: none; display: flex; padding: 14px; color: inherit; transition: background 0.2s ease;"
            onmouseover="this.style.backgroundColor='#f4eee6'" 
@@ -201,7 +237,8 @@
 
         </a>
       </li>
-    `).join('');
+    `;
+    }).join('');
   }
 
   function withUserParam(path){
@@ -285,17 +322,13 @@
     $('displayDesc').style.whiteSpace = 'pre-line';
     $('displayDesc').textContent = formattedDemand;
 
-    const userTeamIds = JSON.parse(localStorage.getItem(`myTeams:${ME.id}`) || '[]');
-    const alreadyJoinedLocal = userTeamIds.some(id => Number(id) === Number(team.team_id));
-    const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').some(req => Number(req.teamId) === Number(team.team_id) && String(req.user?.id) === String(ME.id) && req.status === 'pending');
-    
-    if (alreadyJoinedLocal || pending || Number(team.current_member_count) >= Number(team.num_limit)) {
+    if (Number(team.current_member_count) >= Number(team.num_limit)) {
       setApplicationAvailability({
-        visible: !alreadyJoinedLocal,
+        visible: true,
         disabled: true,
-        text: alreadyJoinedLocal ? '已在隊伍中' : pending ? '審核中...' : '隊伍已額滿',
+        text: '隊伍已額滿',
         lock: true,
-        tone: alreadyJoinedLocal ? 'member' : 'muted'
+        tone: 'muted'
       });
     }
 
@@ -419,30 +452,37 @@
       $('applyBtn').textContent = '讀取履歷清單...';
     
       try {
-        const res = await fetch(`/api/pv/getMyResumeList?userId=${encodeURIComponent(ME.id)}`);
-        
-        if (res.status === 404) {
+        const resumeList = await loadCompleteResumeListForApply();
+
+        if (resumeList.length === 0) {
           showTeamInfoAlert('您目前尚未建立任何履歷！請先前往「個人檔案」新增履歷後再行申請。', 'error');
           resetApplyButton();
           return;
         }
-        if (!res.ok) throw new Error('無法取得您的履歷列表');
-        
-        const result = await res.json();
-        const resumeList = result.data || [];
-    
+
         document.getElementById('hiddenResumeId').value = '';
         document.getElementById('confirmApplyBtn').disabled = true;
     
         const listContainer = document.getElementById('resumeListContainer');
         if (listContainer) {
-          listContainer.innerHTML = resumeList.map(resume => `
-            <button type="button" class="resume-item-btn" data-id="${resume.id}">
-              📄 ${escapeHtml(resume.name)}
+          const decoratedResumes = resumeList.map(resume => ({
+            resume,
+            validation: validateResumeComplete(resume)
+          }));
+          const completeResumes = decoratedResumes.filter(item => item.validation.ok);
+
+          listContainer.innerHTML = decoratedResumes.map(({ resume, validation }) => `
+            <button type="button" class="resume-item-btn ${validation.ok ? '' : 'is-incomplete'}" data-id="${resume.id}" ${validation.ok ? '' : 'disabled'}>
+              <span>📄 ${escapeHtml(resume.name || resume.resume_name || '未命名履歷')}</span>
+              ${validation.ok ? '' : `<small>未完成：${escapeHtml(validation.missing.join('、'))}</small>`}
             </button>
           `).join('');
+
+          if (completeResumes.length === 0) {
+            listContainer.insertAdjacentHTML('beforeend', '<div class="resume-incomplete-note">目前沒有可送出的完整履歷，請先回個人履歷補齊必填項目。</div>');
+          }
     
-          const resumeButtons = listContainer.querySelectorAll('.resume-item-btn');
+          const resumeButtons = listContainer.querySelectorAll('.resume-item-btn:not(.is-incomplete)');
           resumeButtons.forEach(btn => {
             btn.addEventListener('click', (event) => {
               resumeButtons.forEach(b => b.classList.remove('selected'));
@@ -519,21 +559,13 @@
   async function checkUserRoleAndRender(team) {
     try {
       const isCreator = await isOwnedByCurrentUser(currentTeamId);
-      const isAlreadyMember = getLocalMembers(currentTeamId).some(member => String(member.userId) === String(ME.id));
-      const hasPendingApplication = JSON.parse(localStorage.getItem('teamApplications:v1') || '[]').some(app =>
-        Number(app.teamId) === Number(currentTeamId) &&
-        String(app.userId) === String(ME.id) &&
-        app.status === 'pending'
-      );
 
       await renderMemberList(team, isCreator);
 
-      if (isCreator || isAlreadyMember) {
+      if (isCreator) {
         setApplicationAvailability({ visible: false, disabled: true, text: '已在隊伍中', lock: true, tone: 'member' });
-      } else if (hasPendingApplication) {
-        setApplicationAvailability({ disabled: true, text: '審核中...', lock: true, tone: 'muted' });
       } else {
-        if (!applyLocked) setApplicationAvailability({ disabled: false, text: '加入隊伍', lock: false });
+        await checkAndRenderApplyButton(currentTeamId, ME.id);
       }
 
       if (isCreator) {

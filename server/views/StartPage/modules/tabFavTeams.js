@@ -1,12 +1,48 @@
 import * as Data from '../team-data.js';
 
+async function loadDatabaseTeams() {
+  try {
+    const res = await fetch('/api/teams/all');
+    if (!res.ok) throw new Error('無法取得完整隊伍資料');
+    const result = await res.json();
+    return result.teams || result.data || (Array.isArray(result) ? result : []);
+  } catch (error) {
+    console.error('❌ 收藏隊伍補齊比賽資料失敗:', error);
+    return [];
+  }
+}
+
+function getTeamId(team) {
+  return team?.team_id || team?.id;
+}
+
+function mergeFavoriteWithDatabaseTeam(favoriteTeam, databaseTeams) {
+  const favoriteTeamId = getTeamId(favoriteTeam);
+  const databaseTeam = databaseTeams.find(team => Number(getTeamId(team)) === Number(favoriteTeamId)) || {};
+
+  // my-favorites 只回收藏關係的基本欄位；完整 Team 資料才有 com_id / contestName / 人數。
+  return {
+    ...databaseTeam,
+    ...favoriteTeam,
+    com_id: favoriteTeam.com_id || databaseTeam.com_id,
+    contestName: favoriteTeam.contestName || favoriteTeam.contest_name || favoriteTeam.com_name || databaseTeam.contestName || databaseTeam.contest_name || databaseTeam.com_name,
+    current_member_count: favoriteTeam.current_member_count ?? databaseTeam.current_member_count,
+    num_limit: favoriteTeam.num_limit ?? databaseTeam.num_limit
+  };
+}
+
 export async function render(gridContainer, token, userId) {
-  const res = await fetch(`/api/teams/my-favorites?userId=${encodeURIComponent(userId)}`, {
-    headers: { 'Authorization': ` ${token}` }
-  });
+  const [res, databaseTeams] = await Promise.all([
+    fetch(`/api/teams/my-favorites?userId=${encodeURIComponent(userId)}`, {
+      headers: { 'Authorization': ` ${token}` }
+    }),
+    loadDatabaseTeams()
+  ]);
+
   if (!res.ok) throw new Error('API 回傳失敗');
   const result = await res.json();
-  const favTeams = result.data || result.teams || (Array.isArray(result) ? result : []);
+  const favTeams = (result.data || result.teams || (Array.isArray(result) ? result : []))
+    .map(team => mergeFavoriteWithDatabaseTeam(team, databaseTeams));
 
   if (favTeams.length === 0) {
     gridContainer.innerHTML = `<div class="empty-text">目前您尚未收藏任何隊伍。</div>`;
@@ -14,7 +50,7 @@ export async function render(gridContainer, token, userId) {
   }
 
   gridContainer.innerHTML = favTeams.map(t => {
-    const contestName = t.com_name || '未指定特定競賽';
+    const contestName = t.contestName || t.contest_name || t.com_name || '未指定特定競賽';
     const currentCount = t.current_member_count ?? t.current_members ?? t.member_count ?? 1;
     const maxCount = t.num_limit ?? t.max_members ?? 5;
 
