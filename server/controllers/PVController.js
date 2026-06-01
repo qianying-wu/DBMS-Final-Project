@@ -221,7 +221,7 @@ export const getTargetResume = async (req, res) => {
             applicantName: row.user_pv_name || '匿名', // review.js 的 extractResume 吃這個
             school: row.user_school,
             grade: row.department_grade,
-            experience: '目前沒有經驗欄位', // 你的 db 沒有這欄位，先給預設
+            experience: null,
             intro: row.user_intro,
             tags: row.tag_list ? row.tag_list.split(',') : []
         };

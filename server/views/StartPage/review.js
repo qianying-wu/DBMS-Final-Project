@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       name: raw?.applicantName || resume.user_name || resume.name || raw?.name || `使用者 ${targetUserId}`,
       school: resume.school || resume.user_school || raw?.school || '',
       grade: resume.grade || resume.department_grade || raw?.grade || '',
-      experience: resume.experience || resume.user_experience || raw?.experience || '尚未填寫經歷',
+      experience: resume.experience || resume.user_experience || raw?.experience || '',
       intro: resume.intro || resume.user_intro || raw?.intro || raw?.applicantReason || '尚未填寫自我介紹',
       skills: [...new Set(skills)]
     };
@@ -191,6 +191,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (el) el.textContent = text || '-';
   }
 
+  function setOptionalTextBlock(id, text) {
+    const el = $(id);
+    if (!el) return;
+    const block = el.closest('.info-block');
+    const cleanText = String(text || '').trim();
+    if (!cleanText) {
+      if (block) block.hidden = true;
+      return;
+    }
+    if (block) block.hidden = false;
+    el.textContent = cleanText;
+  }
+
   // 改為非同步函式 (async)
   async function loadResumeData() {
     // 這裡變成等待後端回傳資料
@@ -200,7 +213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     safeSetText('r-school', targetProfile.school);
     safeSetText('r-name', targetProfile.name);
     safeSetText('r-grade', [targetProfile.school, targetProfile.grade].filter(Boolean).join(' / '));
-    safeSetText('r-exp', targetProfile.experience);
+    setOptionalTextBlock('r-exp', targetProfile.experience);
     safeSetText('r-intro', targetProfile.intro);
 
     const skillsContainer = $('r-skills');
