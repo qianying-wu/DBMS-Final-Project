@@ -50,6 +50,31 @@
   }
 
   // 將資料放進 HTML attribute 前先轉義。
+  function showCreateTeamAlert(message, type = 'success', onClose) {
+    const existingModal = document.getElementById('createTeamAlertModal');
+    if (existingModal) existingModal.remove();
+
+    const isError = type === 'error';
+    const modal = document.createElement('div');
+    modal.id = 'createTeamAlertModal';
+    modal.className = 'modal';
+    modal.style.zIndex = '9999';
+    modal.innerHTML = `
+      <div class="modal-card create-team-alert-card" role="dialog" aria-modal="true">
+        <div class="create-team-alert-icon ${isError ? 'error' : 'success'}">${isError ? '!' : 'OK'}</div>
+        <h3>${isError ? '操作失敗' : '操作完成'}</h3>
+        <p>${escapeHtml(message)}</p>
+        <button id="closeCreateTeamAlertBtn" class="btn primary" type="button">我知道了</button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    document.getElementById('closeCreateTeamAlertBtn')?.addEventListener('click', () => {
+      modal.remove();
+      if (typeof onClose === 'function') onClose();
+    });
+  }
+
   function escapeAttr(value) {
     return String(value ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
@@ -390,11 +415,11 @@
     const ownerResumeId = $('ownerResume')?.value;
 
     // 2. 檢查邏輯
-    if (!contest) return alert('請先搜尋並選擇一個比賽');
-    if (!name) return alert('請輸入隊伍名稱');
-    if (!skills) return alert('請輸入「招募需求」');
-    if (!desc) return alert('請輸入「主題/說明」');
-    if (!ownerResumeId) return alert('建立隊伍前請先選擇一份要顯示給申請者的履歷，沒有履歷請先建立。');
+    if (!contest) return showCreateTeamAlert('請先搜尋並選擇一個比賽', 'error');
+    if (!name) return showCreateTeamAlert('請輸入隊伍名稱', 'error');
+    if (!skills) return showCreateTeamAlert('請輸入「招募需求」', 'error');
+    if (!desc) return showCreateTeamAlert('請輸入「主題/說明」', 'error');
+    if (!ownerResumeId) return showCreateTeamAlert('建立隊伍前請先選擇一份要顯示給申請者的履歷，沒有履歷請先建立。', 'error');
 
     // 3. 打包要丟給資料庫的欄位資料
     const descParts = [desc, skills ? `需求：${skills}` : ''].filter(Boolean);
@@ -415,7 +440,7 @@
       const path = '/api/teams/create';
       const token = localStorage.getItem('token');
 
-      if (!token) return alert('登入逾時，請重新登入');
+      if (!token) return showCreateTeamAlert('登入逾時，請重新登入', 'error');
 
       const response = await fetch(path, {
         method: 'POST',
@@ -434,15 +459,15 @@
       const result = await response.json();
 
       if (result.success) {
-        alert('🎉 隊伍與成員身分同步建立成功！');
-        // 🚀 順利解鎖跳轉功能
-        window.location.href = withUserParam('/contests.html');
+        showCreateTeamAlert('隊伍與成員身分同步建立成功！', 'success', () => {
+          window.location.href = withUserParam('/contests.html');
+        });
       } else {
-        alert('建立隊伍失敗：' + (result.message || '未知錯誤'));
+        showCreateTeamAlert('建立隊伍失敗：' + (result.message || '未知錯誤'), 'error');
       }
     } catch (error) {
       console.error('網路錯誤:', error);
-      alert('無法連接到伺服器：' + error.message);
+      showCreateTeamAlert('無法連接到伺服器：' + error.message, 'error');
     }
   });
 

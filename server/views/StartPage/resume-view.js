@@ -7,7 +7,7 @@ const resumeId = qs.get('resumeId'); // 從網址列獲取要看哪一份 resume
 
 // 自動修正 Logo 連結
 if (document.querySelector('.logo-link')) {
-  document.querySelector('.logo-link').href = '/team.html?userId=' + encodeURIComponent(userId);
+  document.querySelector('.logo-link').href = '/contests.html?userId=' + encodeURIComponent(userId);
 }
 
 // 取得與 profile.js 完全相同的 Token 驗證標頭
