@@ -176,12 +176,15 @@ export const deleteResume = async (req, res) => {
 export const getTargetResume = async (req, res) => {
     // 這個 API 是要看別人的，所以從網址列抓取要查詢的 userId，而不是從 token 抓
     const targetUserId = req.query.userId;
+    const resumeId = req.query.resumeId;
 
     if (!targetUserId) {
         return res.status(400).json({ ok: false, message: '必須提供 userId' });
     }
 
     try {
+        const whereClause = resumeId ? 'WHERE r.user_id = ? AND r.resume_id = ?' : 'WHERE r.user_id = ?';
+        const queryParams = resumeId ? [targetUserId, resumeId] : [targetUserId];
         const sql = `
             SELECT 
                 r.resume_id,
@@ -196,14 +199,14 @@ export const getTargetResume = async (req, res) => {
             FROM Resumes r
             LEFT JOIN Resume_tags rt ON r.resume_id = rt.resume_id
             LEFT JOIN Person_tags t ON rt.tag_id = t.tag_id
-            WHERE r.user_id = ?
+            ${whereClause}
             GROUP BY r.resume_id
             ORDER BY r.resume_id DESC
             LIMIT 1 
         `;
         // LIMIT 1 的意思是：如果他有很多份履歷，我們預設只抓最新建立的那一份給評價頁面看。
 
-        const [rows] = await pool.query(sql, [targetUserId]);
+        const [rows] = await pool.query(sql, queryParams);
 
         if (rows.length === 0) {
             return res.status(404).json({ ok: false, message: '找不到該用戶的履歷' });
@@ -218,7 +221,7 @@ export const getTargetResume = async (req, res) => {
             applicantName: row.user_pv_name || '匿名', // review.js 的 extractResume 吃這個
             school: row.user_school,
             grade: row.department_grade,
-            experience: '目前沒有經驗欄位', // 你的 db 沒有這欄位，先給預設
+            experience: null,
             intro: row.user_intro,
             tags: row.tag_list ? row.tag_list.split(',') : []
         };

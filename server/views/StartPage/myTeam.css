@@ -480,7 +480,7 @@
 }
 
 .search-main-area {
-    max-width: 900px; /* 🚀 限制最大寬度，避免在超大螢幕散掉 */
+    max-width: 1100px; /* 搜尋結果需要比一般表單更寬，避免資料過早換行 */
 }
 
 .search-header-container {
@@ -534,6 +534,53 @@
 }
 
 /* 🚀 仿照圖 2 的按鈕樣式 */
+.search-control-row {
+    display: grid;
+    grid-template-columns: minmax(520px, 1fr) max-content;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+    margin-bottom: 26px;
+}
+
+.search-control-row input {
+    width: 100%;
+    min-width: 0;
+    padding: 12px 20px;
+    border: 1px solid #d6c2ad;
+    border-radius: 10px;
+    font-size: 16px;
+    background: #fdfaf7;
+    box-sizing: border-box;
+}
+
+.search-filter-tabs {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px;
+    border: 1px solid #eadfd2;
+    border-radius: 10px;
+    background: #fbf9f6;
+}
+
+.search-filter-btn {
+    border: 0;
+    background: transparent;
+    color: #7a6654;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.search-filter-btn.active {
+    background: #caa77a;
+    color: #ffffff;
+    box-shadow: 0 3px 8px rgba(202, 167, 122, 0.22);
+}
+
 .btn-search-style {
     background: #fff;
     border: 1px solid #d6c2ad;
@@ -582,6 +629,84 @@
 }
 
 /* --- 6. 響應式相容 --- */
+.user-search-results {
+    display: grid;
+    gap: 10px;
+}
+
+.user-result-card {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.5fr) minmax(360px, 1.6fr) 160px;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    background: #ffffff;
+    border: 1px solid #eadfd2;
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(79, 56, 39, 0.03);
+}
+
+.team-result-card {
+    grid-template-columns: minmax(260px, 0.9fr) minmax(420px, 1.7fr) minmax(86px, 0.3fr) 120px;
+    gap: 14px;
+}
+
+.user-result-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.user-result-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-result-meta {
+    display: grid;
+    grid-template-columns: minmax(110px, 0.8fr) minmax(190px, 1.2fr);
+    gap: 14px;
+    min-width: 0;
+}
+
+.user-result-meta .info-row {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.team-result-card .info-row {
+    margin: 0;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.team-result-card .label {
+    min-width: auto;
+    margin-right: 8px;
+}
+
+.team-result-contest .val {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.team-result-members {
+    justify-content: flex-end;
+}
+
+.team-result-card .user-result-action {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.user-result-action {
+    width: auto;
+    padding: 9px 14px;
+}
+
 @media (max-width: 768px) {
     .layout-manage {
         grid-template-columns: 1fr;
@@ -593,5 +718,28 @@
     }
     .manage-content {
         padding: 20px;
+    }
+    .search-control-row {
+        grid-template-columns: 1fr;
+    }
+    .search-filter-tabs {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .search-filter-btn {
+        flex: 1;
+    }
+    .user-result-card {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+    .team-result-card {
+        grid-template-columns: 1fr;
+    }
+    .user-result-meta {
+        grid-template-columns: 1fr;
+    }
+    .user-result-action {
+        width: 100%;
     }
 }

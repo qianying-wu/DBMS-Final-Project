@@ -119,6 +119,7 @@ export async function render(gridContainer, token, userId) { //[cite: 5]
             teamName: teamName || '',
             userId: String(currentUserId)
           });
+          if (member.resume_id) reviewParams.set('resumeId', String(member.resume_id));
           const reviewUrl = `/review.html?${reviewParams.toString()}`; //[cite: 5]
 
           return `
