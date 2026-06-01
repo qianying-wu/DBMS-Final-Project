@@ -163,6 +163,56 @@ body{font-family:Arial,'Noto Sans TC',sans-serif;margin:0;background:#faf7f2;col
   filter: brightness(0.95);
 }
 
+.create-team-alert-card {
+  text-align: center;
+  min-width: 320px;
+  padding: 36px 24px;
+}
+
+.create-team-alert-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 19px;
+  letter-spacing: 0;
+}
+
+.create-team-alert-icon.success {
+  background: #f3eadb;
+  color: #9a6a31;
+  border: 2px solid #d7b67f;
+}
+
+.create-team-alert-icon.error {
+  background: #fff0f0;
+  color: #c44747;
+  border: 2px solid #e09a9a;
+}
+
+.create-team-alert-card h3 {
+  margin: 0 0 12px;
+  color: #4f3827;
+  font-size: 22px;
+}
+
+.create-team-alert-card p {
+  color: #55483d;
+  margin: 0 0 24px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.create-team-alert-card .btn {
+  width: 100%;
+  border-radius: 99px;
+  font-size: 16px;
+}
+
 /* 彈窗動畫特效 */
 @keyframes fadeIn {
   from { opacity: 0; }
