@@ -179,7 +179,7 @@
     // 🚀【連線資料庫版】一進網頁，從 DB 撈取該使用者先前勾選的偏好
     async function getUserSavedPreferences() {
         try {
-            const path = '/api/pref/getpref';
+            const path = '/api/pref/preferences';
             const response = await fetch(path, { headers: { ...getAuthHeader() } });
 
             if (response.ok) {
@@ -197,8 +197,7 @@
         if (!preferenceTags || allDbTags.length === 0) return;
 
         preferenceTags.innerHTML = allDbTags.map(tag => {
-            // 🚀 核心修正：將原來的 tag.comType_key 改成 tag.comType！
-            const isSelected = selectedPreferences.includes(tag.comType);
+            const isSelected = selectedPreferences.includes(tag.comType_key);
             return `
               <button class="preference-chip ${isSelected ? 'active' : ''}" 
                       type="button" 
@@ -285,10 +284,6 @@
         });
     }
 
-    // ======================================================================
-    // 4. 收到的評價列表 (🚀 補齊全域變數與點擊事件完全體)
-    // ======================================================================
-
     function renderReceivedReviews() {
         const list = $('receivedReviewList');
         if (!list) return;
@@ -322,10 +317,10 @@
     function initReviewButton() {
         const btnGoToMyReviews = $('btnGoToMyReviews');
         if (btnGoToMyReviews) {
-            btnGoToMyReviews.addEventListener('click', function (e) {
-                e.preventDefault();
-                console.log('✅ 按鈕成功觸發，準備跳轉，用戶ID:', id);
-                window.location.href = `review.html?targetUserId=${id}`;
+            btnGoToMyReviews.addEventListener('click', function(e) {
+                e.preventDefault(); 
+                console.log('✅ 按鈕成功觸發，準備跳轉，用戶ID:', id); 
+                window.location.href = `review.html?targetUserId=${id}`; 
             });
         }
     }

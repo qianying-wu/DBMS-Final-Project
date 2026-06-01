@@ -328,6 +328,7 @@ function renderContests(dataList = []) {
       <article class="contest-card" data-id="${contest.com_id}">
         <div class="card-tag">${escapeHtml(mainTag)}</div>
         <h3>${escapeHtml(contest.com_name)}</h3>
+        <p class="category">分類：${escapeHtml(mainTag)}</p>
         <p class="desc">${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
         <div class="card-footer">
           <span>${escapeHtml(displayDate || '日期未定')}</span>
