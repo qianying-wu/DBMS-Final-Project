@@ -126,7 +126,6 @@ import * as Data from './team-data.js';
           <span class="resume-time">${formatDateTime(p.updatedAt || p.createdAt)}</span>
           <div class="resume-card-actions">
             <button class="icon-action view-resume" type="button" aria-label="查看履歷">查看</button>
-            <button class="icon-action edit-resume" type="button" aria-label="編輯履歷">...</button>
           </div>
         </div>
         `;
