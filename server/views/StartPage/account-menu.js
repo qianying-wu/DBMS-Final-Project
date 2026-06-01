@@ -82,13 +82,19 @@
     modal.style.zIndex = '9999';
 
     modal.innerHTML = `
-      <div class="modal-card" style="text-align: center; min-width: 320px; padding: 36px 24px;">
-        <div style="font-size: 56px; margin-bottom: 12px; line-height: 1;">👋</div>
-        <h3 style="margin: 0 0 12px 0; color: #D9534F; font-size: 22px;">準備離開了嗎？</h3>
-        <p style="color: #5C4F42; margin: 0 0 24px 0; font-size: 15px; line-height: 1.6;">確定要登出你的帳號嗎？</p>
-        <div style="display: flex; gap: 12px; justify-content: center;">
-          <button id="cancelLogoutBtn" style="flex: 1; border-radius: 99px; font-size: 15px; background: #F2EEE9; color: #5C4F42; border: none; padding: 12px 0; cursor: pointer; font-weight: 600;">取消</button>
-          <button id="okLogoutBtn" style="flex: 1; border-radius: 99px; font-size: 15px; background: #D9534F; border: none; color: #fff; padding: 12px 0; cursor: pointer; font-weight: 600;">確定登出</button>
+      <div class="logout-modal-card">
+        <div class="logout-modal-icon logout-modal-icon-warning" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <path d="M10 17l5-5-5-5"/>
+            <path d="M15 12H3"/>
+          </svg>
+        </div>
+        <h3>準備離開了嗎？</h3>
+        <p>確定要登出你的帳號嗎？</p>
+        <div class="logout-modal-actions">
+          <button id="cancelLogoutBtn" class="logout-modal-btn secondary">取消</button>
+          <button id="okLogoutBtn" class="logout-modal-btn danger">確定登出</button>
         </div>
       </div>
     `;
@@ -110,10 +116,14 @@
     modal.style.zIndex = '9999';
 
     modal.innerHTML = `
-      <div class="modal-card" style="text-align: center; min-width: 320px; padding: 36px 24px;">
-        <div style="font-size: 56px; margin-bottom: 12px; line-height: 1;">✨</div>
-        <h3 style="margin: 0 0 12px 0; color: #D48C5B; font-size: 22px;">您已成功登出</h3>
-        <p style="color: #5C4F42; margin: 0; font-size: 15px; line-height: 1.6;">正在為您導向首頁，請稍候...</p>
+      <div class="logout-modal-card compact">
+        <div class="logout-modal-icon logout-modal-icon-success" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5"/>
+          </svg>
+        </div>
+        <h3>您已成功登出</h3>
+        <p>正在為您導向首頁，請稍候...</p>
       </div>
     `;
 
@@ -155,6 +165,21 @@
       .account-menu a, .account-menu button{display:block;padding:10px 12px;border-radius:6px;color:#4f3827;text-decoration:none;font-weight:700;font-size:14px}
       .account-menu button{width:100%;text-align:left;background:none;border:none;cursor:pointer}
       .account-menu a:hover, .account-menu button:hover{background:#fff7ec}
+      .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(63,52,44,.32);backdrop-filter:blur(5px);z-index:9999}
+      .logout-modal-card{width:min(420px,calc(100vw - 40px));background:#fffdf9;border:1px solid #eadfd2;border-radius:18px;box-shadow:0 24px 60px rgba(63,52,44,.18);padding:34px 32px;text-align:center;color:#4f3827}
+      .logout-modal-card.compact{padding:36px 32px}
+      .logout-modal-icon{width:64px;height:64px;border-radius:18px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center}
+      .logout-modal-icon svg{width:34px;height:34px}
+      .logout-modal-icon-warning{background:#fff4ea;color:#b8744f;border:1px solid #f0d5bd}
+      .logout-modal-icon-success{background:#f6efe5;color:#c99d69;border:1px solid #ead8bf}
+      .logout-modal-card h3{margin:0 0 10px;color:#4f3827;font-size:22px;font-weight:900;letter-spacing:0}
+      .logout-modal-card p{margin:0 0 24px;color:#7b6a59;font-size:15px;line-height:1.6;font-weight:700}
+      .logout-modal-card.compact p{margin-bottom:0}
+      .logout-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+      .logout-modal-btn{height:48px;border-radius:14px;border:0;cursor:pointer;font-size:15px;font-weight:900;transition:transform .18s ease,filter .18s ease}
+      .logout-modal-btn:hover{transform:translateY(-1px)}
+      .logout-modal-btn.secondary{background:#f4eee8;color:#5f4734}
+      .logout-modal-btn.danger{background:#b96a5f;color:#fff;box-shadow:0 10px 20px rgba(185,106,95,.18)}
     `;
     document.head.appendChild(style);
   }
