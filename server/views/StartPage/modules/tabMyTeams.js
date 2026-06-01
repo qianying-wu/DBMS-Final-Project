@@ -1,4 +1,59 @@
 import * as Data from '../team-data.js';
+function showTeamAlert(message, type = 'success') {
+  const existingModal = document.getElementById('teamAlertModal');
+  if (existingModal) existingModal.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'teamAlertModal';
+  modal.className = 'team-dialog';
+
+  const isError = type === 'error';
+  modal.innerHTML = `
+    <div class="team-dialog-card" role="dialog" aria-modal="true">
+      <div class="team-dialog-icon ${isError ? 'error' : 'success'}">${isError ? '!' : 'OK'}</div>
+      <h3>${isError ? '操作失敗' : '操作完成'}</h3>
+      <p>${Data.escapeHtml(message)}</p>
+      <button type="button" class="team-dialog-primary" data-dialog-close>我知道了</button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.querySelector('[data-dialog-close]')?.addEventListener('click', () => modal.remove());
+}
+
+function showTeamConfirm(message, { title = '確認操作', okText = '確認', danger = false } = {}) {
+  const existingModal = document.getElementById('teamConfirmModal');
+  if (existingModal) existingModal.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'teamConfirmModal';
+  modal.className = 'team-dialog';
+  modal.innerHTML = `
+    <div class="team-dialog-card" role="dialog" aria-modal="true">
+      <div class="team-dialog-icon ${danger ? 'error' : 'warning'}">${danger ? '!' : '?'}</div>
+      <h3>${Data.escapeHtml(title)}</h3>
+      <p>${Data.escapeHtml(message)}</p>
+      <div class="team-dialog-actions">
+        <button type="button" class="team-dialog-secondary" data-dialog-cancel>取消</button>
+        <button type="button" class="team-dialog-primary ${danger ? 'danger' : ''}" data-dialog-ok>${Data.escapeHtml(okText)}</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  return new Promise(resolve => {
+    const close = value => {
+      modal.remove();
+      resolve(value);
+    };
+    modal.querySelector('[data-dialog-cancel]')?.addEventListener('click', () => close(false));
+    modal.querySelector('[data-dialog-ok]')?.addEventListener('click', () => close(true));
+    modal.addEventListener('click', event => {
+      if (event.target === modal) close(false);
+    });
+  });
+}
 
 /**
  * 🚀 主渲染函式：驅動網格卡片與面板外殼
@@ -28,7 +83,7 @@ export async function render(gridContainer, token, userId) {
   // 👑 修正點三：拔除所有 LocalStorage 判斷，直接 100% 信任資料庫的 team_status
   // 只顯示正常運作中（通常為 active 或啟用）的隊伍，排除已解散(disbanded)或已完賽(completed)的隊伍
   const teams = Array.from(mergedMap.values()).filter(t => {
-    const status = t.team_status || t.status;
+    const status = t.team_status || t.teamStatus || t.status;
     return status !== 'disbanded' && status !== 'completed';
   });
 
@@ -107,11 +162,13 @@ export async function render(gridContainer, token, userId) {
   // 綁定解散與完賽控制邏輯 (向後端更新狀態)
   const modal = gridContainer.querySelector('#disbandModal');
   let selectedTeamId = null;
+  let selectedTeam = null;
 
   gridContainer.querySelectorAll('.btn-disband-team').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       selectedTeamId = btn.dataset.teamId;
+      selectedTeam = teams.find(t => String(t.team_id || t.id) === String(selectedTeamId)) || null;
       modal.style.display = 'flex';
     });
   });
@@ -127,16 +184,16 @@ export async function render(gridContainer, token, userId) {
       const res = await fetch('/api/teams/update-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': ` ${token}` },
-        body: JSON.stringify({ team_id: selectedTeamId, status: statusAction })
+        body: JSON.stringify({ team_id: selectedTeamId, status: statusAction, user_id: userId })
       });
 
       if (!res.ok) throw new Error('更新隊伍狀態失敗');
 
-      alert(statusAction === 'completed' ? '隊伍已成功標記為順利完賽！' : '隊伍已成功解散。');
+      showTeamAlert(statusAction === 'completed' ? '隊伍已成功標記為順利完賽！' : '隊伍已成功解散。');
       render(gridContainer, token, userId); // 刷新最新網格狀態
 
     } catch (err) {
-      alert(err.message);
+      showTeamAlert(err.message, 'error');
     }
   });
 
@@ -179,12 +236,12 @@ export function setupReviewPanelDelegation(refreshCallback) {
         let html = `<div class="panel-header" style="display:flex; justify-content:space-between;"><h3>👋 申請審核中心：${Data.escapeHtml(teamName)}</h3><span class="role-badge creator">${applicants.length} 筆待處理</span></div><div style="display:grid; gap:12px; margin-top:10px;">`;
         applicants.forEach(a => {
           html += `
-            <div class="applicant-card" style="background:#fff; border:1px solid #eadfd2; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center;">
+            <div class="applicant-card">
               <div><strong>${Data.escapeHtml(a.userName || '未知名稱')}</strong><small style="display:block; color:#8a735e; margin-top:4px;">附帶履歷：${Data.escapeHtml(a.resume_name || '預設履歷')}</small></div>
-              <div style="display:flex; gap:8px;">
-                <button class="btn-review-view" data-uid="${a.user_id}" style="cursor:pointer;">檢視履歷</button>
-                <button class="btn-review-pass" data-uid="${a.user_id}" data-team-id="${teamId}" style="cursor:pointer; background:#caa77a; color:#fff; border:none; padding:4px 8px; border-radius:4px;">通過</button>
-                <button class="btn-review-reject" data-uid="${a.user_id}" data-team-id="${teamId}" style="cursor:pointer; color:#b05353; background:#fff; border:1px solid #f3cccc; padding:4px 8px; border-radius:4px;">拒絕</button>
+              <div class="review-action-row">
+                <button class="btn-review-action btn-review-view" data-uid="${a.user_id}" type="button">檢視履歷</button>
+                <button class="btn-review-action btn-review-pass" data-uid="${a.user_id}" data-team-id="${teamId}" type="button">通過</button>
+                <button class="btn-review-action btn-review-reject" data-uid="${a.user_id}" data-team-id="${teamId}" type="button">拒絕</button>
               </div>
             </div>`;
         });
@@ -219,7 +276,10 @@ function bindReviewActionButtons(panelContainer, refreshCallback) {
   panelContainer.querySelectorAll('.btn-review-view').forEach(btn => {
     btn.addEventListener('click', async () => {
       const targetUid = btn.dataset.uid;
-      if (!targetUid) return alert('無法取得該用戶的識別碼');
+      if (!targetUid) {
+        showTeamAlert('無法取得該用戶的識別碼', 'error');
+        return;
+      }
 
       if (viewCard) viewCard.innerHTML = `<p style="text-align: center; color: #caa77a; font-weight: bold;">⏳ 正在連線資料庫讀取履歷...</p>`;
       
@@ -262,7 +322,11 @@ function bindReviewActionButtons(panelContainer, refreshCallback) {
   // 2. 👑 修正點一：核准通過按鈕
   panelContainer.querySelectorAll('.btn-review-pass').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('確定要核准此成員加入隊伍嗎？')) return;
+      const confirmed = await showTeamConfirm('確定要核准此成員加入隊伍嗎？', {
+        title: '核准申請',
+        okText: '核准加入'
+      });
+      if (!confirmed) return;
       try {
         const res = await fetch('/api/teams/review', { 
           method: 'POST', 
@@ -271,26 +335,31 @@ function bindReviewActionButtons(panelContainer, refreshCallback) {
         });
         
         if (res.ok) { 
-          alert('已成功核准加入！'); 
+          showTeamAlert('已成功核准加入！');
           // 💡 通過成功後，立刻執行 refreshCallback 觸發外部的「主控台網格重渲染」
           // 這將會重新打後端 API，獲取更新後(加 1 人)的最新 current_member_count 欄位！
           if (typeof refreshCallback === 'function') refreshCallback(); 
         }
-      } catch (err) { alert('運作失敗'); }
+      } catch (err) { showTeamAlert('運作失敗', 'error'); }
     });
   });
 
   // 3. 拒絕加入按鈕
   panelContainer.querySelectorAll('.btn-review-reject').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('確定要拒絕此申請嗎？')) return;
+      const confirmed = await showTeamConfirm('確定要拒絕此申請嗎？', {
+        title: '拒絕申請',
+        okText: '拒絕',
+        danger: true
+      });
+      if (!confirmed) return;
       try {
         const res = await fetch('/api/teams/review', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': ` ${token}` }, body: JSON.stringify({ team_id: btn.dataset.teamId, user_id: btn.dataset.uid, action: 'reject' }) });
         if (res.ok) { 
-          alert('已成功駁回申請。'); 
+          showTeamAlert('已成功駁回申請。');
           if (typeof refreshCallback === 'function') refreshCallback(); 
         }
-      } catch (err) { alert('運作失敗'); }
+      } catch (err) { showTeamAlert('運作失敗', 'error'); }
     });
   });
 }

@@ -1,8 +1,9 @@
 import * as Data from '../team-data.js'; //
 
 export async function render(gridContainer, token, userId) { //[cite: 5]
-  // 1. 純前端直接從 localStorage 抓取被標記為 'completed' 的歷史隊伍[cite: 5]
-  const historyTeams = JSON.parse(localStorage.getItem('local_history_teams') || '[]'); //[cite: 5]
+  const currentUserId = getValidId(userId) || getValidId(localStorage.getItem('userId')) || getValidId(new URLSearchParams(location.search).get('userId')) || Data.currentUserId;
+  // 1. 從後端讀取已標記為 completed 的歷史隊伍[cite: 5]
+  const historyTeams = await loadHistoryTeams(token, currentUserId); //[cite: 5]
 
   if (historyTeams.length === 0) { //[cite: 5]
     gridContainer.innerHTML = `<div class="empty-text">目前沒有已完賽的歷史紀錄隊伍。</div>`; //[cite: 5]
@@ -13,6 +14,7 @@ export async function render(gridContainer, token, userId) { //[cite: 5]
   gridContainer.innerHTML = `
     ${historyTeams.map(t => { //[cite: 5]
       const teamId = t.team_id; //[cite: 5]
+      const contestId = t.com_id || ''; //[cite: 5]
       const teamName = t.team_name || '未命名隊伍'; //[cite: 5]
       const contestName = t.com_name || '未指定特定競賽'; //[cite: 5]
 
@@ -29,7 +31,7 @@ export async function render(gridContainer, token, userId) { //[cite: 5]
                 <div class="info-row" style="display: flex; font-size: 13.5px;"><span class="label" style="color: #8a735e; min-width: 70px;">競賽項目：</span><span class="val" style="color: #4f3827; font-weight: 600;">${Data.escapeHtml(contestName)}</span></div>
             </div>
             <div class="card-bottom">
-                <button class="btn-manage-action review-teammate-btn" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(teamName)}" style="width: 100%; background: #ffffff; border: 1px solid #caa77a; color: #caa77a; padding: 11px 0; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <button class="btn-manage-action review-teammate-btn" data-team-id="${teamId}" data-com-id="${contestId}" data-team-name="${Data.escapeHtml(teamName)}" style="width: 100%; background: #ffffff; border: 1px solid #caa77a; color: #caa77a; padding: 11px 0; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px;">
                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                    評價此隊伍成員
                 </button>
@@ -67,6 +69,7 @@ export async function render(gridContainer, token, userId) { //[cite: 5]
   gridContainer.querySelectorAll('.review-teammate-btn').forEach(btn => { //[cite: 5]
     btn.addEventListener('click', async () => { //[cite: 5]
       const teamId = btn.dataset.teamId; //[cite: 5]
+      const contestId = btn.dataset.comId || ''; //[cite: 5]
       const teamName = btn.dataset.teamName; //[cite: 5]
 
       modalTitle.innerHTML = `
@@ -84,12 +87,19 @@ export async function render(gridContainer, token, userId) { //[cite: 5]
 
         if (!response.ok) throw new Error('無法取得隊伍成員'); //[cite: 5]
         const result = await response.json(); //[cite: 5]
+        const resolvedContestId = contestId || result.team?.com_id || result.team?.contestId || result.team?.contest_id || '';
         
         // 抓出成員陣列 (相容你們資料庫的格式 rows.members 或 result.members)[cite: 5]
         const members = result.members || []; //[cite: 5]
 
         // 過濾掉目前登入者自己（因為不能自己評價自己）[cite: 5]
-        const teammates = members.filter(m => String(m.user_id) !== String(userId)); //[cite: 5]
+        const teammates = members.filter(m => {
+          const isSelf = String(m.user_id) === String(currentUserId);
+          const status = String(m.mem_status || m.status || '').trim();
+          const role = String(m.role || '').trim();
+          const isAcceptedMember = status === '通過' || role === '建立人';
+          return !isSelf && isAcceptedMember;
+        }); //[cite: 5]
 
         if (teammates.length === 0) { //[cite: 5]
           membersListContainer.innerHTML = '<p style="color:#8a735e; font-size:13.5px; text-align:center; padding: 20px 0;">🎉 此隊伍目前沒有其他隊友可供評價。</p>'; //[cite: 5]
@@ -99,10 +109,17 @@ export async function render(gridContainer, token, userId) { //[cite: 5]
         // 渲染隊友名單，並直接附帶「前往評價」的超連結連結到 review.html[cite: 5]
         membersListContainer.innerHTML = teammates.map(member => { //[cite: 5]
           const mUserId = member.user_id; //[cite: 5]
-          const mName = member.user_name || member.applicantName || `未命名用戶(${mUserId})`; //[cite: 5]
+          const mName = member.user_name || member.userName || member.applicantName || `未命名用戶(${mUserId})`; //[cite: 5]
           
           // 串接至你們原本的 review.html，並帶入對應的參數[cite: 5]
-          const reviewUrl = `/review.html?targetUserId=${mUserId}&teamId=${teamId}&teamName=${encodeURIComponent(teamName)}&userId=${userId}`; //[cite: 5]
+          const reviewParams = new URLSearchParams({
+            targetUserId: String(mUserId),
+            teamId: String(teamId),
+            comId: String(resolvedContestId),
+            teamName: teamName || '',
+            userId: String(currentUserId)
+          });
+          const reviewUrl = `/review.html?${reviewParams.toString()}`; //[cite: 5]
 
           return `
             <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 16px; background:#fbf9f6; border:1px solid #eadfd2; border-radius:10px; transition: all 0.2s ease;">
@@ -129,4 +146,49 @@ export async function render(gridContainer, token, userId) { //[cite: 5]
       }
     });
   });
+}
+
+function getValidId(value) {
+  const id = String(value ?? '').trim();
+  return id && id !== 'undefined' && id !== 'null' && id !== 'unknown' ? id : '';
+}
+
+async function loadHistoryTeams(token, userId) {
+  if (!userId) return [];
+
+  try {
+    const headers = token ? { 'Authorization': ` ${token}` } : {};
+    const [joinedRes, ownedRes] = await Promise.all([
+      fetch(`/api/teams/my-joined?userId=${encodeURIComponent(userId)}`, { headers }),
+      fetch(`/api/teams/my-owned?userId=${encodeURIComponent(userId)}`, { headers })
+    ]);
+
+    const [joinedData, ownedData] = await Promise.all([
+      joinedRes.ok ? joinedRes.json() : null,
+      ownedRes.ok ? ownedRes.json() : null
+    ]);
+
+    const joinedTeams = normalizeTeamList(joinedData);
+    const ownedTeams = normalizeTeamList(ownedData);
+    const mergedTeams = new Map();
+
+    [...joinedTeams, ...ownedTeams].forEach(team => {
+      const teamId = team.team_id || team.id;
+      if (!teamId) return;
+      const status = team.team_status || team.teamStatus || team.status;
+      if (status === 'completed') {
+        mergedTeams.set(String(teamId), team);
+      }
+    });
+
+    return Array.from(mergedTeams.values());
+  } catch (error) {
+    console.error('讀取歷史隊伍失敗:', error);
+    return [];
+  }
+}
+
+function normalizeTeamList(data) {
+  if (!data) return [];
+  return data.data || data.teams || (Array.isArray(data) ? data : []);
 }

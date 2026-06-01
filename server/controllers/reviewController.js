@@ -1,17 +1,25 @@
 import pool from '../models/db.js';
 import { checkContent } from '../util/wordfilter.js';
 
+const COMPLETED_STATUS = 'completed';
+const MEMBER_ACCEPTED = '通過';
+const ROLE_OWNER = '建立人';
+
 export const submitReview = async (req, res) => {
     // 1. 從 req.body 拿資料
-    const {com_id, userWrite_id, userRec_id, star, rev_content } = req.body;
+    const { com_id, team_id, userWrite_id, userRec_id, star, rev_content } = req.body;
 
     // 2. 驗證邏輯
-    if (!com_id || !userWrite_id || !userRec_id || !star) {
-        return res.status(400).json({ ok: false, error: '缺少必要欄位' });
+    if (!com_id || !team_id || !userWrite_id || !userRec_id || !star) {
+        return res.status(400).json({ ok: false, error: '缺少必要欄位，請從已完賽隊伍進入評價。' });
     }
 
     if (star < 1 || star > 5) {
         return res.status(400).json({ ok: false, error: '評分須介於 1-5 之間' });
+    }
+
+    if (String(userWrite_id) === String(userRec_id)) {
+        return res.status(400).json({ ok: false, error: '不能評價自己，請選擇曾合作過的隊友。' });
     }
 
     // 3. 髒話過濾
@@ -27,6 +35,41 @@ export const submitReview = async (req, res) => {
     }
 
     try {
+        const [teamRows] = await pool.execute(
+            `SELECT teamStatus FROM Team WHERE team_id = ? AND com_id = ?`,
+            [team_id, com_id]
+        );
+
+        if (teamRows.length === 0) {
+            return res.status(404).json({ ok: false, error: '找不到這支隊伍對應的比賽。' });
+        }
+
+        if ((teamRows[0].teamStatus || '') !== COMPLETED_STATUS) {
+            return res.status(403).json({
+                ok: false,
+                error: '隊伍尚未標記為完賽，完賽後才能評價隊友。'
+            });
+        }
+
+        const [memberRows] = await pool.execute(
+            `
+                SELECT m.user_id
+                FROM Membership m
+                WHERE m.team_id = ?
+                  AND m.user_id IN (?, ?)
+                  AND (m.mem_status = ? OR m.role = ?)
+            `,
+            [team_id, userWrite_id, userRec_id, MEMBER_ACCEPTED, ROLE_OWNER]
+        );
+
+        const memberIds = new Set(memberRows.map(row => String(row.user_id)));
+        if (!memberIds.has(String(userWrite_id)) || !memberIds.has(String(userRec_id))) {
+            return res.status(403).json({
+                ok: false,
+                error: '只能評價同一個歷史隊伍中曾合作過的隊友。'
+            });
+        }
+
         // ==========================================
         // 🌟 新的防護網：檢查「這場比賽」是否已經評價過
         // ==========================================

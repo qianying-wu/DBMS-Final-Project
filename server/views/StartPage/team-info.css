@@ -190,6 +190,22 @@
   margin-top: 18px;
 }
 
+#applyBtn.is-muted {
+  background: #d8d4cf;
+  border-color: #d8d4cf;
+  color: #7b6a59;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+#applyBtn.is-member {
+  background: #5c748a;
+  border-color: #5c748a;
+  color: #ffffff;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .required-application-fields,
 .custom-question-fields {
   grid-column: 1 / -1;

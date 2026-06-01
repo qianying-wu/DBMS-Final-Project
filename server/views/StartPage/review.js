@@ -4,15 +4,28 @@ import * as Data from './team-data.js';
 document.addEventListener('DOMContentLoaded', async () => {
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(window.location.search);
+  const getValidParam = name => {
+    const value = params.get(name);
+    if (!value) return '';
+    const trimmed = value.trim();
+    return trimmed && !['undefined', 'null', 'unknown'].includes(trimmed) ? trimmed : '';
+  };
+  const getValidStoredId = key => {
+    const value = localStorage.getItem(key);
+    if (!value) return '';
+    const trimmed = value.trim();
+    return trimmed && !['undefined', 'null', 'unknown'].includes(trimmed) ? trimmed : '';
+  };
 
   // targetUserId 是「被評價的人」，userId 則保留給目前登入者，避免兩者混在一起。
-  const currentUserId = localStorage.getItem('userId') || params.get('userId') || Data.currentUserId || '';
-  const targetUserId = params.get('targetUserId') || params.get('revieweeId') || currentUserId || 'default_user';
+  const currentUserId = getValidStoredId('userId') || getValidParam('userId') || Data.currentUserId || '';
+  const targetUserId = getValidParam('targetUserId') || getValidParam('revieweeId') || currentUserId || 'default_user';
   // 新增：嘗試從網址抓履歷 ID（例如 ?resumeId=xxx）
   const resumeId = params.get('resumeId') || '';
   const mode = params.get('mode') || 'write';
-  const teamId = params.get('comId') || params.get('teamId') || '';
-  const teamName = params.get('teamName') || '';
+  const teamId = getValidParam('teamId');
+  let contestId = getValidParam('comId');
+  const teamName = getValidParam('teamName');
   const storageKey = `userReviews_${targetUserId}`;
 
   const starRating = $('starRating');
@@ -20,9 +33,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const reviewComment = $('reviewComment');
   const submitReviewBtn = $('submitReviewBtn');
   const reviewList = $('reviewList');
-  const reviewFormCard = document.querySelector('.review-column .editor-card');
+  const reviewFormCard = document.querySelector('.review-form-card');
   let currentRating = 0;
   let targetProfile = null;
+  let teamDetailCache = null;
+  let canWriteReview = mode !== 'view';
 
   function showCustomAlert(message, type = 'success') {
     // 檢查是不是已經有打開的視窗，有的話先清掉
@@ -209,6 +224,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     return localStorage.getItem(`nickname:${currentUserId}`) || `使用者 ${currentUserId}`;
   }
 
+  async function fetchTeamDetail() {
+    if (!teamId) return '';
+
+    if (teamDetailCache) return teamDetailCache;
+
+    try {
+      const token = localStorage.getItem('token');
+      const headers = token ? { 'Authorization': token } : {};
+      const response = await fetch(`/api/teams/detail?teamId=${encodeURIComponent(teamId)}`, { headers });
+      if (!response.ok) return null;
+
+      const result = await response.json();
+      teamDetailCache = result.team || result.data || result;
+      return teamDetailCache;
+    } catch (error) {
+      console.error('讀取隊伍狀態失敗：', error);
+      return null;
+    }
+  }
+
+  async function resolveContestId() {
+    if (contestId) return contestId;
+    if (!teamId) return '';
+
+    try {
+      const team = await fetchTeamDetail();
+      if (!team) return '';
+
+      contestId = String(team.com_id || team.contestId || team.contest_id || '').trim();
+      return contestId;
+    } catch (error) {
+      console.error('解析比賽 ID 失敗：', error);
+      return '';
+    }
+  }
+
   function updateStars(value) {
     stars.forEach(star => {
       const active = parseInt(star.getAttribute('data-value'), 10) <= value;
@@ -353,15 +404,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     submitReviewBtn.style.opacity = isChecking ? '0.6' : '1';
   }
 
-  function initMode() {
+  function lockReviewForm(message) {
+    canWriteReview = false;
+    if (reviewFormCard) {
+      reviewFormCard.innerHTML = `
+        <h3 class="card-title">撰寫評價</h3>
+        <div class="empty-note">${escapeHtml(message)}</div>
+      `;
+    }
+  }
+
+  async function initMode() {
     // mode=view 用在只看歷史評價，不顯示撰寫表單
     if (mode === 'view' && reviewFormCard) {
       reviewFormCard.hidden = true;
+      canWriteReview = false;
+      return;
+    }
+
+    if (!teamId) {
+      lockReviewForm('請從已完賽隊伍的歷史紀錄進入評價。');
+      return;
+    }
+
+    const team = await fetchTeamDetail();
+    const status = team?.team_status || team?.teamStatus || team?.status || '';
+    if (status !== 'completed') {
+      lockReviewForm('這支隊伍尚未標記為完賽，完賽後才能評價隊友。');
     }
   }
 
   if (submitReviewBtn) {
     submitReviewBtn.addEventListener('click', async () => {
+      if (!canWriteReview) {
+        showCustomAlert('這支隊伍尚未完賽，暫時不能送出評價。', 'error');
+        return;
+      }
+
       const comment = reviewComment.value.trim();
 
       if (String(currentUserId) === String(targetUserId)) {
@@ -378,9 +457,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       setSubmitState(true);
+      const resolvedContestId = await resolveContestId();
+      if (!resolvedContestId) {
+        setSubmitState(false);
+        showCustomAlert('找不到這支隊伍對應的比賽，請從歷史隊伍重新進入評價。', 'error');
+        return;
+      }
 
       const reviewPayload = {
-        com_id: teamId || 1, // 端必填 com_id(比賽ID)，如果你從網址抓不到，可能要先塞個預設值(如 1)避免報錯
+        com_id: resolvedContestId,
+        team_id: teamId || null,
         userWrite_id: currentUserId,
         userRec_id: targetUserId,
         star: currentRating,
@@ -428,7 +514,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const homeLink = document.querySelector('.logo-link');
   if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
 
-  initMode();
+  await initMode();
 
   // 已經拿掉多餘的 loadReviews() 呼叫
   await loadReviews();

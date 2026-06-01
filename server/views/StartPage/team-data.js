@@ -25,11 +25,12 @@ export async function loadTeams() {
 
     const result = await res.json();
     const dbTeams = result.data || result.teams || result;
+    const activeTeams = dbTeams.filter(team => (team.teamStatus || team.team_status || team.status || 'active') === 'active');
 
     console.log('📦 資料庫原始隊伍資料：', dbTeams);
 
     // 🛠️ 變數對齊：對應你之前調整過的資料庫欄位
-    const mappedTeams = dbTeams.map(team => ({
+    const mappedTeams = activeTeams.map(team => ({
       id: team.team_id || team.id,                  // 雙重保險相容
       team_id: team.team_id,                        // 隊伍 ID
       team_name: team.team_name,                    // 隊伍名稱
