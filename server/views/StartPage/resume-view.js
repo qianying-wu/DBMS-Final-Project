@@ -7,62 +7,64 @@ const resumeId = qs.get('resumeId'); // 從網址列獲取要看哪一份 resume
 
 // 自動修正 Logo 連結
 if (document.querySelector('.logo-link')) {
-    document.querySelector('.logo-link').href = '/team.html?userId=' + encodeURIComponent(userId);
+  document.querySelector('.logo-link').href = '/team.html?userId=' + encodeURIComponent(userId);
 }
 
 // 取得與 profile.js 完全相同的 Token 驗證標頭
 function getAuthHeader() {
-    const token = localStorage.getItem('token');
-    return token ? { 'Authorization': `${token}` } : {};
+  const token = localStorage.getItem('token');
+  return token ? { 'Authorization': `${token}` } : {};
 }
 
 // XSS 防禦：跳脫 HTML 特殊字元
 function esc(value) {
-    return String(value ?? '').replace(/[&<>"']/g, char => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[char]));
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[char]));
 }
 
 // ==========================================
 // 2. 主力函數：對齊 `/api/pv/loadPV` 撈取資料庫資料
 // ==========================================
 async function loadProfile() {
-    try {
-        const path = '/api/pv/loadPV';
-        // 發送與 profile.js 完全相同的 fetch 請求（帶有 Token）
-        const response = await fetch(path, { headers: { ...getAuthHeader() } });
+  try {
+    const path = '/api/pv/loadPV';
+    // 發送與 profile.js 完全相同的 fetch 請求（帶有 Token）
+    const response = await fetch(path, { headers: { ...getAuthHeader() } });
 
-        if (!response.ok) throw new Error('無法取得履歷資料');
+    if (!response.ok) throw new Error('無法取得履歷資料');
 
-        const existProfiles = await response.json(); // 這是一個履歷陣列
+    const existProfiles = await response.json(); // 這是一個履歷陣列
 
-        // 從陣列中，撈出 id 與網址列傳進來的 `resumeId` 相同的特定履歷
-        // 如果網址沒傳，預設撈第一份 (existProfiles[0])
-        const profile = existProfiles.find(x => String(x.id) === String(resumeId)) || existProfiles[0] || null;
+    // 從陣列中，撈出 id 與網址列傳進來的 `resumeId` 相同的特定履歷
+    // 如果網址沒傳，預設撈第一份 (existProfiles[0])
+    const profile = existProfiles.find(x => String(x.id) === String(resumeId)) || existProfiles[0] || null;
 
-        console.log("=== 【DEBUG】從後端撈到的特定履歷整筆資料 ===", profile); // 👈 加這一行
-        if (profile && profile.data) {
-            // 這裡就是關鍵的 RENDER！把撈到的 data 丟給負責畫畫面的函數
-            renderResume(profile.data);
-        } else {
-            renderEmpty();
-        }
-    } catch (error) {
-        console.error("載入履歷失敗，顯示空狀態:", error);
-        renderEmpty();
+    console.log("=== 【DEBUG】從後端撈到的特定履歷整筆資料 ===", profile); // 👈 加這一行
+    if (profile && profile.data) {
+      if (!profile.data.tags && profile.tags) {
+        profile.data.tags = profile.tags;
+      }
+      renderResume(profile.data);
+    } else {
+      renderEmpty();
     }
+  } catch (error) {
+    console.error("載入履歷失敗，顯示空狀態:", error);
+    renderEmpty();
+  }
 }
 
 // ==========================================
 // 3. 渲染畫面函數 (Render)
 // ==========================================
 function renderResume(data) {
-    const resumeViewEl = document.getElementById('resumeView');
-    if (!resumeViewEl) return;
+  const resumeViewEl = document.getElementById('resumeView');
+  if (!resumeViewEl) return;
 
-    // 根據另一份檔案的對應：
-    // 名字是 data.user_pv_name、學校是 data.school、年級是 data.grade、自介是 data.intro
-    resumeViewEl.innerHTML = `
+  // 根據另一份檔案的對應：
+  // 名字是 data.user_pv_name、學校是 data.school、年級是 data.grade、自介是 data.intro
+  resumeViewEl.innerHTML = `
     <div class="resume-template-head" style="background: linear-gradient(135deg, #fffcf7 0%, #fcf7f0 100%); padding: 36px 40px; display: flex; gap: 28px; align-items: center;">
       <div class="resume-avatar" style="width: 90px; height: 90px; border-radius: 50%; background: #f3ede4; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex-shrink: 0;">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#a17851" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -104,10 +106,10 @@ function renderResume(data) {
 
 // 查無資料時顯示的畫面
 function renderEmpty() {
-    const resumeViewEl = document.getElementById('resumeView');
-    if (resumeViewEl) {
-        resumeViewEl.innerHTML = '<div class="empty-note" style="padding: 40px; text-align: center; color: #b1a79b;">尚未建立履歷檔案</div>';
-    }
+  const resumeViewEl = document.getElementById('resumeView');
+  if (resumeViewEl) {
+    resumeViewEl.innerHTML = '<div class="empty-note" style="padding: 40px; text-align: center; color: #b1a79b;">尚未建立履歷檔案</div>';
+  }
 }
 
 // ==========================================
@@ -119,14 +121,8 @@ loadProfile();
 // 返回上一頁按鈕邏輯
 const backBtn = document.getElementById('backBtnResume');
 if (backBtn) {
-    backBtn.addEventListener('click', function () {
-        if (window.history && window.history.length > 1) {
-            window.history.back();
-        } else {
-            window.location.href = '/profile.html';
-        }
-    });
+  backBtn.addEventListener('click', function () {
+    window.location.href = '/profile.html';
+  });
 }
 
-const homeLink = $('homeLink');
-if (homeLink) homeLink.href = Data.withUserParam('/contests.html');

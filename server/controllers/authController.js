@@ -60,9 +60,9 @@ const loadUserPreferences = async (userId) => {
 
 // --- 註冊邏輯 ---
 export const register = async (req, res) => {
-    const { account,userName,userPsw,userEmail,preferences = []} = req.body || {};
-    
-    if (!account || !userPsw || !userName || !userEmail) {  
+    const { account, userName, userPsw, userEmail, preferences = [] } = req.body || {};
+
+    if (!account || !userPsw || !userName || !userEmail) {
         return res.status(400).json({ ok: false, error: '資料填寫不完整' });
     }
 
@@ -124,15 +124,14 @@ export const register = async (req, res) => {
 
 // --- 登入邏輯 ---
 export const login = async (req, res) => {
-    const {account, userPsw} = req.body || {};
+    const { account, userPsw } = req.body || {};
 
     if (!account || !userPsw) {
-        return res.status(400).json({ 
-            ok: false, 
-            error: '請完整輸入帳號、密碼' 
+        return res.status(400).json({
+            ok: false,
+            error: '請完整輸入帳號、密碼'
         });
     }
-
     try {
         // 1. 尋找使用者 (SQL: SELECT)
         // 同時比對帳號、密碼
@@ -143,28 +142,28 @@ export const login = async (req, res) => {
 
         // 2. 比對結果
         if (rows.length === 0) {
-            return res.status(401).json({ 
-                ok: false, 
-                error: '帳號或密碼錯誤' 
+            return res.status(401).json({
+                ok: false,
+                error: '帳號或密碼錯誤'
             });
         }
         const user = rows[0];
         // 3. 密碼比對 (使用 bcrypt)
         const isMatch = await bcrypt.compare(userPsw, user.userPsw);
         if (!isMatch) {
-            return res.status(401).json({ 
-                ok: false, 
-                error: '帳號或密碼錯誤' 
+            return res.status(401).json({
+                ok: false,
+                error: '帳號或密碼錯誤'
             });
         }
         console.log(`使用者 ${user.account} (ID: ${user.user_id}) 登入成功`);
-        const payload = { 
-            user_id: user.user_id 
+        const payload = {
+            user_id: user.user_id
         };
         // 簽發 Token，暗號記得是用你們的 PASSPORT_SECRET 喔
         const token = jwt.sign(payload, process.env.PASSPORT_SECRET, { expiresIn: '1d' });
-        res.json({ 
-            ok: true, 
+        res.json({
+            ok: true,
             message: '登入成功',
             userId: user.user_id,
             token: "JWT " + token, // 前端登入成功後會拿到這個 token，之後每次 API 請求都要帶在 Header 裡面
@@ -173,6 +172,86 @@ export const login = async (req, res) => {
     } catch (err) {
         console.error('Database Error (Login):', err.message);
         res.status(500).json({ ok: false, error: '伺服器內部錯誤' });
+    }
+};
+// --- 取得使用者帳號資訊 ---
+export const getUserAccount = async (req, res) => {
+    try {
+        // 1. 從請求中取得 userId
+        const userId = req.user.id || req.user.user_id || req.user.userId;
+
+        if (!userId) {
+            console.log('【後端警告】查詢帳號失敗：缺少有效的 userId');
+            return res.status(400).json({ ok: false, error: '缺少使用者 ID' });
+        }
+
+        console.log(`[帳號查詢] 正在撈取 user_id: ${userId} 的帳號資料...`);
+
+        // 2. 執行 SQL 查詢 
+        // 💡 請根據你資料庫真正的欄位名稱調整，這裡假設表名為 user，欄位為 account 與 user_id
+        const [rows] = await pool.execute(
+            'SELECT account FROM user WHERE user_id = ?',
+            [Number(userId)]
+        );
+
+        // 3. 檢查資料庫有沒有這個人
+        if (!rows || rows.length === 0) {
+            console.log(`【後端警告】找不到 user_id: ${userId} 的使用者`);
+            return res.status(404).json({ ok: false, error: '找不到該使用者' });
+        }
+
+        // 4. 成功查到，回傳給前端
+        // rows[0].account 就是對應到的 Email 帳號
+        return res.status(200).json({
+            ok: true,
+            account: rows[0].account
+        });
+
+    } catch (error) {
+        console.error('❌ getUserAccount 發生 SQL 錯誤:', error);
+        return res.status(500).json({ ok: false, error: '伺服器內部錯誤' });
+    }
+};
+// --- 更新使用者密碼 ---
+export const updatePsw = async (req, res) => {
+    try {
+        // 1. 安全防禦：優先從 Passport JWT 解密出來的 req.user 拿 id，防止前端惡意竄改別人的 userId
+        const userId = req.user?.id || req.user?.user_id || req.body.userId;
+        const { userPsw } = req.body; // 這就是前端傳過來的 newPassword
+        if (!userId) {
+            return res.status(400).json({ success: false, message: '缺少使用者 ID' });
+        }
+        // 2. 彈性判斷：如果前端根本沒傳密碼過來（代表使用者沒填就按儲存）
+        if (!userPsw) {
+            console.log(`[密碼變更] 使用者 ${userId} 未輸入新密碼，不做任何變更`);
+            return res.status(200).json({
+                success: true,
+                message: '未偵測到密碼變更需求'
+            });
+        }
+        console.log(`[密碼變更] 正在為 user_id: ${userId} 進行密碼加密與同步...`);
+        //  使用 bcrypt 進行密碼雜湊加密
+        const saltRounds = 10; // 建議的加鹽複雜度
+        const hashedPassword = await bcrypt.hash(userPsw, saltRounds);
+
+        const [result] = await pool.execute(
+            'UPDATE user SET userPsw = ? WHERE user_id = ?',
+            [hashedPassword, Number(userId)]
+        );
+        // 5. 檢查是否有成功更新到資料
+        if (result.affectedRows === 0) {
+            console.log(`【後端警告】更新密碼失敗，找不到 user_id: ${userId} 的使用者`);
+            return res.status(404).json({ success: false, message: '找不到該使用者，無法更新密碼' });
+        }
+        console.log(`✅ [密碼變更] user_id: ${userId} 密碼已成功變更並寫入 DB！`);
+        // 6. 回傳成功給前端
+        return res.status(200).json({
+            success: true,
+            message: '密碼已成功更新！'
+        });
+    } catch (error) {
+        console.error('❌ updateProfile 發生錯誤:', error);
+        return res.status(500).json({ success: false, message: '伺服器內部錯誤' });
     }
 };
 
