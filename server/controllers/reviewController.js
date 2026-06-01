@@ -3,7 +3,7 @@ import { checkContent } from '../util/wordfilter.js';
 
 export const submitReview = async (req, res) => {
     // 1. 從 req.body 拿資料
-    const {com_id, userWrite_id, userRec_id, star, rev_content } = req.body;
+    const { com_id, team_id, userWrite_id, userRec_id, star, rev_content } = req.body;
 
     // 2. 驗證邏輯
     if (!com_id || !userWrite_id || !userRec_id || !star) {
@@ -12,6 +12,10 @@ export const submitReview = async (req, res) => {
 
     if (star < 1 || star > 5) {
         return res.status(400).json({ ok: false, error: '評分須介於 1-5 之間' });
+    }
+
+    if (String(userWrite_id) === String(userRec_id)) {
+        return res.status(400).json({ ok: false, error: '不能評價自己，請選擇曾合作過的隊友。' });
     }
 
     // 3. 髒話過濾
@@ -27,6 +31,27 @@ export const submitReview = async (req, res) => {
     }
 
     try {
+        if (team_id) {
+            const [memberRows] = await pool.execute(
+                `
+                    SELECT m.user_id
+                    FROM Membership m
+                    WHERE m.team_id = ?
+                      AND m.user_id IN (?, ?)
+                      AND (m.mem_status = '通過' OR m.role = '建立人')
+                `,
+                [team_id, userWrite_id, userRec_id]
+            );
+
+            const memberIds = new Set(memberRows.map(row => String(row.user_id)));
+            if (!memberIds.has(String(userWrite_id)) || !memberIds.has(String(userRec_id))) {
+                return res.status(403).json({
+                    ok: false,
+                    error: '只能評價同一個歷史隊伍中曾合作過的隊友。'
+                });
+            }
+        }
+
         // ==========================================
         // 🌟 新的防護網：檢查「這場比賽」是否已經評價過
         // ==========================================

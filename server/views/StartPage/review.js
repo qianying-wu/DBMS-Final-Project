@@ -4,15 +4,28 @@ import * as Data from './team-data.js';
 document.addEventListener('DOMContentLoaded', async () => {
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(window.location.search);
+  const getValidParam = name => {
+    const value = params.get(name);
+    if (!value) return '';
+    const trimmed = value.trim();
+    return trimmed && !['undefined', 'null', 'unknown'].includes(trimmed) ? trimmed : '';
+  };
+  const getValidStoredId = key => {
+    const value = localStorage.getItem(key);
+    if (!value) return '';
+    const trimmed = value.trim();
+    return trimmed && !['undefined', 'null', 'unknown'].includes(trimmed) ? trimmed : '';
+  };
 
   // targetUserId 是「被評價的人」，userId 則保留給目前登入者，避免兩者混在一起。
-  const currentUserId = localStorage.getItem('userId') || params.get('userId') || Data.currentUserId || '';
-  const targetUserId = params.get('targetUserId') || params.get('revieweeId') || currentUserId || 'default_user';
+  const currentUserId = getValidStoredId('userId') || getValidParam('userId') || Data.currentUserId || '';
+  const targetUserId = getValidParam('targetUserId') || getValidParam('revieweeId') || currentUserId || 'default_user';
   // 新增：嘗試從網址抓履歷 ID（例如 ?resumeId=xxx）
   const resumeId = params.get('resumeId') || '';
   const mode = params.get('mode') || 'write';
-  const teamId = params.get('comId') || params.get('teamId') || '';
-  const teamName = params.get('teamName') || '';
+  const teamId = getValidParam('teamId');
+  let contestId = getValidParam('comId');
+  const teamName = getValidParam('teamName');
   const storageKey = `userReviews_${targetUserId}`;
 
   const starRating = $('starRating');
@@ -20,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const reviewComment = $('reviewComment');
   const submitReviewBtn = $('submitReviewBtn');
   const reviewList = $('reviewList');
-  const reviewFormCard = document.querySelector('.review-column .editor-card');
+  const reviewFormCard = document.querySelector('.review-form-card');
   let currentRating = 0;
   let targetProfile = null;
 
@@ -209,6 +222,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     return localStorage.getItem(`nickname:${currentUserId}`) || `使用者 ${currentUserId}`;
   }
 
+  async function resolveContestId() {
+    if (contestId) return contestId;
+    if (!teamId) return '';
+
+    try {
+      const token = localStorage.getItem('token');
+      const headers = token ? { 'Authorization': token } : {};
+      const response = await fetch(`/api/teams/detail?teamId=${encodeURIComponent(teamId)}`, { headers });
+      if (!response.ok) return '';
+
+      const result = await response.json();
+      const team = result.team || result.data || result;
+      contestId = String(team.com_id || team.contestId || team.contest_id || '').trim();
+      return contestId;
+    } catch (error) {
+      console.error('解析比賽 ID 失敗：', error);
+      return '';
+    }
+  }
+
   function updateStars(value) {
     stars.forEach(star => {
       const active = parseInt(star.getAttribute('data-value'), 10) <= value;
@@ -378,9 +411,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       setSubmitState(true);
+      const resolvedContestId = await resolveContestId();
+      if (!resolvedContestId) {
+        setSubmitState(false);
+        showCustomAlert('找不到這支隊伍對應的比賽，請從歷史隊伍重新進入評價。', 'error');
+        return;
+      }
 
       const reviewPayload = {
-        com_id: teamId || 1, // 端必填 com_id(比賽ID)，如果你從網址抓不到，可能要先塞個預設值(如 1)避免報錯
+        com_id: resolvedContestId,
+        team_id: teamId || null,
         userWrite_id: currentUserId,
         userRec_id: targetUserId,
         star: currentRating,

@@ -28,7 +28,7 @@ export async function render(gridContainer, token, userId) {
   // 👑 修正點三：拔除所有 LocalStorage 判斷，直接 100% 信任資料庫的 team_status
   // 只顯示正常運作中（通常為 active 或啟用）的隊伍，排除已解散(disbanded)或已完賽(completed)的隊伍
   const teams = Array.from(mergedMap.values()).filter(t => {
-    const status = t.team_status || t.status;
+    const status = t.team_status || t.teamStatus || t.status;
     return status !== 'disbanded' && status !== 'completed';
   });
 
@@ -107,11 +107,13 @@ export async function render(gridContainer, token, userId) {
   // 綁定解散與完賽控制邏輯 (向後端更新狀態)
   const modal = gridContainer.querySelector('#disbandModal');
   let selectedTeamId = null;
+  let selectedTeam = null;
 
   gridContainer.querySelectorAll('.btn-disband-team').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       selectedTeamId = btn.dataset.teamId;
+      selectedTeam = teams.find(t => String(t.team_id || t.id) === String(selectedTeamId)) || null;
       modal.style.display = 'flex';
     });
   });
@@ -127,7 +129,7 @@ export async function render(gridContainer, token, userId) {
       const res = await fetch('/api/teams/update-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': ` ${token}` },
-        body: JSON.stringify({ team_id: selectedTeamId, status: statusAction })
+        body: JSON.stringify({ team_id: selectedTeamId, status: statusAction, user_id: userId })
       });
 
       if (!res.ok) throw new Error('更新隊伍狀態失敗');

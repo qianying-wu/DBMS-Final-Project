@@ -61,7 +61,7 @@ export async function renderTeamsGridSection() {
     } else if (activeTab === 'favorites-com') {
       await tabFavContests.render(gridContainer, allContestsData, (data) => { allContestsData = data; });
     } else if (activeTab === 'history') {
-      await tabHistory.render(gridContainer);
+      await tabHistory.render(gridContainer, token, userId);
     }
   } catch (error) {
     console.error('❌ 中央管理網格驅動失敗:', error);

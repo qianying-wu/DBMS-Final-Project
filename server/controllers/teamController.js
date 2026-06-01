@@ -48,9 +48,11 @@ export const getAllData = async (req, res) => {
     const [teams] = await pool.query(`
             SELECT 
                 t.*, 
+                t.teamStatus AS team_status,
                 c.com_name AS contestName 
             FROM Team t 
             LEFT JOIN Competition c ON t.com_id = c.com_id
+            WHERE COALESCE(t.teamStatus, 'active') = 'active'
         `);
     res.json({ contests, teams });
   } catch (error) {
@@ -221,6 +223,7 @@ export const getMyJoinedTeams = async (req, res) => {
 
   try {
     const [teams] = await pool.execute(
+<<<<<<< Updated upstream
       `SELECT 
         t.team_id, 
         t.team_name, 
@@ -231,6 +234,12 @@ export const getMyJoinedTeams = async (req, res) => {
        FROM Membership m
        JOIN Team t ON m.team_id = t.team_id
        LEFT JOIN Competition c ON t.com_id = c.com_id -- 👑 關鍵：關聯到你的競賽表 (請依實際欄位修改)
+=======
+      `SELECT t.team_id, t.team_name, t.com_id, c.com_name, t.current_member_count, t.num_limit, t.teamStatus, t.teamStatus AS team_status
+       FROM Membership m
+       JOIN Team t ON m.team_id = t.team_id
+       LEFT JOIN Competition c ON t.com_id = c.com_id
+>>>>>>> Stashed changes
        WHERE m.user_id = ? AND m.mem_status = '通過'`,
       [userId]
     );
@@ -278,6 +287,7 @@ export const getMyOwnedTeams = async (req, res) => {
 
   try {
     const [teams] = await pool.execute(
+<<<<<<< Updated upstream
       `SELECT 
         t.team_id, 
         t.team_name, 
@@ -288,6 +298,12 @@ export const getMyOwnedTeams = async (req, res) => {
        FROM Membership m
        JOIN Team t ON m.team_id = t.team_id
        LEFT JOIN Competition c ON t.com_id = c.com_id -- 👑 關鍵：關聯到你的競賽表 (請依實際欄位修改)
+=======
+      `SELECT t.team_id, t.team_name, t.com_id, c.com_name, t.current_member_count, t.num_limit, t.teamStatus, t.teamStatus AS team_status
+       FROM Membership m
+       JOIN Team t ON m.team_id = t.team_id
+       LEFT JOIN Competition c ON t.com_id = c.com_id
+>>>>>>> Stashed changes
        WHERE m.user_id = ? AND m.role = '建立人'`,
       [userId]
     );
@@ -300,6 +316,54 @@ export const getMyOwnedTeams = async (req, res) => {
 };
 
 // 收藏 / 取消收藏
+export const updateTeamStatus = async (req, res) => {
+  const { team_id, status, user_id } = req.body;
+  const allowedStatuses = new Set(['active', 'completed', 'disbanded']);
+
+  if (!team_id || !status || !user_id) {
+    return res.status(400).json({ success: false, message: '缺少必要欄位' });
+  }
+
+  if (!allowedStatuses.has(status)) {
+    return res.status(400).json({ success: false, message: '不支援的隊伍狀態' });
+  }
+
+  try {
+    const [ownerRows] = await pool.execute(
+      `SELECT user_id
+       FROM Membership
+       WHERE team_id = ? AND user_id = ? AND role = '建立人'`,
+      [team_id, user_id]
+    );
+
+    if (ownerRows.length === 0) {
+      return res.status(403).json({ success: false, message: '只有隊伍建立人可以變更隊伍狀態' });
+    }
+
+    await pool.execute(
+      `UPDATE Team SET teamStatus = ? WHERE team_id = ?`,
+      [status, team_id]
+    );
+
+    const [teamRows] = await pool.execute(
+      `SELECT t.team_id, t.team_name, t.com_id, c.com_name, t.current_member_count, t.num_limit, t.teamStatus, t.teamStatus AS team_status
+       FROM Team t
+       LEFT JOIN Competition c ON t.com_id = c.com_id
+       WHERE t.team_id = ?`,
+      [team_id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: status === 'completed' ? '隊伍已標記為完賽' : '隊伍狀態已更新',
+      data: teamRows[0] || null
+    });
+  } catch (error) {
+    console.error('更新隊伍狀態失敗:', error);
+    return res.status(500).json({ success: false, message: '伺服器資料庫錯誤' });
+  }
+};
+
 export const toggleFavorite = async (req, res) => {
     const { userId, teamId } = req.body;
   
@@ -466,6 +530,7 @@ export const checkApplyStatus = async (req, res) => {
     res.status(500).json({ success: false, message: '伺服器內部錯誤' });
   }
 };
+<<<<<<< Updated upstream
 
 export const updateStatus = async (req, res) => {
   const { team_id, status } = req.body;
@@ -515,3 +580,5 @@ export const updateStatus = async (req, res) => {
 
 
 }
+=======
+>>>>>>> Stashed changes
