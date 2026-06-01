@@ -9,14 +9,25 @@ const $ = id => document.getElementById(id);
 let contests = [];
 let currentPreferences = [];
 
-// 檢查 sessionStorage 有沒有進站紀錄，清掉token 和 userId，確保每次新開分頁都要重新登入一次，避免舊分頁的 token 影響新分頁的使用
+// 檢查 sessionStorage 有沒有進站紀錄
+const urlParams = new URLSearchParams(window.location.search);
+const hasUserIdInUrl = urlParams.has('userId'); // 👑 檢查網址是不是剛登入跳轉過來的
+
 if (!sessionStorage.getItem('hasVisited')) {
   // 如果沒有，代表這是「新開的分頁」或是「剛關掉重開」
-  localStorage.removeItem('token');
-  localStorage.removeItem('userId');
+  
+  // 👑 核心修正：只有在網址「沒有」帶 userId 的情況下，才允許清空快取
+  // 如果網址有 userId，代表他是剛登入成功的，千萬不能刪！
+  if (!hasUserIdInUrl) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    console.log('[AUTH] 檢測到新工作階段，已清空舊的 localStorage');
+  } else {
+    console.log('[AUTH] 檢測到新工作階段，但偵測到剛登入成功跳轉，保留憑證');
+  }
 
+  // 標記已經訪問過
   sessionStorage.setItem('hasVisited', 'true');
-  console.log('[AUTH] 檢測到新工作階段，已清空舊的 localStorage');
 }
 
 // 將字串轉成安全 HTML，避免資料庫文字影響頁面結構
