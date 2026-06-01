@@ -312,7 +312,6 @@ function getRecommendedContests(dataList = [], preferences = []) {
 // }
 
 // 核心渲染函式：負責將比賽資料陣列轉換成 HTML 卡片
-// 核心渲染函式：負責將比賽資料陣列轉換成 HTML 卡片
 function renderContests(dataList = []) {
   const grid = $('contestsGrid');
   if (!grid) return;
