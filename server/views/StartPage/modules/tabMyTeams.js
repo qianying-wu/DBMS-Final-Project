@@ -147,11 +147,11 @@ export async function render(gridContainer, token, userId) {
         <div style="display:flex; flex-direction:column; gap:14px; margin:24px 0;">
           <label style="display:flex; align-items:center; gap:12px; padding:14px 16px; background:#fdfbf9; border:2px solid #caa77a; border-radius:10px; cursor:pointer; font-weight:700; font-size:15px;">
             <input type="radio" name="disbandReason" value="completed" checked style="accent-color:#caa77a; width:18px; height:18px; margin:0;"> 
-            順利完賽 <span style="font-weight:normal; font-size:13px; color:#8a735e; margin-left:auto;">（近到歷史紀錄評價隊友）</span>
+            順利完賽 <span style="font-weight:normal; font-size:13px; color:#8a735e; margin-left:auto;">（移至歷史紀錄隊伍）</span>
           </label>
           <label style="display:flex; align-items:center; gap:12px; padding:14px 16px; background:#fbf9f6; border:2px solid #eadfd2; border-radius:10px; cursor:pointer; font-weight:700; font-size:15px;">
             <input type="radio" name="disbandReason" value="disbanded" style="accent-color:#caa77a; width:18px; height:18px; margin:0;"> 
-            解散隊伍 <span style="font-weight:normal; font-size:13px; color:#8a735e; margin-left:auto;">（其他原因）</span>
+            解散隊伍 <span style="font-weight:normal; font-size:13px; color:#8a735e; margin-left:auto;">（將會徹底刪除隊伍）</span>
           </label>
         </div>
         <div style="display:flex; justify-content:end; gap:10px; margin-top:28px;">

@@ -77,6 +77,31 @@
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
   }
 
+  function showTeamInfoAlert(message, type = 'success', onClose) {
+    const existingModal = document.getElementById('teamInfoAlertModal');
+    if (existingModal) existingModal.remove();
+
+    const isError = type === 'error';
+    const modal = document.createElement('div');
+    modal.id = 'teamInfoAlertModal';
+    modal.className = 'modal';
+    modal.style.zIndex = '9999';
+    modal.innerHTML = `
+      <div class="modal-card team-info-alert-card" role="dialog" aria-modal="true">
+        <div class="team-info-alert-icon ${isError ? 'error' : 'success'}">${isError ? '!' : 'OK'}</div>
+        <h3>${isError ? '操作失敗' : '操作完成'}</h3>
+        <p>${escapeHtml(message)}</p>
+        <button id="closeTeamInfoAlertBtn" class="btn primary" type="button">我知道了</button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    document.getElementById('closeTeamInfoAlertBtn')?.addEventListener('click', () => {
+      modal.remove();
+      if (typeof onClose === 'function') onClose();
+    });
+  }
+
   async function checkAndRenderApplyButton(teamId, userId) {
     const applyBtn = $('applyBtn');
     if (!applyBtn || !userId || userId === 'unknown') return;
@@ -249,8 +274,7 @@
     
     const team = teams.find(t => Number(t.team_id) === currentTeamId);
     if (!team) {
-      alert('找不到該隊伍資訊！');
-      history.back();
+      showTeamInfoAlert('找不到該隊伍資訊！', 'error', () => history.back());
       return;
     }
 
@@ -321,19 +345,19 @@
       const currentCount = Number(currentTeam.current_member_count) || 1;
 
       if (!teamName) {
-        alert('請輸入隊伍名稱');
+        showTeamInfoAlert('請輸入隊伍名稱', 'error');
         return;
       }
       if (!skills) {
-        alert('請輸入「招募需求」');
+        showTeamInfoAlert('請輸入「招募需求」', 'error');
         return;
       }
       if (!desc) {
-        alert('請輸入「主題/說明」');
+        showTeamInfoAlert('請輸入「主題/說明」', 'error');
         return;
       }
       if (!Number.isInteger(numLimit) || numLimit < currentCount || numLimit > 12) {
-        alert(`隊伍人數上限需介於 ${currentCount} 到 12 人之間`);
+        showTeamInfoAlert(`隊伍人數上限需介於 ${currentCount} 到 12 人之間`, 'error');
         return;
       }
 
@@ -375,9 +399,9 @@
         renderTeamDetails(updatedTeam, currentContest || {});
         await renderMemberList(updatedTeam, true);
         closeEditTeamModal();
-        alert('隊伍資料已更新');
+        showTeamInfoAlert('隊伍資料已更新');
       } catch (err) {
-        alert(err.message);
+        showTeamInfoAlert(err.message, 'error');
       } finally {
         if (saveBtn) {
           saveBtn.disabled = false;
@@ -392,7 +416,7 @@
       if (applyLocked || $('applyBtn')?.disabled) return;
     
       if (!ME || !ME.id) {
-        alert('請先登入後再進行申請！');
+        showTeamInfoAlert('請先登入後再進行申請！', 'error');
         return;
       }
     
@@ -403,7 +427,7 @@
         const res = await fetch(`/api/pv/getMyResumeList?userId=${encodeURIComponent(ME.id)}`);
         
         if (res.status === 404) {
-          alert('您目前尚未建立任何履歷！請先前往「個人檔案」新增履歷後再行申請。');
+          showTeamInfoAlert('您目前尚未建立任何履歷！請先前往「個人檔案」新增履歷後再行申請。', 'error');
           resetApplyButton();
           return;
         }
@@ -443,7 +467,7 @@
             const selectedResumeId = document.getElementById('hiddenResumeId').value;
             
             if (!selectedResumeId) {
-              alert('偵測不到履歷識別碼，請重新選擇一份履歷！');
+              showTeamInfoAlert('偵測不到履歷識別碼，請重新選擇一份履歷！', 'error');
               return;
             }
 
@@ -466,7 +490,7 @@
               
               if (!res.ok) throw new Error(result.message || '申請失敗');
 
-              alert('申請成功！目前狀態：審核中。');
+              showTeamInfoAlert('申請成功！目前狀態：審核中。');
               
               if (typeof checkAndRenderApplyButton === 'function') {
                 await checkAndRenderApplyButton(currentTeamId, ME.id);
@@ -476,7 +500,7 @@
               }
 
             } catch (err) {
-              alert(err.message);
+              showTeamInfoAlert(err.message, 'error');
               resetApplyButton();
             }
           });
@@ -486,7 +510,7 @@
         openResumeModal();
     
       } catch (err) {
-        alert(err.message);
+        showTeamInfoAlert(err.message, 'error');
         resetApplyButton();
       }
     });
