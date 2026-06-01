@@ -31,7 +31,8 @@
 
   async function getLiveTeamMemberCount(teamId, token) {
     try {
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      // 🔧 修正：移除多餘的 Bearer
+      const headers = token ? { 'Authorization': token } : {};
       const res = await fetch(`/api/teams/detail?teamId=${encodeURIComponent(teamId)}`, { headers });
       if (!res.ok) throw new Error('無法取得隊伍詳細資料');
 
@@ -55,7 +56,6 @@
       const dbContests = result.competitions || result;
 
       const mappedContests = dbContests.map(contest => {
-        // 🚀【核心對線】精準抓取後端 GROUP_CONCAT 吐出來的 tags 字串，並拆解成陣列
         const parsedTags = contest.tags && typeof contest.tags === 'string'
           ? contest.tags.split(',')
           : ['其他'];
@@ -70,7 +70,7 @@
           com_location: contest.com_location || '地點未定',
           com_reward: contest.com_reward || '獎勵未定',
           com_fee: contest.com_fee || '費用未定',
-          tags: parsedTags // 🚀 成功保留完整的多標籤陣列
+          tags: parsedTags 
         };
       });
 
@@ -122,7 +122,8 @@
 
     try {
       const res = await fetch(`/api/teams/my-favorites?userId=${userId}`, {
-        headers: { 'Authorization': `Bearer ${token}` } // 🔧 順手鎖緊 Bearer 機制
+        // 🔧 修正：移除多餘的 Bearer
+        headers: { 'Authorization': token } 
       });
       if (!res.ok) return [];
       const result = await res.json();
@@ -189,7 +190,8 @@
 
     try {
       const response = await fetch(`/api/contests/getFavorites?userId=${encodeURIComponent(userId)}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        // 🔧 修正：移除多餘的 Bearer
+        headers: { 'Authorization': token }
       });
       if (!response.ok) throw new Error('無法取得收藏比賽清單');
 
@@ -230,13 +232,10 @@
     document.title = `${contest.name} / 組隊`;
     await syncContestFavoriteButton();
 
-    // 🚀【全面解鎖多標籤】將這場比賽綁定的所有中文標籤，通通渲染成精緻的小晶片！
     const tagsHtml = contest.tags && contest.tags.length
       ? contest.tags.map(t => `<span class="contest-detail-tag" style="background: #fbf6ef; border: 1px solid #efe1cf; color: #5d4937; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; display: inline-block;">${escapeHtml(t)}</span>`).join('')
       : '';
 
-    // 渲染比賽摘要（內含多標籤雲排版）
-    // 渲染比賽摘要（🚀 標籤已調整到標題正下方）
     $('contestSummary').innerHTML = `
       <h2 style="margin: 0 0 12px 0;">${contest.name}</h2>
       
@@ -253,14 +252,12 @@
       </div>
     `;
 
-    // 渲染比賽說明文字
     $('contestInfo').innerHTML = `
       <p>${contest.com_intro}</p>
       </br>
       <p>比賽官網連結：<a href="${contest.com_link}" target="_blank">${contest.com_link}</a></p>
     `;
 
-    // 渲染屬於該比賽的「所有隊伍卡片」
     $('teamCards').innerHTML = teams.length ? teams.map(team => {
       const isFav = dbFavIds.includes(Number(team.team_id || team.id));
       const formattedDemand = team.demand
@@ -308,7 +305,8 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // 🔧 鎖緊 Token 驗證
+          // 🔧 修正：移除多餘的 Bearer
+          'Authorization': token 
         },
         body: JSON.stringify({ userId: Number(userId), teamId: Number(teamId) })
       });
@@ -355,7 +353,6 @@
     location.href = teamInfoHref(id);
   }
 
-  // 強制掛在視窗最頂層
   window.handleCreateTeamClick = function (e) {
     if (e) e.preventDefault();
     console.log("創建隊伍按鈕成功觸發！");
@@ -422,7 +419,8 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          // 🔧 修正：移除多餘的 Bearer
+          'Authorization': token
         },
         body: JSON.stringify({
           userId: Number(userId),
@@ -457,7 +455,6 @@
     }
   };
 
-  // 事件委派：監聽隊伍列表的點擊
   $('teamCards').addEventListener('click', e => {
     const favBtn = e.target.closest('[data-fav]');
     if (favBtn) return toggleFavorite(Number(favBtn.dataset.fav), favBtn);
@@ -468,6 +465,5 @@
   const homeLink = $('homeLink');
   if (homeLink) homeLink.href = withUserParam('/contests.html');
 
-  // 頁面載入後執行初始渲染
   render();
 })();
