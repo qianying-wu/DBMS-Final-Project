@@ -75,8 +75,6 @@ function redirectToAuth() {
 // ==========================================================================
 // 2. 競賽資料處理與渲染核心 (核心業務邏輯)
 // ==========================================================================
-
-// 從後端讀取資料庫 Competition 表的全部比賽
 // 從後端讀取資料庫 Competition 表的全部比賽（內含聯查標籤）
 async function loadContests() {
   try {
@@ -161,6 +159,48 @@ async function loadRecommendationPreferences() {
 
   return [];
 }
+
+async function fetchAllDbTags() {
+  try {
+    const path = '/api/pref/allPrefTags';
+    const res = await fetch(path);
+    if (res.ok) {
+      const result = await res.json();
+      if (result.success && Array.isArray(result.data)) return result.data;
+    }
+  } catch (e) {
+    console.error("無法從資料庫讀取 Com_type 總表", e);
+  }
+  return [];
+}
+
+// 🚀 建立一個動態初始化下拉選單的函式
+async function initCategoryFilter() {
+  const categoryFilter = document.getElementById('categoryFilter');
+  if (!categoryFilter) return; // 確保畫面上真的有這個元件
+
+  // 1. 直接呼叫你之前寫好的函式，拿到資料庫的總表陣列
+  const dbTags = await fetchAllDbTags();
+
+  if (!dbTags || dbTags.length === 0) {
+    console.warn("⚠️ 沒拿到任何資料庫標籤資料");
+    return;
+  }
+
+  // 2. 將陣列資料轉換成 HTML 的 <option> 標籤
+  // 💡 關鍵點：value 改用 db 欄位裡的 comType（字串），這樣後面搜尋比較好對齊
+  const optionsHtml = dbTags.map(tag => {
+    return `<option value="${tag.comType}">${tag.comType}</option>`;
+  }).join('');
+
+  // 3. 保留原本的「所有分類」，後面塞入從資料庫撈出來的真實分類
+  categoryFilter.innerHTML = `<option value="all">所有分類</option>` + optionsHtml;
+}
+
+// 💡 記得在頁面載入（例如 DOMContentLoaded 或其他初始化進程）時執行它！
+document.addEventListener('DOMContentLoaded', () => {
+  initCategoryFilter();
+});
 
 function renderRecommendations(dataList = []) {
   const grid = $('recommendedGrid');
