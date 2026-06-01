@@ -505,3 +505,79 @@ export const checkApplyStatus = async (req, res) => {
     return res.status(500).json({ success: false, message: '伺服器內部錯誤' });
   }
 };
+
+export const removeMember = async (req, res) => {
+  // requester_user_id 是發起動作的人（點擊按鈕的人），target_user_id 是被踢的人（或退隊的自己）
+  const { team_id, target_user_id, requester_user_id } = req.body;
+
+  if (!team_id || !target_user_id || !requester_user_id) {
+    return res.status(400).json({ success: false, message: '缺少必要參數' });
+  }
+
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // 1. 取得操作者 (發送請求的人) 的身分
+    const [requesterInfo] = await connection.execute(
+      `SELECT role FROM Membership WHERE team_id = ? AND user_id = ?`,
+      [team_id, requester_user_id]
+    );
+
+    if (requesterInfo.length === 0) {
+      await connection.rollback();
+      return res.status(403).json({ success: false, message: '您不是該隊伍成員，無權限操作' });
+    }
+
+    const requesterRole = requesterInfo[0].role;
+    const isSelf = String(requester_user_id) === String(target_user_id); // 判斷是退隊還是踢人
+
+    // 2. 規則防呆：建立人不能自己退隊
+    if (isSelf && requesterRole === ROLE_OWNER) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, message: '建立人無法主動退隊，若要退出請使用解散隊伍功能' });
+    }
+
+    // 3. 權限防呆：如果不是自己退隊，就必須是隊長才能踢人
+    if (!isSelf && requesterRole !== ROLE_OWNER) {
+      await connection.rollback();
+      return res.status(403).json({ success: false, message: '您沒有權限剔除該成員' });
+    }
+
+    // 4. 確認目標成員狀態 (必須是已經「通過」的成員，不能踢申請中的)
+    const [targetInfo] = await connection.execute(
+      `SELECT mem_status FROM Membership WHERE team_id = ? AND user_id = ? AND mem_status = ?`,
+      [team_id, target_user_id, MEMBER_ACCEPTED]
+    );
+
+    if (targetInfo.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: '該成員不在隊伍中，或尚未通過審核' });
+    }
+
+    // 5. 執行刪除成員，並把隊伍人數 -1
+    await connection.execute(
+      `DELETE FROM Membership WHERE team_id = ? AND user_id = ?`,
+      [team_id, target_user_id]
+    );
+
+    await connection.execute(
+      `UPDATE Team SET current_member_count = current_member_count - 1 WHERE team_id = ?`,
+      [team_id]
+    );
+
+    await connection.commit();
+    
+    // 回傳成功訊息，根據是退隊還是踢人給不同的提示
+    const actionMsg = isSelf ? '已成功退出隊伍' : '已成功剔除該成員';
+    return res.status(200).json({ success: true, message: actionMsg });
+    
+  } catch (error) {
+    await connection.rollback();
+    console.error('移除成員失敗:', error);
+    return res.status(500).json({ success: false, message: '伺服器內部錯誤' });
+  } finally {
+    connection.release();
+  }
+};

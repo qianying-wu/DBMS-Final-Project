@@ -23,6 +23,7 @@ router.post('/update-status', teamController.updateTeamStatus);
 
 //  底下都是保護 API（必須登入）
 router.use(passport.authenticate("jwt", { session: false }));    // 驗證 Token 並注入 req.user
+router.post('/remove-member', requireLogin, teamController.removeMember);
 
 
 router.post(
