@@ -15,7 +15,7 @@ const hasUserIdInUrl = urlParams.has('userId'); // 👑 檢查網址是不是剛
 
 if (!sessionStorage.getItem('hasVisited')) {
   // 如果沒有，代表這是「新開的分頁」或是「剛關掉重開」
-  
+
   // 👑 核心修正：只有在網址「沒有」帶 userId 的情況下，才允許清空快取
   // 如果網址有 userId，代表他是剛登入成功的，千萬不能刪！
   if (!hasUserIdInUrl) {
@@ -54,14 +54,6 @@ function isLoggedIn() {
 
   // 👑 關鍵核心：只有當 token 存在，且 id 不是髒資料時，才算真正登入
   return Boolean(token && token.trim() !== "");
-
-  // token &&
-  // token.trim() !== "" &&
-  // id &&
-  // id !== 'unknown' &&
-  // id !== 'null' &&
-  // id !== 'undefined'
-  // );
 }
 
 // 未登入時的彈出提示或跳轉
@@ -98,7 +90,7 @@ async function loadContests() {
     // 🚀 核心修正：將後端的 com_tags 欄位解開為前端可用的 tags 陣列
     contests = dbContests.map(contest => ({
       ...contest,
-      // 萬一後端某個比賽沒有設定標籤，就給它預設值 ['Other']
+      // 萬一後端某個比賽沒有設定標籤，就給它預設值 ['其他']
       tags: contest.tags ? contest.tags.split(',') : ['其他']
     }));
 
@@ -112,60 +104,64 @@ async function loadContests() {
 }
 
 
-// 依照比賽名稱與說明做簡單分類
-// function inferCategory(contest) {
-//   const text = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase();
-//   if (text.includes('ai') || text.includes('資料') || text.includes('機器') || text.includes('智慧')) return 'AI';
-//   if (text.includes('設計') || text.includes('創意') || text.includes('黑客松')) return 'Design';
-//   if (text.includes('商業') || text.includes('創業') || text.includes('金融')) return 'Business';
-//   return 'Other';
-// }
-
-// 對應中文標籤
-// function categoryLabel(category) {
-//   return {
-//     AI: '人工智慧',
-//     Design: '設計與創意',
-//     Business: '商業競賽',
-//     Other: '其他'
-//   }[category] || category;
-// }
-
 // 🚀【全面升級】揚棄前端盲猜，直接拿資料庫定義的中文分類標籤
 function getContestMainTag(contest) {
   return contest.tags && contest.tags.length ? contest.tags[0] : '其他';
 }
 
+// 🚀 擴充字典，補上「演算法」相關字詞
 function preferenceKeywords(preferences = []) {
   const map = {
-    ai: ['ai', '人工智慧', '智慧', '機器', '資料', '模型'],
-    data: ['資料', '數據', '分析', 'data'],
-    web: ['網頁', '網站', 'web', '前端', '後端'],
-    app: ['app', '應用', '手機', '行動'],
-    robotics: ['機器人', '自動化', 'robot'],
-    security: ['資安', '安全', 'security'],
-    medical: ['醫療', '健康', '照護'],
-    fintech: ['金融', 'fintech', '商業'],
-    sustainability: ['永續', '環境', '綠色'],
-    startup: ['創業', '新創', '提案'],
-    design: ['設計', '創意', 'ui', 'ux'],
-    presentation: ['簡報', '企劃', '提案']
+    'ai': ['ai', '人工智慧', '機器學習', '深度學習', '模型'],
+    'robotics': ['機器人', '自動化', 'robot'],
+    'medical': ['醫療', '健康', '照護', '生技'],
+    'app': ['app', '手機', 'ios', 'android'],
+    'business': ['商業個案', '商業', '企劃', '行銷', '商管', '創業'],
+    'sustainability': ['永續', '環境', '綠色', 'esg', 'sdgs', '碳中和'],
+    'web': ['網頁', '前端', '後端', '網站'],
+
+    // 👇 核心修正：把太氾濫的「開發」、「軟體」拿掉，改用更精準的字
+    'algorithm': ['演算法', '程式設計', '解題', 'c++', 'python', '邏輯運算'],
+    '演算法 / 程式設計': ['演算法', '程式設計', '解題', 'c++', 'python', '邏輯運算'],
+    '演算法/程式設計': ['演算法', '程式設計', '解題', 'c++', 'python', '邏輯運算'],
+
+    '網頁開發/uiux': ['網頁', '前端', '後端', 'ui', 'ux', '介面', '使用者體驗'],
+    '商業個案': ['商業個案', '商業', '企劃', '行銷', '商管'],
+    '永續議題': ['永續', '環境', '綠色', 'esg', 'sdgs', '社會企業'],
+    'app 開發': ['app', '手機', 'ios', 'android', '行動應用'],
+    '醫療科技': ['醫療', '健康', '生技', '照護']
   };
 
-  const keywords = preferences.flatMap(key => map[key] || [key]);
-  return keywords.length ? keywords : ['ai', '人工智慧', '設計', '創意', '商業', '熱門'];
+  const keywords = preferences.flatMap(key => {
+    const lowerKey = String(key).toLowerCase();
+    return map[lowerKey] ? map[lowerKey] : [lowerKey];
+  });
+
+  console.log('📥 從 DB 抓到的原始偏好：', preferences);
+  console.log('🧠 算分使用的擴充關鍵字：', keywords);
+
+  return keywords;
 }
 
 async function loadRecommendationPreferences() {
-  const userId = localStorage.getItem('userId') || new URLSearchParams(location.search).get('userId');
-  if (!userId || userId === 'unknown') return [];
+  // 記得要帶上 Token 才能通過後端驗證，加上 Bearer 與空格
+  const token = localStorage.getItem('token');
+  if (!token) return [];
 
   try {
-    if (window.AppPreferences?.loadUserPreferences) {
-      return await window.AppPreferences.loadUserPreferences(userId);
+    const response = await fetch('/api/pref/getpref', {
+      headers: { 'Authorization': token }
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      // 成功的話，會回傳資料庫裡記著的陣列，例如 ["business", "sustainability"]
+      if (result.success && Array.isArray(result.data)) {
+        return result.data;
+      }
     }
   } catch (err) {
-    console.warn('讀取使用者偏好失敗，改用熱門推薦:', err);
+    console.warn('無法從資料庫讀取偏好:', err);
   }
 
   return [];
@@ -199,7 +195,6 @@ async function initCategoryFilter() {
   }
 
   // 2. 將陣列資料轉換成 HTML 的 <option> 標籤
-  // 💡 關鍵點：value 改用 db 欄位裡的 comType（字串），這樣後面搜尋比較好對齊
   const optionsHtml = dbTags.map(tag => {
     return `<option value="${tag.comType}">${tag.comType}</option>`;
   }).join('');
@@ -212,6 +207,36 @@ async function initCategoryFilter() {
 document.addEventListener('DOMContentLoaded', () => {
   initCategoryFilter();
 });
+
+// 🚀 算分與過濾 0 分比賽
+// 🚀 算分系統升級：給「標籤命中」超高加分，解決同分誤判！
+function getRecommendedContests(dataList = [], preferences = []) {
+  if (!preferences || preferences.length === 0) return [];
+
+  const keywords = preferenceKeywords(preferences).map(item => String(item).toLowerCase());
+
+  const scoredContests = dataList.map(contest => {
+    // 1. 把文字拆成兩包：一包是內文，一包是標籤
+    const text = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase();
+    const tagsText = contest.tags ? contest.tags.join(' ').toLowerCase() : '';
+
+    // 2. 算內文分數：提到關鍵字，每次給 1 分
+    let score = keywords.reduce((sum, keyword) => sum + (text.includes(keyword) ? 1 : 0), 0);
+
+    // 3. 🌟 算標籤加權分：如果比賽的「標籤」直接命中你的關鍵字，一次灌 5 分！
+    score += keywords.reduce((sum, keyword) => sum + (tagsText.includes(keyword) ? 5 : 0), 0);
+
+    return { contest, score };
+  });
+
+  console.log('📊 比賽分數排行榜 (加權後)：', scoredContests.map(c => ({ name: c.contest.com_name, score: c.score })));
+
+  return scoredContests
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score) // 分數高的排前面
+    .slice(0, 3)
+    .map(item => item.contest);
+}
 
 function renderRecommendations(dataList = []) {
   const grid = $('recommendedGrid');
@@ -255,63 +280,8 @@ function renderRecommendations(dataList = []) {
     `;
   }).join('');
 }
-function getRecommendedContests(dataList = [], preferences = []) {
-  const keywords = preferenceKeywords(preferences).map(item => String(item).toLowerCase());
 
-  return dataList
-    .map(contest => {
-      const text = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase();
-      const score = keywords.reduce((sum, keyword) => sum + (text.includes(keyword) ? 1 : 0), 0);
-      return { contest, score };
-    })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
-    .map(item => item.contest);
-}
 
-// function renderRecommendations(dataList = []) {
-//   const grid = $('recommendedGrid');
-//   const section = $('recommendedSection');
-//   if (!grid || !section) return;
-
-//   if (!isLoggedIn()) {
-//     section.classList.add('hidden');
-//     grid.innerHTML = '';
-//     return;
-//   }
-
-//   section.classList.remove('hidden');
-
-//   const recommended = getRecommendedContests(dataList, currentPreferences);
-//   if (!recommended.length) {
-//     grid.innerHTML = '<div class="empty-note">目前暫無適合的推薦比賽。</div>';
-//     return;
-//   }
-
-//   grid.innerHTML = recommended.map(contest => {
-//     const category = getContestMainTag(contest);
-//     const rawDate = contest.com_date || '';
-//     const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
-//     const contestId = contest.com_id || contest.id;
-
-//     return `
-//       <article class="recommend-card" data-recommend-id="${contestId}">
-//         <div class="recommend-topline">
-//           <span>${categoryLabel(category)}</span>
-//           <strong>推薦</strong>
-//         </div>
-//         <h3>${escapeHtml(contest.com_name || contest.name || '未命名比賽')}</h3>
-//         <p>${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
-//         <div class="recommend-footer">
-//           <span>${escapeHtml(displayDate || '日期未定')}</span>
-//           <span>查看詳情 →</span>
-//         </div>
-//       </article>
-//     `;
-//   }).join('');
-// }
-
-// 核心渲染函式：負責將比賽資料陣列轉換成 HTML 卡片
 // 核心渲染函式：負責將比賽資料陣列轉換成 HTML 卡片
 function renderContests(dataList = []) {
   const grid = $('contestsGrid');
@@ -337,31 +307,6 @@ function renderContests(dataList = []) {
     `;
   }).join('') : '<div class="empty-note">目前資料庫沒有可瀏覽的比賽。</div>';
 }
-// function renderContests(dataList = []) {
-//   const grid = $('contestsGrid');
-//   if (!grid) return;
-
-//   grid.innerHTML = dataList.length ? dataList.map(contest => {
-//     const category = getContestMainTag(contest);
-
-//     // 💡 修正原本 com_date 為 null 時可能引發的 .includes 報錯問題
-//     const rawDate = contest.com_date || '';
-//     const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
-
-//     return `
-//       <article class="contest-card" data-id="${contest.com_id}">
-//         <div class="card-tag">${categoryLabel(category)}</div>
-//         <h3>${escapeHtml(contest.com_name)}</h3>
-//         <p class="category">分類：${categoryLabel(category)}</p>
-//         <p class="desc">${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
-//         <div class="card-footer">
-//           <span>${escapeHtml(displayDate || '日期未定')}</span>
-//           <span class="more-link">查看更多 →</span>
-//         </div>
-//       </article>
-//     `;
-//   }).join('') : '<div class="empty-note">目前資料庫沒有可瀏覽的比賽。</div>';
-// }
 
 // 執行搜尋與下拉選單的篩選功能
 function applyFilters() {
@@ -378,18 +323,6 @@ function applyFilters() {
 
   renderContests(filtered);
 }
-// function applyFilters() {
-//   const q = $('contestSearch')?.value.trim().toLowerCase() || '';
-//   const category = $('categoryFilter')?.value || 'all';
-
-//   const filtered = contests.filter(contest => {
-//     const matchedText = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase().includes(q);
-//     const matchedCategory = category === 'all' || getContestMainTag(contest) === category;
-//     return matchedText && matchedCategory;
-//   });
-
-//   renderContests(filtered);
-// }
 
 
 // ==========================================================================
@@ -464,9 +397,6 @@ function setupGeneralUiEvents() {
 // 4. 統一初始化入口
 // ==========================================================================
 function initApp() {
-  // 1. 執行登入狀態 UI 切換
-  // renderAuthAction();
-
   // 2. 綁定常規 UI 事件與通知/頭像監聽
   setupGeneralUiEvents();
   bindNotify();

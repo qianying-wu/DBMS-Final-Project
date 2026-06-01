@@ -197,7 +197,7 @@
         if (!preferenceTags || allDbTags.length === 0) return;
 
         preferenceTags.innerHTML = allDbTags.map(tag => {
-            const isSelected = selectedPreferences.includes(tag.comType);
+            const isSelected = selectedPreferences.includes(tag.comType_key);
             return `
               <button class="preference-chip ${isSelected ? 'active' : ''}" 
                       type="button" 

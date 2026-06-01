@@ -9,16 +9,15 @@ export const getUserPreferences = async (req, res) => {
     try {
         // 🚀 雙表聯查：從使用者偏好表出發，串回總表拿 comType_key
         const sql = `
-            SELECT t.comType
+            SELECT t.comType_key
             FROM UserPreference up
             JOIN Com_type t ON up.comType_id = t.comType_id
             WHERE up.user_id = ?
         `;
         const [rows] = await pool.execute(sql, [userId]);
 
-        // 把 [{comType: "hackathon"}, {comType: "uiux"}] 
         // 轉成前端要的純字串陣列 ["hackathon", "uiux"]
-        const keys = rows.map(row => row.comType);
+        const keys = rows.map(row => row.comType_key);
 
         return res.status(200).json({ success: true, data: keys });
     } catch (error) {
