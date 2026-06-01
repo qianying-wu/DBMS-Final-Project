@@ -247,20 +247,35 @@ function renderRecommendations(dataList = []) {
   const section = $('recommendedSection');
   if (!grid || !section) return;
 
+  // 狀況 4：未登入 ➡️ 隱藏整個區塊
   if (!isLoggedIn()) {
     section.classList.add('hidden');
     grid.innerHTML = '';
     return;
   }
 
-  section.classList.remove('hidden');
+  // 先檢查身上到底有沒有帶著「偏好標籤」
+  const hasPreferences = currentPreferences && currentPreferences.length > 0;
 
-  const recommended = getRecommendedContests(dataList, currentPreferences);
-  if (!recommended.length) {
-    grid.innerHTML = '<div class="empty-note" style="grid-column: 1 / -1; color: #8a735e;">目前暫無適合的推薦比賽，先看看下方的熱門競賽吧！</div>';
+  // 狀況 3：已登入，未設定標籤 ➡️ 隱藏整個區塊
+  if (!hasPreferences) {
+    section.classList.add('hidden');
+    grid.innerHTML = '';
     return;
   }
 
+  // 既然有設定偏好，那就來算分，看看有沒有命中的比賽
+  const recommended = getRecommendedContests(dataList, currentPreferences);
+
+  // 狀況 2：已登入，標籤未命中 (算出來的名單是空的) ➡️ 顯示區塊，並用文字告知
+  if (recommended.length === 0) {
+    section.classList.remove('hidden');
+    grid.innerHTML = '<div class="empty-note" style="grid-column: 1 / -1; color: #8a735e; padding: 20px 0;">目前暫無符合您偏好的比賽，先看看下方的熱門競賽吧！</div>';
+    return;
+  }
+
+  // 狀況 1：已登入，標籤有命中 ➡️ 顯示推薦卡片
+  section.classList.remove('hidden');
   grid.innerHTML = recommended.map(contest => {
     const mainTag = getContestMainTag(contest);
     const rawDate = contest.com_date || '';
