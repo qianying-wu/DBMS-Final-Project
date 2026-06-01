@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <title>探索競賽 - 競賽組隊平台</title>
   <link rel="stylesheet" href="header.css">
   <link rel="stylesheet" href="contests.css">
 </head>
+
 <body>
   <header class="topbar">
     <a id="homeLink" href="/contests.html"><img src="/logo.png" alt="競賽組隊 Logo" class="logo-img"></a>
@@ -29,12 +31,12 @@
       <p>尋找感興趣的領域，查看詳情並開始組隊。</p>
       <div class="filter-bar">
         <input type="text" id="contestSearch" placeholder="輸入關鍵字搜尋比賽...">
-        <select id="categoryFilter">
-          <option value="all">所有分類</option>
+          <!--<select id="categoryFilter">
+        <option value="all">所有分類</option>
           <option value="AI">人工智慧</option>
           <option value="Design">設計與創意</option>
           <option value="Business">商業競賽</option>
-        </select>
+        </select>-->
       </div>
     </section>
 
@@ -52,7 +54,7 @@
     </section>
 
     <div id="contestsGrid" class="contests-grid">
-      
+
     </div>
   </main>
   <script type="module" src="/contests.js"></script>
@@ -60,4 +62,5 @@
   <script src="/auth-guard.js"></script>
   <script src="/account-menu.js"></script>
 </body>
+
 </html>

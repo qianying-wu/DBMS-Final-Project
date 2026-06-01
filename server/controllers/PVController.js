@@ -157,13 +157,29 @@ export const deleteResume = async (req, res) => {
     const userId = req.user.user_id;
     const { id } = req.params; // 從網址 /api/resumes/:id 拿到要刪除的 ID
     try {
+        const [resumeRows] = await pool.query(
+            'SELECT resume_id FROM Resumes WHERE resume_id = ? AND user_id = ?',
+            [id, userId]
+        );
+        if (resumeRows.length === 0) {
+            return res.status(404).json({ ok: false, message: '找不到該履歷或無權限刪除' });
+        }
+
+        const [usedRows] = await pool.query(
+            'SELECT 1 FROM Membership WHERE resume_id = ? LIMIT 1',
+            [id]
+        );
+        if (usedRows.length > 0) {
+            return res.status(409).json({
+                ok: false,
+                message: '這份履歷已被隊伍建立或申請紀錄使用，為了保留歷史紀錄，不能刪除。'
+            });
+        }
+
         // 由於資料庫通常有外鍵約束（Foreign Key），保險起見我們先手動把中介表的標籤連結斷開
         await pool.query('DELETE FROM Resume_tags WHERE resume_id = ?', [id]);
         // 接著刪除履歷主表，且必須加上 user_id 確保不能刪到別人的履歷
-        const [result] = await pool.query('DELETE FROM Resumes WHERE resume_id = ? AND user_id = ?', [id, userId]);
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ ok: false, message: '找不到該履歷或無權限刪除' });
-        }
+        await pool.query('DELETE FROM Resumes WHERE resume_id = ? AND user_id = ?', [id, userId]);
         res.json({ ok: true, message: '履歷已成功從資料庫刪除！' });
     } catch (error) {
         console.error('刪除履歷失敗：', error);

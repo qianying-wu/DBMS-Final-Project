@@ -54,6 +54,49 @@
     return String(value ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  async function loadOwnerResumeOptions() {
+    const select = $('ownerResume');
+    if (!select) return [];
+
+    const userId = localStorage.getItem('userId') || currentUserId;
+
+    if (!userId || userId === 'unknown') {
+      select.innerHTML = '<option value="">請先登入後再建立隊伍</option>';
+      select.disabled = true;
+      return [];
+    }
+
+    try {
+      const response = await fetch(`/api/pv/getMyResumeList?userId=${encodeURIComponent(userId)}`);
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        select.innerHTML = '<option value="">尚未建立履歷，請先建立履歷後再創建隊伍。</option>';
+        select.disabled = true;
+        return [];
+      }
+
+      const resumes = result.data || [];
+      if (resumes.length === 0) {
+        select.innerHTML = '<option value="">尚未建立履歷，請先建立履歷後再創建隊伍。</option>';
+        select.disabled = true;
+        return [];
+      }
+
+      select.disabled = false;
+      select.innerHTML = `
+        <option value="">請選擇要顯示給申請者的履歷</option>
+        ${resumes.map(resume => `<option value="${escapeAttr(resume.id)}">${escapeHtml(resume.name || '未命名履歷')}</option>`).join('')}
+      `;
+      return resumes;
+    } catch (error) {
+      console.error('讀取建立者履歷失敗:', error);
+      select.innerHTML = '<option value="">無法讀取履歷</option>';
+      select.disabled = true;
+      return [];
+    }
+  }
+
   // 🚀 簡化後的版本：單純記錄使用者切換下拉選單時選擇的比賽 com_id
   function toggleNewContestFields() {
     selectedContestId = $('contestSelect').value ? Number($('contestSelect').value) : null;
@@ -344,12 +387,14 @@
     const desc = $('teamDesc').value.trim();
     const skills = $('teamSkills').value.trim();
     const slots = Number($('teamSlots').value) || 4;
+    const ownerResumeId = $('ownerResume')?.value;
 
     // 2. 檢查邏輯
     if (!contest) return alert('請先搜尋並選擇一個比賽');
     if (!name) return alert('請輸入隊伍名稱');
     if (!skills) return alert('請輸入「招募需求」');
     if (!desc) return alert('請輸入「主題/說明」');
+    if (!ownerResumeId) return alert('建立隊伍前請先選擇一份要顯示給申請者的履歷，沒有履歷請先建立。');
 
     // 3. 打包要丟給資料庫的欄位資料
     const descParts = [desc, skills ? `需求：${skills}` : ''].filter(Boolean);
@@ -361,7 +406,8 @@
       num_limit: slots,
       demand: descParts.join('\n'),
       team_name: name,
-      user_id: localStorage.getItem("userId")
+      user_id: localStorage.getItem("userId") || currentUserId,
+      resume_id: ownerResumeId
     };
 
     // 4. 送出請求 (一次 Fetch 搞定兩張表！)
@@ -406,6 +452,8 @@
 
   // 負責網頁載入啟動的監聽器，回呼函式要加上 async
   document.addEventListener('DOMContentLoaded', async () => {
+
+    await loadOwnerResumeOptions();
 
     const contests = await loadContests();
 

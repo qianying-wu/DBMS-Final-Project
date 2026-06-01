@@ -2,18 +2,51 @@
 import pool from '../models/db.js';
 
 //撈比賽
+// 🚀 升級版：支援動態聯查標籤的 getAllContests
 export const getAllContests = async (req, res) => {
     try {
-        // 📝 執行 SQL：從資料庫撈取比賽
-        const [rows] = await pool.query('SELECT com_id, com_name, com_date, com_enroll_ddl, com_intro, com_link, com_location, com_reward, com_fee FROM Competition');
+        // 📝 升級 SQL：使用 LEFT JOIN 串接中介表 ComCat 與總表 Com_type
+        // 並用 GROUP_CONCAT 把該比賽的所有標籤名稱用逗號 ',' 實時串接成 com_tags
+        const sql = `
+            SELECT 
+                c.com_id, 
+                c.com_name, 
+                c.com_date, 
+                c.com_enroll_ddl, 
+                c.com_intro, 
+                c.com_link, 
+                c.com_location, 
+                c.com_reward, 
+                c.com_fee,
+                GROUP_CONCAT(ct.comType SEPARATOR ',') AS tags
+            FROM Competition c
+            LEFT JOIN ComCat cc ON c.com_id = cc.com_id
+            LEFT JOIN Com_type ct ON cc.comType_id = ct.comType_id
+            GROUP BY c.com_id
+            ORDER BY c.com_id DESC
+        `;
 
-        // 把撈出來的陣列用 JSON 格式回傳給前端
+        const [rows] = await pool.query(sql);
+
+        // 把撈出來、內含 com_tags 欄位的陣列用 JSON 格式回傳給前端
         return res.json(rows);
     } catch (error) {
         console.error('❌ 撈取比賽資料失敗:', error);
         return res.status(500).json({ message: '伺服器錯誤，無法讀取比賽' });
     }
 };
+// export const getAllContests = async (req, res) => {
+//     try {
+//         // 📝 執行 SQL：從資料庫撈取比賽
+//         const [rows] = await pool.query('SELECT com_id, com_name, com_date, com_enroll_ddl, com_intro, com_link, com_location, com_reward, com_fee FROM Competition');
+
+//         // 把撈出來的陣列用 JSON 格式回傳給前端
+//         return res.json(rows);
+//     } catch (error) {
+//         console.error('❌ 撈取比賽資料失敗:', error);
+//         return res.status(500).json({ message: '伺服器錯誤，無法讀取比賽' });
+//     }
+// };
 
 // 收藏 / 取消收藏
 export const toggleFavorite = async (req, res) => {

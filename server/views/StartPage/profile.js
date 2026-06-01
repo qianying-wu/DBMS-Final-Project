@@ -70,11 +70,14 @@ import * as Data from './team-data.js';
           method: 'DELETE',
           headers: { ...getAuthHeader() }
         });
-        if (!res.ok) throw new Error('刪除失敗');
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || '刪除失敗');
+        }
         return true;
       } catch (err) {
         console.error(err);
-        alert('刪除履歷失敗');
+        alert(err.message || '刪除履歷失敗');
         return false;
       }
     }

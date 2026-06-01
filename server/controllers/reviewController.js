@@ -8,10 +8,15 @@ const ROLE_OWNER = '建立人';
 export const submitReview = async (req, res) => {
     // 1. 從 req.body 拿資料
     const { com_id, team_id, userWrite_id, userRec_id, star, rev_content } = req.body;
+    const currentUserId = req.user?.user_id;
 
     // 2. 驗證邏輯
     if (!com_id || !team_id || !userWrite_id || !userRec_id || !star) {
         return res.status(400).json({ ok: false, error: '缺少必要欄位，請從已完賽隊伍進入評價。' });
+    }
+
+    if (String(currentUserId) !== String(userWrite_id)) {
+        return res.status(403).json({ ok: false, error: '登入身分與評價者不一致，請重新登入後再試。' });
     }
 
     if (star < 1 || star > 5) {

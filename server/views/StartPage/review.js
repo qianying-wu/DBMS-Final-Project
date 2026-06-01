@@ -31,16 +31,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const starRating = $('starRating');
   const reviewError = $('reviewError');
   const contentGrid = document.querySelector('.content-grid');
+  const authToken = localStorage.getItem('token');
   let pageHasError = false;
 
-  function showReviewError(message) {
+  function showReviewError(message, options = {}) {
     pageHasError = true;
     const backTeamUrl = Data.withUserParam('/myTeam.html');
+    const title = options.title || '找不到此用戶';
+    const tone = options.tone || 'error';
 
     if (reviewError) {
+      reviewError.className = `review-error ${tone === 'empty' ? 'is-empty' : ''}`.trim();
       reviewError.innerHTML = `
         <div class="review-error-card">
-          <h3>找不到此用戶</h3>
+          <h3>${escapeHtml(title)}</h3>
           <p>${escapeHtml(message)}</p>
           <div class="error-actions">
             <a href="/contests.html" class="btn-error">返回競賽首頁</a>
@@ -70,6 +74,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   let targetProfile = null;
   let teamDetailCache = null;
   let canWriteReview = mode !== 'view';
+
+  if (!authToken) {
+    showReviewError('請先登入後再查看履歷與評價資料。', {
+      title: '請先登入',
+      tone: 'empty'
+    });
+    return;
+  }
 
   function showCustomAlert(message, type = 'success') {
     // 檢查是不是已經有打開的視窗，有的話先清掉
@@ -199,8 +211,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // 如果拿別人的履歷也需要你的登入驗證，就把 token 塞進去
-      const token = localStorage.getItem('token');
-      const headers = token ? { 'Authorization': token } : {};
+      const headers = { 'Authorization': authToken };
 
       const response = await fetch(url, { headers });
       if (!response.ok) {
@@ -247,10 +258,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const result = await fetchTargetUserResume();
 
     if (!result || result.error) {
-      const message = result?.error === 'user-not-found'
-        ? '此目標帳號不存在，請從隊伍管理重新進入評價頁面。'
-        : '該用戶尚未建立履歷，請等待該用戶建立履歷或查看其他隊友的履歷。';
-      showReviewError(message);
+      if (result?.error === 'user-not-found') {
+        showReviewError('此目標帳號不存在，請從隊伍管理重新進入評價頁面。');
+      } else {
+        showReviewError('此使用者目前沒有可顯示的履歷，請等待對方建立履歷或查看其他隊友。', {
+          title: '尚未建立履歷',
+          tone: 'empty'
+        });
+      }
       return;
     }
 
@@ -345,7 +360,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
       // 呼叫我們剛剛在後端寫好的 API
-      const response = await fetch(`/api/review/list/${targetUserId}`);
+      const response = await fetch(`/api/review/list/${targetUserId}`, {
+        headers: { 'Authorization': authToken }
+      });
       const result = await response.json();
 
       if (!response.ok || !result.ok) {

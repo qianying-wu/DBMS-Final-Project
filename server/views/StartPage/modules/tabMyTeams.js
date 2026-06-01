@@ -297,7 +297,9 @@ function bindReviewActionButtons(panelContainer, refreshCallback) {
       if (viewModal) viewModal.style.display = 'flex';
 
       try {
-        const res = await fetch(`/api/pv/getTargetResume?userId=${encodeURIComponent(targetUid)}`);
+        const token = localStorage.getItem('token');
+        const headers = token ? { 'Authorization': token } : {};
+        const res = await fetch(`/api/pv/getTargetResume?userId=${encodeURIComponent(targetUid)}`, { headers });
         if (res.status === 404) {
           if (viewCard) viewCard.innerHTML = `<p style="text-align: center; color: #cc0000; padding: 20px 0;">❌ 找不到該用戶的履歷資料。</p>`;
           return;
