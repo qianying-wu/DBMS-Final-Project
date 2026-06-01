@@ -278,6 +278,59 @@ export const getMyOwnedTeams = async (req, res) => {
   }
 };
 
+export const updateTeam = async (req, res) => {
+  const { team_id, user_id, team_name, demand, num_limit } = req.body;
+
+  if (!team_id || !user_id || !team_name || !num_limit) {
+    return res.status(400).json({ success: false, message: '缺少必要欄位' });
+  }
+
+  const parsedLimit = Number(num_limit);
+  if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > 12) {
+    return res.status(400).json({ success: false, message: '隊伍人數上限需介於 1 到 12 人之間' });
+  }
+
+  try {
+    const [ownerRows] = await pool.execute(
+      `SELECT t.current_member_count
+       FROM Membership m
+       JOIN Team t ON m.team_id = t.team_id
+       WHERE m.team_id = ? AND m.user_id = ? AND m.role = ?`,
+      [team_id, user_id, ROLE_OWNER]
+    );
+
+    if (ownerRows.length === 0) {
+      return res.status(403).json({ success: false, message: '只有隊伍建立人可以編輯隊伍資料' });
+    }
+
+    if (parsedLimit < Number(ownerRows[0].current_member_count || 0)) {
+      return res.status(400).json({ success: false, message: '人數上限不能低於目前隊伍人數' });
+    }
+
+    await pool.execute(
+      `UPDATE Team SET team_name = ?, demand = ?, num_limit = ? WHERE team_id = ?`,
+      [team_name.trim(), demand || '', parsedLimit, team_id]
+    );
+
+    const [teamRows] = await pool.execute(
+      `SELECT t.team_id, t.team_name, t.com_id, t.demand, c.com_name, t.current_member_count, t.num_limit, t.teamStatus, t.teamStatus AS team_status
+       FROM Team t
+       LEFT JOIN Competition c ON t.com_id = c.com_id
+       WHERE t.team_id = ?`,
+      [team_id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: '隊伍資料已更新',
+      data: teamRows[0] || null
+    });
+  } catch (error) {
+    console.error('更新隊伍資料失敗:', error);
+    return res.status(500).json({ success: false, message: '伺服器資料庫錯誤' });
+  }
+};
+
 export const updateTeamStatus = async (req, res) => {
   const { team_id, status, user_id } = req.body;
   const allowedStatuses = new Set([ACTIVE_STATUS, COMPLETED_STATUS, DISBANDED_STATUS]);

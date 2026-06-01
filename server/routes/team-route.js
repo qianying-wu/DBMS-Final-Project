@@ -18,6 +18,7 @@ router.post('/toggle-favorite', teamController.toggleFavorite);
 router.get('/detail', teamController.getTeamMember);
 router.post('/review', teamController.reviewApplication);
 router.get('/apply-status', teamController.checkApplyStatus);
+router.post('/update', teamController.updateTeam);
 router.post('/update-status', teamController.updateTeamStatus);
 
 //  底下都是保護 API（必須登入）

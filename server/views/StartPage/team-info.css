@@ -270,7 +270,8 @@
   }
 
   .contest-detail-grid,
-  .required-application-fields {
+  .required-application-fields,
+  .edit-team-form {
     grid-template-columns: 1fr;
   }
   
@@ -293,6 +294,58 @@
 
 .avatar-btn:hover {
   background: #f5f0ea;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#editTeamBtn {
+  flex-shrink: 0;
+}
+
+.edit-team-modal-content {
+  max-width: 560px;
+}
+
+.edit-team-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px;
+  gap: 14px;
+  padding-top: 16px;
+}
+
+.edit-team-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #3f342c;
+  font-weight: 700;
+}
+
+.edit-team-form .full {
+  grid-column: 1 / -1;
+}
+
+.edit-team-form input,
+.edit-team-form textarea {
+  width: 100%;
+  border: 1px solid #d9d3ce;
+  border-radius: 8px;
+  padding: 12px;
+  font: inherit;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.edit-team-form input:focus,
+.edit-team-form textarea:focus {
+  outline: 2px solid #d9a037;
+  border-color: #d9a037;
+}
+
+.edit-team-form .modal-footer {
+  grid-column: 1 / -1;
 }
 
 .custom-modal {
