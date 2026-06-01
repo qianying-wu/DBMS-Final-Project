@@ -105,22 +105,32 @@ export async function render(gridContainer, token, userId) {
 
     return `
       <div class="team-manage-card" id="team-card-${teamId}">
-          <div class="card-top"><h3 class="team-title" style="margin-top: 5px;">${Data.escapeHtml(t.team_name)}</h3></div>
-          <div class="card-mid">
-              <div class="info-row"><span class="label">競賽項目：</span><span class="val">${Data.escapeHtml(contestName)}</span></div>
-              <div class="info-row"><span class="label">目前人數：</span><span class="val">${currentCount} / ${maxCount} 人</span></div>
-          </div>
-          <div class="card-bottom">
-              <button class="btn-manage-action" data-team-id="${teamId}">管理隊伍</button>
-              ${isCreator ? `
-                <div class="owned-action-row" style="margin-top:8px; display:flex; gap:4px; flex-wrap: wrap;">
-                  <button class="btn-secondary-action" data-owned-action="applications" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">申請審核${pendingCount ? ` (${pendingCount})` : ''}</button>
-                  <button class="btn-secondary-action" data-owned-action="members" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">隊友名單</button>
-                  <button class="btn-secondary-action btn-disband-team" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}" data-contest-name="${Data.escapeHtml(contestName)}">解散/完賽</button>
-                </div>
-              ` : ''}
-          </div>
+      <div class="card-top">
+        <h3 class="team-title" style="margin-top: 5px;">${Data.escapeHtml(t.team_name)}</h3>
       </div>
+      <div class="card-mid">
+          <div class="info-row"><span class="label">競賽項目：</span><span class="val">${Data.escapeHtml(contestName)}</span></div>
+          <div class="info-row"><span class="label">目前人數：</span><span class="val">${currentCount} / ${maxCount} 人</span></div>
+      </div>
+      <div class="card-bottom">
+          <button class="btn-manage-action ${isCreator ? '' : 'btn-view-only'}" 
+                  data-team-id="${teamId}">
+              ${isCreator ? '管理隊伍' : '查看隊伍'}
+          </button>
+
+          ${isCreator ? `
+            <div class="owned-action-row" style="margin-top:8px; display:flex; gap:4px; flex-wrap: wrap;">
+              <button class="btn-secondary-action" data-owned-action="applications" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">申請審核${pendingCount ? ` (${pendingCount})` : ''}</button>
+              <button class="btn-secondary-action" data-owned-action="members" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">隊友名單</button>
+              <button class="btn-secondary-action btn-disband-team" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}" data-contest-name="${Data.escapeHtml(contestName)}">解散/完賽</button>
+            </div>
+          ` : `
+            <div class="member-tag" style="margin-top:10px; font-size:12px; color:#999; text-align:center;">
+              ※ 您是以成員身份加入此隊伍
+            </div>
+          `}
+      </div>
+  </div>
     `;
   }).join('');
 
@@ -229,11 +239,11 @@ export function setupReviewPanelDelegation(refreshCallback) {
       if (action === 'applications') {
         const applicants = members.filter(m => m.mem_status === '申請中' || m.status === '申請中');
         if (applicants.length === 0) {
-          panel.innerHTML = `<div class="panel-header"><h3>👋 申請審核中心：${Data.escapeHtml(teamName)}</h3></div><div class="empty-text">🎉 目前沒有任何待審核的加入申請。</div>`;
+          panel.innerHTML = `<div class="panel-header"><h3>👋隊伍【${Data.escapeHtml(teamName)}】的申請審核中心</h3></div><div class="empty-text">🎉 目前沒有任何待審核的加入申請。</div>`;
           return;
         }
 
-        let html = `<div class="panel-header" style="display:flex; justify-content:space-between;"><h3>👋 申請審核中心：${Data.escapeHtml(teamName)}</h3><span class="role-badge creator">${applicants.length} 筆待處理</span></div><div style="display:grid; gap:12px; margin-top:10px;">`;
+        let html = `<div class="panel-header" style="display:flex; justify-content:space-between;"><h3>👋隊伍【${Data.escapeHtml(teamName)}】的申請審核中心</h3><span class="role-badge creator">${applicants.length} 筆待處理</span></div><div style="display:grid; gap:12px; margin-top:10px;">`;
         applicants.forEach(a => {
           html += `
             <div class="applicant-card">
@@ -252,7 +262,7 @@ export function setupReviewPanelDelegation(refreshCallback) {
 
       if (action === 'members') {
         const activeMembers = members.filter(m => m.mem_status === '通過' || m.status === '通過');
-        let html = `<div class="panel-header"><h3>👥 正式隊友名單：${Data.escapeHtml(teamName)}</h3></div><div style="display:grid; gap:8px; margin-top:10px;">`;
+        let html = `<div class="panel-header"><h3>👥隊伍【${Data.escapeHtml(teamName)}】的正式隊友名單</h3></div><div style="display:grid; gap:8px; margin-top:10px;">`;
         activeMembers.forEach(m => {
           const isLeader = m.role === '建立人';
           html += `<div style="background:#fbfbfb; border:1px solid #eee; padding:12px; border-radius:6px; display:flex; justify-content:space-between;"><strong>${Data.escapeHtml(m.userName || '隊員')}</strong><span class="role-badge">${isLeader ? '建立人' : '組員'}</span></div>`;
