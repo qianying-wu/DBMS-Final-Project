@@ -45,6 +45,12 @@ body {
   color: #6C3B34;
 }
 
+.review-error.is-empty {
+  background: #FFFCF7;
+  border-color: #E7D8C5;
+  color: #5F4B3A;
+}
+
 .review-error-card {
   display: grid;
   gap: 16px;
@@ -54,6 +60,10 @@ body {
   margin: 0;
   font-size: 22px;
   color: #A63C32;
+}
+
+.review-error.is-empty .review-error-card h3 {
+  color: #7A5A32;
 }
 
 .review-error-card p {
@@ -425,4 +435,10 @@ body {
   font-size: 13px;
   color: #8a735e;
   font-weight: 500;
+}
+
+.review-error.is-empty .review-error-card .btn-error {
+  border-color: #B89061;
+  background: #FFF8EE;
+  color: #7A5A32;
 }
