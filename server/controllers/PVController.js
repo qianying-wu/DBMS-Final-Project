@@ -183,6 +183,11 @@ export const getTargetResume = async (req, res) => {
     }
 
     try {
+        const [userRows] = await pool.query('SELECT 1 FROM user WHERE user_id = ? LIMIT 1', [targetUserId]);
+        if (!userRows || userRows.length === 0) {
+            return res.status(404).json({ ok: false, reason: 'user-not-found', message: '找不到該使用者帳號' });
+        }
+
         const whereClause = resumeId ? 'WHERE r.user_id = ? AND r.resume_id = ?' : 'WHERE r.user_id = ?';
         const queryParams = resumeId ? [targetUserId, resumeId] : [targetUserId];
         const sql = `
@@ -209,7 +214,7 @@ export const getTargetResume = async (req, res) => {
         const [rows] = await pool.query(sql, queryParams);
 
         if (rows.length === 0) {
-            return res.status(404).json({ ok: false, message: '找不到該用戶的履歷' });
+            return res.status(404).json({ ok: false, reason: 'no-resume', message: '該使用者尚未建立履歷' });
         }
 
         const row = rows[0];
