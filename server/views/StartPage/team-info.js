@@ -7,7 +7,21 @@
   const currentTeamId = Number(params.get('teamId') || params.get('id'));
   const userIdParam = params.get('userId') || localStorage.getItem('userId');
   const ME = { id: userIdParam && userIdParam !== 'unknown' ? userIdParam : '9999', name: '你自己' };
+  let applyLocked = false;
 
+  function setApplicationAvailability({ visible = true, disabled = false, text = '加入隊伍', lock = false, tone = 'default' } = {}) {
+    const block = $('applicationBlock');
+    const applyBtn = $('applyBtn');
+    applyLocked = lock;
+
+    if (block) block.style.display = visible ? 'flex' : 'none';
+    if (!applyBtn) return;
+
+    applyBtn.textContent = text;
+    applyBtn.disabled = disabled;
+    applyBtn.classList.toggle('is-muted', tone === 'muted');
+    applyBtn.classList.toggle('is-member', tone === 'member');
+  }
   async function loadContests() {
     try {
       const res = await fetch('/api/contests/competitions'); 
@@ -77,16 +91,11 @@
       const status = result.status; 
 
       if (status === '申請中') {
-        applyBtn.textContent = '審核中...';
-        applyBtn.disabled = true;
-        applyBtn.style.backgroundColor = '#cccccc'; 
+        setApplicationAvailability({ disabled: true, text: '審核中...', lock: true, tone: 'muted' });
       } else if (status === '通過') {
-        applyBtn.textContent = '您已是隊員';
-        applyBtn.disabled = true;
-        applyBtn.style.backgroundColor = '#5c748a';
+        setApplicationAvailability({ visible: false, disabled: true, text: '您已是隊員', lock: true, tone: 'member' });
       } else {
-        applyBtn.textContent = '加入隊伍';
-        applyBtn.disabled = false;
+        if (!applyLocked) setApplicationAvailability({ disabled: false, text: '加入隊伍', lock: false });
       }
     } catch (err) {
       console.error("❌ 無法取得資料庫 Membership 狀態:", err);
@@ -208,11 +217,13 @@
     const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').some(req => Number(req.teamId) === Number(team.team_id) && String(req.user?.id) === String(ME.id) && req.status === 'pending');
     
     if (alreadyJoinedLocal || pending || Number(team.current_member_count) >= Number(team.num_limit)) {
-      $('applyBtn').textContent = alreadyJoinedLocal ? '已在隊伍中' : pending ? '審核中...' : '隊伍已額滿';
-      $('applyBtn').disabled = true;
-      if (alreadyJoinedLocal) {
-        if ($('applicationBlock')) $('applicationBlock').style.display = 'none';
-      }
+      setApplicationAvailability({
+        visible: !alreadyJoinedLocal,
+        disabled: true,
+        text: alreadyJoinedLocal ? '已在隊伍中' : pending ? '審核中...' : '隊伍已額滿',
+        lock: true,
+        tone: alreadyJoinedLocal ? 'member' : 'muted'
+      });
     }
 
     await checkUserRoleAndRender(team);
@@ -234,6 +245,8 @@
 
     $('applyBtn')?.addEventListener('click', async (e) => {
       e.preventDefault();
+
+      if (applyLocked || $('applyBtn')?.disabled) return;
     
       if (!ME || !ME.id) {
         alert('請先登入後再進行申請！');
@@ -336,10 +349,8 @@
     });
     
     function resetApplyButton() {
-      if($('applyBtn')) {
-        $('applyBtn').disabled = false;
-        $('applyBtn').textContent = '加入隊伍';
-      }
+      if (applyLocked) return;
+      setApplicationAvailability({ disabled: false, text: '加入隊伍', lock: false });
     }
   }
 
@@ -356,19 +367,11 @@
       await renderMemberList(team, isCreator);
 
       if (isCreator || isAlreadyMember) {
-        if ($('applicationBlock')) $('applicationBlock').style.display = 'none';
+        setApplicationAvailability({ visible: false, disabled: true, text: '已在隊伍中', lock: true, tone: 'member' });
       } else if (hasPendingApplication) {
-        if ($('applicationBlock')) $('applicationBlock').style.display = 'flex';
-        if ($('applyBtn')) {
-          $('applyBtn').textContent = '審核中...';
-          $('applyBtn').disabled = true;
-        }
+        setApplicationAvailability({ disabled: true, text: '審核中...', lock: true, tone: 'muted' });
       } else {
-        if ($('applyBtn') && $('applyBtn').textContent !== '審核中...' && $('applyBtn').textContent !== '隊伍已額滿') {
-          $('applyBtn').style.display = 'inline-flex';
-          $('applyBtn').disabled = false;
-        }
-        if ($('applicationBlock')) $('applicationBlock').style.display = 'flex';
+        if (!applyLocked) setApplicationAvailability({ disabled: false, text: '加入隊伍', lock: false });
       }
 
       if (isCreator) {

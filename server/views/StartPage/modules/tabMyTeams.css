@@ -16,3 +16,76 @@
   .resume-detail-preview strong { color: #4f3827; }
   .resume-tags-wrapper { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .resume-tag-badge { background: #caa77a; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+
+  .applicant-card {
+    background: #fff;
+    border: 1px solid #eadfd2;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .review-action-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .btn-review-action {
+    border: 1px solid #eadfd2;
+    border-radius: 8px;
+    background: #fff;
+    color: #6f5a47;
+    padding: 8px 12px;
+    min-height: 34px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease;
+  }
+
+  .btn-review-action:hover {
+    border-color: #caa77a;
+    color: #4f3827;
+    box-shadow: 0 4px 10px rgba(79, 56, 39, .08);
+  }
+
+  .btn-review-view {
+    background: #f7fbff;
+    border-color: #cfe1ef;
+    color: #50616d;
+  }
+
+  .btn-review-pass {
+    background: #caa77a;
+    border-color: #caa77a;
+    color: #fff;
+  }
+
+  .btn-review-pass:hover {
+    background: #b89162;
+    color: #fff;
+  }
+
+  .btn-review-reject {
+    background: #fff7f4;
+    border-color: #e3c1b9;
+    color: #a05a48;
+  }
+
+  @media (max-width: 640px) {
+    .applicant-card {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .review-action-row {
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }

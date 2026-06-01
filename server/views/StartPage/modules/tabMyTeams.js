@@ -181,12 +181,12 @@ export function setupReviewPanelDelegation(refreshCallback) {
         let html = `<div class="panel-header" style="display:flex; justify-content:space-between;"><h3>👋 申請審核中心：${Data.escapeHtml(teamName)}</h3><span class="role-badge creator">${applicants.length} 筆待處理</span></div><div style="display:grid; gap:12px; margin-top:10px;">`;
         applicants.forEach(a => {
           html += `
-            <div class="applicant-card" style="background:#fff; border:1px solid #eadfd2; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center;">
+            <div class="applicant-card">
               <div><strong>${Data.escapeHtml(a.userName || '未知名稱')}</strong><small style="display:block; color:#8a735e; margin-top:4px;">附帶履歷：${Data.escapeHtml(a.resume_name || '預設履歷')}</small></div>
-              <div style="display:flex; gap:8px;">
-                <button class="btn-review-view" data-uid="${a.user_id}" style="cursor:pointer;">檢視履歷</button>
-                <button class="btn-review-pass" data-uid="${a.user_id}" data-team-id="${teamId}" style="cursor:pointer; background:#caa77a; color:#fff; border:none; padding:4px 8px; border-radius:4px;">通過</button>
-                <button class="btn-review-reject" data-uid="${a.user_id}" data-team-id="${teamId}" style="cursor:pointer; color:#b05353; background:#fff; border:1px solid #f3cccc; padding:4px 8px; border-radius:4px;">拒絕</button>
+              <div class="review-action-row">
+                <button class="btn-review-action btn-review-view" data-uid="${a.user_id}" type="button">檢視履歷</button>
+                <button class="btn-review-action btn-review-pass" data-uid="${a.user_id}" data-team-id="${teamId}" type="button">通過</button>
+                <button class="btn-review-action btn-review-reject" data-uid="${a.user_id}" data-team-id="${teamId}" type="button">拒絕</button>
               </div>
             </div>`;
         });

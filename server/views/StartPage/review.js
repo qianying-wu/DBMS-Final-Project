@@ -36,6 +36,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const reviewFormCard = document.querySelector('.review-form-card');
   let currentRating = 0;
   let targetProfile = null;
+  let teamDetailCache = null;
+  let canWriteReview = mode !== 'view';
 
   function showCustomAlert(message, type = 'success') {
     // 檢查是不是已經有打開的視窗，有的話先清掉
@@ -222,18 +224,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     return localStorage.getItem(`nickname:${currentUserId}`) || `使用者 ${currentUserId}`;
   }
 
-  async function resolveContestId() {
-    if (contestId) return contestId;
+  async function fetchTeamDetail() {
     if (!teamId) return '';
+
+    if (teamDetailCache) return teamDetailCache;
 
     try {
       const token = localStorage.getItem('token');
       const headers = token ? { 'Authorization': token } : {};
       const response = await fetch(`/api/teams/detail?teamId=${encodeURIComponent(teamId)}`, { headers });
-      if (!response.ok) return '';
+      if (!response.ok) return null;
 
       const result = await response.json();
-      const team = result.team || result.data || result;
+      teamDetailCache = result.team || result.data || result;
+      return teamDetailCache;
+    } catch (error) {
+      console.error('讀取隊伍狀態失敗：', error);
+      return null;
+    }
+  }
+
+  async function resolveContestId() {
+    if (contestId) return contestId;
+    if (!teamId) return '';
+
+    try {
+      const team = await fetchTeamDetail();
+      if (!team) return '';
+
       contestId = String(team.com_id || team.contestId || team.contest_id || '').trim();
       return contestId;
     } catch (error) {
@@ -386,15 +404,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     submitReviewBtn.style.opacity = isChecking ? '0.6' : '1';
   }
 
-  function initMode() {
+  function lockReviewForm(message) {
+    canWriteReview = false;
+    if (reviewFormCard) {
+      reviewFormCard.innerHTML = `
+        <h3 class="card-title">撰寫評價</h3>
+        <div class="empty-note">${escapeHtml(message)}</div>
+      `;
+    }
+  }
+
+  async function initMode() {
     // mode=view 用在只看歷史評價，不顯示撰寫表單
     if (mode === 'view' && reviewFormCard) {
       reviewFormCard.hidden = true;
+      canWriteReview = false;
+      return;
+    }
+
+    if (!teamId) {
+      lockReviewForm('請從已完賽隊伍的歷史紀錄進入評價。');
+      return;
+    }
+
+    const team = await fetchTeamDetail();
+    const status = team?.team_status || team?.teamStatus || team?.status || '';
+    if (status !== 'completed') {
+      lockReviewForm('這支隊伍尚未標記為完賽，完賽後才能評價隊友。');
     }
   }
 
   if (submitReviewBtn) {
     submitReviewBtn.addEventListener('click', async () => {
+      if (!canWriteReview) {
+        showCustomAlert('這支隊伍尚未完賽，暫時不能送出評價。', 'error');
+        return;
+      }
+
       const comment = reviewComment.value.trim();
 
       if (String(currentUserId) === String(targetUserId)) {
@@ -468,7 +514,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const homeLink = document.querySelector('.logo-link');
   if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
 
-  initMode();
+  await initMode();
 
   // 已經拿掉多餘的 loadReviews() 呼叫
   await loadReviews();
