@@ -9,21 +9,16 @@
       // 2. 如果網址有正確的 userId，但 LocalStorage 沒存，就自動幫它補存進去！
       if (urlUserId && urlUserId !== 'unknown') {
          localStorage.setItem('userId', urlUserId);
-         sessionStorage.setItem('userId', urlUserId);
-      }
-
-      let userId = localStorage.getItem('userId');
-      if (!userId || userId === 'unknown') {
-         userId = sessionStorage.getItem('userId');
       }
 
       // 3. 這時候再去拿 LocalStorage，就絕對拿得到了
+      const userId = localStorage.getItem('userId');
       const userArea = document.querySelector('.actions'); // 🔔👤 區塊
       const authArea = document.querySelector('.loginBtn');      // 登入按鈕區塊
   
       if (!userArea || !authArea) return; // 確保頁面上有這些元素才執行
   
-      if (userId && userId !== 'unknown' && userId !== '') {
+      if (userId && userId !== 'unknown') {
         userArea.style.display = 'flex';
         authArea.style.display = 'none';
       } else {

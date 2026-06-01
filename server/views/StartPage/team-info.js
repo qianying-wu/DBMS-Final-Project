@@ -8,8 +8,6 @@
   const userIdParam = params.get('userId') || localStorage.getItem('userId');
   const ME = { id: userIdParam && userIdParam !== 'unknown' ? userIdParam : '9999', name: '你自己' };
   let applyLocked = false;
-  let currentTeam = null;
-  let currentContest = null;
 
   function setApplicationAvailability({ visible = true, disabled = false, text = '加入隊伍', lock = false, tone = 'default' } = {}) {
     const block = $('applicationBlock');
@@ -77,29 +75,8 @@
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
   }
 
-  function showTeamInfoAlert(message, type = 'success', onClose) {
-    const existingModal = document.getElementById('teamInfoAlertModal');
-    if (existingModal) existingModal.remove();
-
-    const isError = type === 'error';
-    const modal = document.createElement('div');
-    modal.id = 'teamInfoAlertModal';
-    modal.className = 'modal';
-    modal.style.zIndex = '9999';
-    modal.innerHTML = `
-      <div class="modal-card team-info-alert-card" role="dialog" aria-modal="true">
-        <div class="team-info-alert-icon ${isError ? 'error' : 'success'}">${isError ? '!' : 'OK'}</div>
-        <h3>${isError ? '操作失敗' : '操作完成'}</h3>
-        <p>${escapeHtml(message)}</p>
-        <button id="closeTeamInfoAlertBtn" class="btn primary" type="button">我知道了</button>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-    document.getElementById('closeTeamInfoAlertBtn')?.addEventListener('click', () => {
-      modal.remove();
-      if (typeof onClose === 'function') onClose();
-    });
+  function getLocalMembers(teamId) {
+    return JSON.parse(localStorage.getItem(`teamMembers:v1:${teamId}`) || '[]');
   }
 
   async function checkAndRenderApplyButton(teamId, userId) {
@@ -209,68 +186,18 @@
     return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
   }
 
-  function renderTeamDetails(team, contest) {
-    currentTeam = team;
-    currentContest = contest;
-
-    document.title = `${team.team_name} - 隊伍資料`;
-    $('displayTeamName').textContent = team.team_name;
-    $('displayContestLabel').textContent = contest.name;
-    $('displayContestName').textContent = contest.name;
-    $('displayContestDate').textContent = (contest.com_date) ? contest.com_date.split('T')[0] : '日期未定';
-    $('displayContestInfo').textContent = contest.com_intro || '尚未提供競賽資料';
-    $('displayMemberCount').textContent = team.current_member_count;
-    $('displayMaxSlots').textContent = team.num_limit;
-
-    const formattedDemand = team.demand ? team.demand.replace(/(需求|說明|招募)/g, '\n$1') : '尚未填寫隊伍需求。';
-    $('displayDesc').style.whiteSpace = 'pre-line';
-    $('displayDesc').textContent = formattedDemand;
-  }
-
-  function splitTeamDemand(demand) {
-    const text = String(demand || '').trim();
-    const match = text.match(/(?:^|\n)需求：(.*)$/s);
-    if (!match) return { desc: text, skills: '' };
-
-    return {
-      desc: text.slice(0, match.index).trim(),
-      skills: match[1].trim()
-    };
-  }
-
-  function fillEditTeamForm(team) {
-    const { desc, skills } = splitTeamDemand(team.demand);
-    $('editTeamName').value = team.team_name || '';
-    $('editTeamSlots').value = team.num_limit || 1;
-    $('editTeamSkills').value = skills;
-    $('editTeamDesc').value = desc;
-    $('editTeamSlots').min = Math.max(Number(team.current_member_count) || 1, 1);
-  }
-
-  function openEditTeamModal() {
-    if (!currentTeam) return;
-    fillEditTeamForm(currentTeam);
-    const modal = $('editTeamModal');
-    if (modal) modal.style.display = 'flex';
-  }
-
-  function closeEditTeamModal() {
-    const modal = $('editTeamModal');
-    if (modal) modal.style.display = 'none';
-  }
-
   async function renderTeamInfo() {
     const teams = await loadTeams();
     const contests = await loadContests();
     
     const team = teams.find(t => Number(t.team_id) === currentTeamId);
     if (!team) {
-      showTeamInfoAlert('找不到該隊伍資訊！', 'error', () => history.back());
+      alert('找不到該隊伍資訊！');
+      history.back();
       return;
     }
 
     const contest = contests.find(c => Number(c.id) === Number(team.com_id)) || { name: '未知比賽', com_date: '日期未定', com_intro: '尚未填寫比賽資訊。', officialUrl: '#' };
-    renderTeamDetails(team, contest);
 
     document.title = `${team.team_name} - 隊伍資訊`;
     $('displayTeamName').textContent = team.team_name;
@@ -316,102 +243,13 @@
       if (e.target === modal) closeResumeModal(); 
     });
 
-    $('editTeamBtn')?.addEventListener('click', openEditTeamModal);
-    $('closeEditTeamModalBtn')?.addEventListener('click', closeEditTeamModal);
-    $('cancelEditTeamBtn')?.addEventListener('click', closeEditTeamModal);
-    const editTeamModal = $('editTeamModal');
-    let editModalMouseDownOnBackdrop = false;
-    editTeamModal?.addEventListener('mousedown', (e) => {
-      editModalMouseDownOnBackdrop = e.target === editTeamModal;
-    });
-    editTeamModal?.addEventListener('click', (e) => {
-      if (editModalMouseDownOnBackdrop && e.target === editTeamModal) closeEditTeamModal();
-      editModalMouseDownOnBackdrop = false;
-    });
-
-    $('editTeamForm')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!currentTeam) return;
-
-      const teamName = $('editTeamName').value.trim();
-      const numLimit = Number($('editTeamSlots').value);
-      const skills = $('editTeamSkills').value.trim();
-      const desc = $('editTeamDesc').value.trim();
-      const currentCount = Number(currentTeam.current_member_count) || 1;
-
-      if (!teamName) {
-        showTeamInfoAlert('請輸入隊伍名稱', 'error');
-        return;
-      }
-      if (!skills) {
-        showTeamInfoAlert('請輸入「招募需求」', 'error');
-        return;
-      }
-      if (!desc) {
-        showTeamInfoAlert('請輸入「主題/說明」', 'error');
-        return;
-      }
-      if (!Number.isInteger(numLimit) || numLimit < currentCount || numLimit > 12) {
-        showTeamInfoAlert(`隊伍人數上限需介於 ${currentCount} 到 12 人之間`, 'error');
-        return;
-      }
-
-      const demand = [desc, `需求：${skills}`].join('\n');
-
-      const saveBtn = $('saveEditTeamBtn');
-      const originalText = saveBtn?.textContent;
-      if (saveBtn) {
-        saveBtn.disabled = true;
-        saveBtn.textContent = '儲存中...';
-      }
-
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('/api/teams/update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': ` ${token || ''}`
-          },
-          body: JSON.stringify({
-            team_id: currentTeamId,
-            user_id: ME.id,
-            team_name: teamName,
-            demand,
-            num_limit: numLimit
-          })
-        });
-        const result = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(result.message || '更新隊伍資料失敗');
-
-        const updatedTeam = {
-          ...currentTeam,
-          ...(result.data || {}),
-          demand,
-          num_limit: numLimit,
-          team_name: teamName
-        };
-        renderTeamDetails(updatedTeam, currentContest || {});
-        await renderMemberList(updatedTeam, true);
-        closeEditTeamModal();
-        showTeamInfoAlert('隊伍資料已更新');
-      } catch (err) {
-        showTeamInfoAlert(err.message, 'error');
-      } finally {
-        if (saveBtn) {
-          saveBtn.disabled = false;
-          saveBtn.textContent = originalText || '儲存變更';
-        }
-      }
-    });
-
     $('applyBtn')?.addEventListener('click', async (e) => {
       e.preventDefault();
 
       if (applyLocked || $('applyBtn')?.disabled) return;
     
       if (!ME || !ME.id) {
-        showTeamInfoAlert('請先登入後再進行申請！', 'error');
+        alert('請先登入後再進行申請！');
         return;
       }
     
@@ -422,7 +260,7 @@
         const res = await fetch(`/api/pv/getMyResumeList?userId=${encodeURIComponent(ME.id)}`);
         
         if (res.status === 404) {
-          showTeamInfoAlert('您目前尚未建立任何履歷！請先前往「個人檔案」新增履歷後再行申請。', 'error');
+          alert('您目前尚未建立任何履歷！請先前往「個人檔案」新增履歷後再行申請。');
           resetApplyButton();
           return;
         }
@@ -462,7 +300,7 @@
             const selectedResumeId = document.getElementById('hiddenResumeId').value;
             
             if (!selectedResumeId) {
-              showTeamInfoAlert('偵測不到履歷識別碼，請重新選擇一份履歷！', 'error');
+              alert('偵測不到履歷識別碼，請重新選擇一份履歷！');
               return;
             }
 
@@ -485,7 +323,7 @@
               
               if (!res.ok) throw new Error(result.message || '申請失敗');
 
-              showTeamInfoAlert('申請成功！目前狀態：審核中。');
+              alert('申請成功！目前狀態：審核中。');
               
               if (typeof checkAndRenderApplyButton === 'function') {
                 await checkAndRenderApplyButton(currentTeamId, ME.id);
@@ -495,7 +333,7 @@
               }
 
             } catch (err) {
-              showTeamInfoAlert(err.message, 'error');
+              alert(err.message);
               resetApplyButton();
             }
           });
@@ -505,7 +343,7 @@
         openResumeModal();
     
       } catch (err) {
-        showTeamInfoAlert(err.message, 'error');
+        alert(err.message);
         resetApplyButton();
       }
     });

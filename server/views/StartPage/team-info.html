@@ -29,7 +29,6 @@
           <div class="section-heading">
             <h2 id="displayTeamName">隊伍名稱載入中...</h2>
             <span id="displayContestLabel" class="contest-label">比賽名稱</span>
-            <button id="editTeamBtn" class="btn outline hidden" type="button">編輯隊伍</button>
           </div>
 
           <div class="info-block status-block">
@@ -99,36 +98,6 @@
           <button id="cancelModalBtn" class="btn-modal-secondary">取消</button>
           <button id="confirmApplyBtn" class="btn-modal-primary" disabled>確認送出申請</button>
         </div>
-      </div>
-    </div>
-    <div id="editTeamModal" class="custom-modal" style="display: none;">
-      <div class="modal-content edit-team-modal-content">
-        <div class="modal-header">
-          <h3>編輯隊伍資料</h3>
-          <button id="closeEditTeamModalBtn" class="close-btn" type="button">&times;</button>
-        </div>
-        <form id="editTeamForm" class="edit-team-form">
-          <label>
-            隊伍名稱
-            <input id="editTeamName" type="text" maxlength="80" required>
-          </label>
-          <label>
-            隊伍人數上限
-            <input id="editTeamSlots" type="number" min="1" max="12" required>
-          </label>
-          <label class="full">
-            招募需求
-            <input id="editTeamSkills" type="text" maxlength="300" required>
-          </label>
-          <label class="full">
-            主題 / 說明
-            <textarea id="editTeamDesc" rows="6" maxlength="1000" required></textarea>
-          </label>
-          <div class="modal-footer">
-            <button id="cancelEditTeamBtn" class="btn-modal-secondary" type="button">取消</button>
-            <button id="saveEditTeamBtn" class="btn-modal-primary" type="submit">儲存變更</button>
-          </div>
-        </form>
       </div>
     </div>
     <script src="/team-info.js"></script>

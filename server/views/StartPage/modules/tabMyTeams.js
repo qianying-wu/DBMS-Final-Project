@@ -1,5 +1,4 @@
 import * as Data from '../team-data.js';
-
 function showTeamAlert(message, type = 'success') {
   const existingModal = document.getElementById('teamAlertModal');
   if (existingModal) existingModal.remove();
@@ -60,9 +59,6 @@ function showTeamConfirm(message, { title = '確認操作', okText = '確認', d
  * 🚀 主渲染函式：驅動網格卡片與面板外殼
  */
 export async function render(gridContainer, token, userId) {
-  // 將 userId 存起來，後續面板操作會用到
-  gridContainer.dataset.currentUserId = userId; 
-
   const joinedUrl = `/api/teams/my-joined?userId=${encodeURIComponent(userId)}`;
   const ownedUrl = `/api/teams/my-owned?userId=${encodeURIComponent(userId)}`;
 
@@ -84,7 +80,8 @@ export async function render(gridContainer, token, userId) {
   processedJoined.forEach(item => { const id = item.team_id || item.id; if (id) mergedMap.set(id, item); });
   processedOwned.forEach(item => { const id = item.team_id || item.id; if (id) mergedMap.set(id, item); });
 
-  // 只顯示正常運作中的隊伍
+  // 👑 修正點三：拔除所有 LocalStorage 判斷，直接 100% 信任資料庫的 team_status
+  // 只顯示正常運作中（通常為 active 或啟用）的隊伍，排除已解散(disbanded)或已完賽(completed)的隊伍
   const teams = Array.from(mergedMap.values()).filter(t => {
     const status = t.team_status || t.teamStatus || t.status;
     return status !== 'disbanded' && status !== 'completed';
@@ -97,7 +94,10 @@ export async function render(gridContainer, token, userId) {
 
   const cardsHtml = teams.map(t => {
     const teamId = t.team_id || t.id;
+    
+    // 👑 修正點二：競賽名稱相容性防禦，防止後端欄位吐出 contest_name 而非 com_name
     const contestName = t.com_name || t.contest_name || t.contestName || '未指定特定競賽';
+    
     const currentCount = t.current_member_count ?? t.current_members ?? t.member_count ?? 1;
     const maxCount = t.num_limit ?? t.max_members ?? 5;
     const isCreator = t.isApiOwner || String(t.leader_id) === String(userId);
@@ -125,12 +125,9 @@ export async function render(gridContainer, token, userId) {
               <button class="btn-secondary-action btn-disband-team" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}" data-contest-name="${Data.escapeHtml(contestName)}">解散/完賽</button>
             </div>
           ` : `
-             <div class="owned-action-row" style="margin-top:8px; display:flex; gap:4px; flex-wrap: wrap; justify-content:center;">
-                <button class="btn-secondary-action" data-owned-action="members" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">隊友名單</button>
-             </div>
-             <div class="member-tag" style="margin-top:10px; font-size:12px; color:#999; text-align:center;">
+            <div class="member-tag" style="margin-top:10px; font-size:12px; color:#999; text-align:center;">
               ※ 您是以成員身份加入此隊伍
-             </div>
+            </div>
           `}
       </div>
   </div>
@@ -139,7 +136,7 @@ export async function render(gridContainer, token, userId) {
 
   gridContainer.innerHTML = `
     <section id="ownedTeamPanel" class="owned-team-panel">
-      <div class="empty-text">選擇一支隊伍，查看申請審核或隊友名單。</div>
+      <div class="empty-text">選擇一支由您建立的隊伍，查看申請審核或隊友名單。</div>
     </section>
     ${cardsHtml}
 
@@ -150,11 +147,11 @@ export async function render(gridContainer, token, userId) {
         <div style="display:flex; flex-direction:column; gap:14px; margin:24px 0;">
           <label style="display:flex; align-items:center; gap:12px; padding:14px 16px; background:#fdfbf9; border:2px solid #caa77a; border-radius:10px; cursor:pointer; font-weight:700; font-size:15px;">
             <input type="radio" name="disbandReason" value="completed" checked style="accent-color:#caa77a; width:18px; height:18px; margin:0;"> 
-            順利完賽 <span style="font-weight:normal; font-size:13px; color:#8a735e; margin-left:auto;">（移至歷史紀錄隊伍）</span>
+            順利完賽 <span style="font-weight:normal; font-size:13px; color:#8a735e; margin-left:auto;">（近到歷史紀錄評價隊友）</span>
           </label>
           <label style="display:flex; align-items:center; gap:12px; padding:14px 16px; background:#fbf9f6; border:2px solid #eadfd2; border-radius:10px; cursor:pointer; font-weight:700; font-size:15px;">
             <input type="radio" name="disbandReason" value="disbanded" style="accent-color:#caa77a; width:18px; height:18px; margin:0;"> 
-            解散隊伍 <span style="font-weight:normal; font-size:13px; color:#8a735e; margin-left:auto;">（將會徹底刪除隊伍）</span>
+            解散隊伍 <span style="font-weight:normal; font-size:13px; color:#8a735e; margin-left:auto;">（其他原因）</span>
           </label>
         </div>
         <div style="display:flex; justify-content:end; gap:10px; margin-top:28px;">
@@ -172,14 +169,16 @@ export async function render(gridContainer, token, userId) {
     });
   });
 
-  // 綁定解散與完賽控制邏輯
+  // 綁定解散與完賽控制邏輯 (向後端更新狀態)
   const modal = gridContainer.querySelector('#disbandModal');
   let selectedTeamId = null;
+  let selectedTeam = null;
 
   gridContainer.querySelectorAll('.btn-disband-team').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       selectedTeamId = btn.dataset.teamId;
+      selectedTeam = teams.find(t => String(t.team_id || t.id) === String(selectedTeamId)) || null;
       modal.style.display = 'flex';
     });
   });
@@ -187,10 +186,11 @@ export async function render(gridContainer, token, userId) {
   gridContainer.querySelector('#btnCancelDisband').addEventListener('click', () => { modal.style.display = 'none'; });
 
   gridContainer.querySelector('#btnConfirmDisband').addEventListener('click', async () => {
-    const statusAction = modal.querySelector('input[name="disbandReason"]:checked').value;
+    const statusAction = modal.querySelector('input[name="disbandReason"]:checked').value; // 'completed' 或 'disbanded'
     modal.style.display = 'none';
 
     try {
+      // 👑 修正點三：改為發送 POST 請求至後端更新真正的隊伍狀態，不依賴本地快取
       const res = await fetch('/api/teams/update-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': ` ${token}` },
@@ -200,7 +200,7 @@ export async function render(gridContainer, token, userId) {
       if (!res.ok) throw new Error('更新隊伍狀態失敗');
 
       showTeamAlert(statusAction === 'completed' ? '隊伍已成功標記為順利完賽！' : '隊伍已成功解散。');
-      render(gridContainer, token, userId); 
+      render(gridContainer, token, userId); // 刷新最新網格狀態
 
     } catch (err) {
       showTeamAlert(err.message, 'error');
@@ -226,7 +226,6 @@ export function setupReviewPanelDelegation(refreshCallback) {
     const teamName = btn.dataset.teamName;
     const token = localStorage.getItem('token');
     const panel = document.getElementById('ownedTeamPanel');
-    const currentUserId = gridContainer.dataset.currentUserId; // 從主容器拿目前登入者的 ID
 
     if (!panel) return;
     panel.innerHTML = `<div class="loading-placeholder" style="padding:20px; text-align:center; color:#caa77a;">🔍 正在連線讀取【${Data.escapeHtml(teamName)}】...</div>`;
@@ -236,9 +235,6 @@ export function setupReviewPanelDelegation(refreshCallback) {
       if (!res.ok) throw new Error();
       const result = await res.json();
       const members = result.members || [];
-
-      // 判斷當前使用者是不是這隊的隊長 (假設建立人 role 為 '建立人')
-      const isCurrentUserOwner = members.some(m => String(m.user_id) === String(currentUserId) && m.role === '建立人');
 
       if (action === 'applications') {
         const applicants = members.filter(m => m.mem_status === '申請中' || m.status === '申請中');
@@ -267,33 +263,11 @@ export function setupReviewPanelDelegation(refreshCallback) {
       if (action === 'members') {
         const activeMembers = members.filter(m => m.mem_status === '通過' || m.status === '通過');
         let html = `<div class="panel-header"><h3>👥隊伍【${Data.escapeHtml(teamName)}】的正式隊友名單</h3></div><div style="display:grid; gap:8px; margin-top:10px;">`;
-        
         activeMembers.forEach(m => {
           const isLeader = m.role === '建立人';
-          let actionButtonHtml = '';
-
-          // 判斷要長出踢人還是退隊按鈕
-          if (isCurrentUserOwner && String(m.user_id) !== String(currentUserId)) {
-              // 隊長看別人 -> 踢出
-              actionButtonHtml = `<button class="btn-member-action btn-kick" data-team-id="${teamId}" data-uid="${m.user_id}" style="padding:4px 8px; font-size:12px; border-radius:4px; border:1px solid #cc0000; background:#fff; color:#cc0000; cursor:pointer;">剔除</button>`;
-          } else if (!isCurrentUserOwner && String(m.user_id) === String(currentUserId)) {
-              // 成員看自己 -> 退出
-              actionButtonHtml = `<button class="btn-member-action btn-leave" data-team-id="${teamId}" data-uid="${m.user_id}" style="padding:4px 8px; font-size:12px; border-radius:4px; border:1px solid #e68a00; background:#fff; color:#e68a00; cursor:pointer;">退出隊伍</button>`;
-          }
-
-          html += `
-            <div style="background:#fbfbfb; border:1px solid #eee; padding:12px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <strong>${Data.escapeHtml(m.userName || '隊員')}</strong>
-                <span class="role-badge" style="margin-left:8px;">${isLeader ? '建立人' : '組員'}</span>
-              </div>
-              <div>${actionButtonHtml}</div>
-            </div>`;
+          html += `<div style="background:#fbfbfb; border:1px solid #eee; padding:12px; border-radius:6px; display:flex; justify-content:space-between;"><strong>${Data.escapeHtml(m.userName || '隊員')}</strong><span class="role-badge">${isLeader ? '建立人' : '組員'}</span></div>`;
         });
         panel.innerHTML = html + '</div>';
-        
-        // 綁定踢人/退隊按鈕事件
-        bindMemberActionButtons(panel, currentUserId, refreshCallback);
       }
     } catch (err) {
       panel.innerHTML = `<div class="empty-text" style="color:red;">載入失敗，請確認伺服器連線。</div>`;
@@ -302,80 +276,7 @@ export function setupReviewPanelDelegation(refreshCallback) {
 }
 
 /**
- * 👑 綁定踢出/退出按鈕邏輯
- */
-function bindMemberActionButtons(panelContainer, currentUserId, refreshCallback) {
-    const token = localStorage.getItem('token');
-
-    // 踢人按鈕 (隊長專屬)
-    panelContainer.querySelectorAll('.btn-kick').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const targetId = btn.dataset.uid;
-            const teamId = btn.dataset.teamId;
-
-            const confirmed = await showTeamConfirm('確定要將此成員剔除嗎？', {
-                title: '剔除成員',
-                okText: '確定剔除',
-                danger: true
-            });
-            if (!confirmed) return;
-
-            try {
-                const res = await fetch('/api/teams/remove-member', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': ` ${token}` },
-                    body: JSON.stringify({ team_id: teamId, target_user_id: targetId, requester_user_id: currentUserId })
-                });
-
-                const result = await res.json();
-                if (res.ok && result.success) {
-                    showTeamAlert(result.message);
-                    if (typeof refreshCallback === 'function') refreshCallback();
-                } else {
-                    showTeamAlert(result.message || '操作失敗', 'error');
-                }
-            } catch (err) {
-                showTeamAlert('運作失敗，請確認網路狀態', 'error');
-            }
-        });
-    });
-
-    // 退出按鈕 (組員專屬)
-    panelContainer.querySelectorAll('.btn-leave').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const targetId = btn.dataset.uid;
-            const teamId = btn.dataset.teamId;
-
-            const confirmed = await showTeamConfirm('確定要退出這個隊伍嗎？退出後需重新申請。', {
-                title: '退出隊伍',
-                okText: '確定退出',
-                danger: true
-            });
-            if (!confirmed) return;
-
-            try {
-                const res = await fetch('/api/teams/remove-member', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': ` ${token}` },
-                    body: JSON.stringify({ team_id: teamId, target_user_id: targetId, requester_user_id: currentUserId })
-                });
-
-                const result = await res.json();
-                if (res.ok && result.success) {
-                    showTeamAlert(result.message);
-                    if (typeof refreshCallback === 'function') refreshCallback();
-                } else {
-                    showTeamAlert(result.message || '操作失敗', 'error');
-                }
-            } catch (err) {
-                showTeamAlert('運作失敗，請確認網路狀態', 'error');
-            }
-        });
-    });
-}
-
-/**
- * 👑 審核按鈕控制範疇
+ * 👑 審核按鈕控制範範疇
  */
 function bindReviewActionButtons(panelContainer, refreshCallback) {
   const token = localStorage.getItem('token');
@@ -430,7 +331,7 @@ function bindReviewActionButtons(panelContainer, refreshCallback) {
     });
   });
 
-  // 2. 核准通過按鈕
+  // 2. 👑 修正點一：核准通過按鈕
   panelContainer.querySelectorAll('.btn-review-pass').forEach(btn => {
     btn.addEventListener('click', async () => {
       const confirmed = await showTeamConfirm('確定要核准此成員加入隊伍嗎？', {
@@ -447,6 +348,8 @@ function bindReviewActionButtons(panelContainer, refreshCallback) {
         
         if (res.ok) { 
           showTeamAlert('已成功核准加入！');
+          // 💡 通過成功後，立刻執行 refreshCallback 觸發外部的「主控台網格重渲染」
+          // 這將會重新打後端 API，獲取更新後(加 1 人)的最新 current_member_count 欄位！
           if (typeof refreshCallback === 'function') refreshCallback(); 
         }
       } catch (err) { showTeamAlert('運作失敗', 'error'); }
