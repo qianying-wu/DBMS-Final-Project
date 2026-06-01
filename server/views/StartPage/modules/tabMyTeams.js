@@ -120,16 +120,16 @@ export async function render(gridContainer, token, userId) {
 
           ${isCreator ? `
             <div class="owned-action-row" style="margin-top:8px; display:flex; gap:4px; flex-wrap: wrap;">
-              <button class="btn-secondary-action" data-owned-action="applications" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">申請審核${pendingCount ? ` (${pendingCount})` : ''}</button>
               <button class="btn-secondary-action" data-owned-action="members" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">隊友名單</button>
+              <button class="btn-secondary-action" data-owned-action="applications" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">申請審核${pendingCount ? ` (${pendingCount})` : ''}</button>
               <button class="btn-secondary-action btn-disband-team" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}" data-contest-name="${Data.escapeHtml(contestName)}">解散/完賽</button>
             </div>
           ` : `
-             <div class="owned-action-row" style="margin-top:8px; display:flex; gap:4px; flex-wrap: wrap; justify-content:center;">
+             <div class="owned-action-row" style="margin-top:8px; display:flex; gap:4px; flex-wrap: wrap; justify-content:left;">
                 <button class="btn-secondary-action" data-owned-action="members" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">隊友名單</button>
-             </div>
-             <div class="member-tag" style="margin-top:10px; font-size:12px; color:#999; text-align:center;">
-              ※ 您是以成員身份加入此隊伍
+                <div style="margin-top: auto; padding-top: 12px;">
+                  <span style="font-size: 13px; color: #a89a8e; font-style: italic; display: block;"> ※非隊長無法審核申請或解散隊伍 </span>
+                </div>
              </div>
           `}
       </div>
