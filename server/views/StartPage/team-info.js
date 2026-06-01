@@ -99,31 +99,40 @@
     return JSON.parse(localStorage.getItem(`teamMembers:v1:${teamId}`) || '[]');
   }
 
-  function saveLocalApplication(teamId) {
-    const applications = JSON.parse(localStorage.getItem('teamApplications:v1') || '[]');
-    const profile = getActiveProfile();
-    const applicantName = getProfileName(profile, `使用者 ${ME.id}`);
+  async function checkAndRenderApplyButton(teamId, userId) {
+    const applyBtn = $('applyBtn');
+    if (!applyBtn || !userId || userId === 'unknown') return;
 
-    const exists = applications.some(app =>
-      Number(app.teamId) === Number(teamId) &&
-      String(app.userId) === String(ME.id) &&
-      app.status === 'pending'
-    );
-    if (exists) return;
+    try {
+      // 向後端詢問目前在 Membership 表中的狀態
+      const res = await fetch(`/api/teams/apply-status?userId=${encodeURIComponent(userId)}&teamId=${encodeURIComponent(teamId)}`);
+      if (!res.ok) throw new Error();
+      
+      const result = await res.json();
+      const status = result.status; // '申請中', '通過', 或 'none'
 
-    applications.unshift({
-      id: `${teamId}-${ME.id}-${Date.now()}`,
-      teamId: Number(teamId),
-      userId: String(ME.id),
-      applicantName,
-      applicantContact: profile?.email || profile?.userEmail || '尚未填寫',
-      applicantReason: '想加入這個隊伍，一起完成比賽。',
-      resume: profile,
-      status: 'pending',
-      createdAt: new Date().toISOString()
-    });
+      if (status === '申請中') {
+        applyBtn.textContent = '審核中...';
+        applyBtn.disabled = true;
+        applyBtn.style.backgroundColor = '#cccccc'; // 變成灰色不可點擊
+      } else if (status === '通過') {
+        applyBtn.textContent = '您已是隊員';
+        applyBtn.disabled = true;
+        applyBtn.style.backgroundColor = '#5c748a';
+      } else {
+        // 'none' 代表沒申請過，維持原樣
+        applyBtn.textContent = '加入隊伍';
+        applyBtn.disabled = false;
+      }
+    } catch (err) {
+      console.error("❌ 無法取得資料庫 Membership 狀態:", err);
+    }
+  }
 
-    localStorage.setItem('teamApplications:v1', JSON.stringify(applications));
+  // --- 🚀 在網頁一啟動載入時，直接呼叫檢查 ---
+  // 確保你有拿到 currentTeamId 與 ME.id
+  if (currentTeamId && ME?.id) {
+    checkAndRenderApplyButton(currentTeamId, ME.id);
   }
 
   // 用既有的「我建立的隊伍」API 判斷目前使用者是不是這支隊伍的建立者。
@@ -240,32 +249,141 @@
 
   // 2. 綁定事件處理器
   function setupEventListeners() {
-    // 申請按鈕
+    const modal = document.getElementById('resumeModal');
+    function openResumeModal() { 
+      if (modal) modal.style.display = 'flex'; 
+    }
+    function closeResumeModal() { 
+      if (modal) modal.style.display = 'none'; 
+    }
+    document.getElementById('closeModalBtn')?.addEventListener('click', closeResumeModal);
+    document.getElementById('cancelModalBtn')?.addEventListener('click', closeResumeModal);
+    modal?.addEventListener('click', (e) => { 
+      if (e.target === modal) closeResumeModal(); 
+    });
+
+    // --- 🚀 申請按鈕與單份履歷詳細彈窗整合邏輯 ---
     $('applyBtn').addEventListener('click', async (e) => {
       e.preventDefault();
-      
+    
+      if (!ME || !ME.id) {
+        alert('請先登入後再進行申請！');
+        return;
+      }
+    
+      $('applyBtn').disabled = true;
+      $('applyBtn').textContent = '讀取履歷清單...';
+    
       try {
-        const res = await fetch('/api/teams/apply', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: ME.id,       // 目前登入的使用者 ID
-            team_id: currentTeamId // 目前頁面的隊伍 ID
-          })
-        });
-
+        // 1. 連線對接全新 API：撈取該用戶的所有履歷名稱列表
+        const res = await fetch(`/api/pv/getMyResumeList?userId=${encodeURIComponent(ME.id)}`);
+        
+        if (res.status === 404) {
+          alert('您目前尚未建立任何履歷！請先前往「個人檔案」新增履歷後再行申請。');
+          resetApplyButton();
+          return;
+        }
+        if (!res.ok) throw new Error('無法取得您的履歷列表');
+        
         const result = await res.json();
-        if (!res.ok) throw new Error(result.message || '申請失敗');
+        const resumeList = result.data || [];
+    
+        // 2. 清空之前的隱藏 ID 狀態，並確保確認按鈕預設為停用(因為還沒選取)
+        document.getElementById('hiddenResumeId').value = '';
+        document.getElementById('confirmApplyBtn').disabled = true;
+    
+        // 3. 動態組合「履歷選擇按鈕排」並渲染
+        const listContainer = document.getElementById('resumeListContainer');
+        if (listContainer) {
+          listContainer.innerHTML = resumeList.map(resume => `
+            <button type="button" class="resume-item-btn" data-id="${resume.id}">
+              📄 ${escapeHtml(resume.name)}
+            </button>
+          `).join('');
+    
+          // 4. 👑 重點：為剛建立出來的一排履歷按鈕綁定「點擊切換選取」事件
+          const resumeButtons = listContainer.querySelectorAll('.resume-item-btn');
+          resumeButtons.forEach(btn => {
+            btn.addEventListener('click', (event) => {
+              // 移除其他按鈕的選取狀態(selected class)
+              resumeButtons.forEach(b => b.classList.remove('selected'));
+              
+              // 為當前點擊的按鈕加上選取狀態
+              btn.classList.add('selected');
+              
+              // 將點到的履歷 ID 寫進隱藏欄位
+              const targetId = btn.getAttribute('data-id');
+              document.getElementById('hiddenResumeId').value = targetId;
+              
+              // 開啟下方「確認送出申請」按鈕的可點擊狀態
+              document.getElementById('confirmApplyBtn').disabled = false;
+              // --- 👑 監聽：當使用者在小視窗按下「確認送出申請」 ---
+              document.getElementById('confirmApplyBtn')?.addEventListener('click', async () => {
+                // 1. 撈出剛剛使用者點選履歷時，悄悄存進隱藏欄位的 resume_id
+                const selectedResumeId = document.getElementById('hiddenResumeId').value;
+                
+                if (!selectedResumeId) {
+                  alert('偵測不到履歷識別碼，請重新選擇一份履歷！');
+                  return;
+                }
 
-        alert('申請成功！目前狀態：審核中。');
-        saveLocalApplication(currentTeamId);
-        $('applyBtn').textContent = '審核中...';
-        $('applyBtn').disabled = true;
+                // 2. 關閉小視窗，並鎖定主頁面的「加入隊伍」按鈕進入讀取狀態，防止重複點擊
+                closeResumeModal();
+                $('applyBtn').disabled = true;
+                $('applyBtn').textContent = '申請傳送中...';
 
+                try {
+                  // 3. 發送 POST 請求，將核心資料一口氣送到資料庫的 Membership 表
+                  const res = await fetch('/api/teams/apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      user_id: ME.id,
+                      team_id: currentTeamId,       // 💡 請確保你外層有宣告 currentTeamId 變數
+                      resume_id: selectedResumeId   // 👑 夾帶剛剛選好的履歷 ID
+                    })
+                  });
+
+                  const result = await res.json();
+                  
+                  // 4. 處理後端拋出的防呆錯誤（例如：人數已滿、重複申請等）
+                  if (!res.ok) throw new Error(result.message || '申請失敗');
+
+                  // 5. 提示成功！
+                  alert('申請成功！目前狀態：審核中。');
+                  
+                  // 6. 重新向後端驗證最新狀態，讓主畫面的按鈕即時變成「審核中...」並鎖定
+                  if (typeof checkAndRenderApplyButton === 'function') {
+                    await checkAndRenderApplyButton(currentTeamId, ME.id);
+                  } else {
+                    $('applyBtn').textContent = '審核中...';
+                    $('applyBtn').disabled = true;
+                  }
+
+                } catch (err) {
+                  // 如果中間發生任何錯誤（例如網路斷線或後端報錯），跳出警告並恢復按鈕可點擊狀態
+                  alert(err.message);
+                  resetApplyButton();
+                }
+              });
+            });
+          });
+        }
+    
+        // 5. 恢復主按鈕狀態並開啟小視窗
+        resetApplyButton();
+        openResumeModal();
+    
       } catch (err) {
         alert(err.message);
+        resetApplyButton();
       }
     });
+    
+    function resetApplyButton() {
+      $('applyBtn').disabled = false;
+      $('applyBtn').textContent = '加入隊伍';
+    }
   }
 
   /**

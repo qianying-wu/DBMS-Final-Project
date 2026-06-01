@@ -120,7 +120,7 @@ function setupReviewPanelDelegation() {
         let html = `<div class="panel-header"><h3>👥 正式隊友名單：${Data.escapeHtml(teamName)}</h3></div><div style="display:grid; gap:8px; margin-top:10px;">`;
         activeMembers.forEach(m => {
           const isLeader = m.role === '建立人';
-          html += `<div style="background:#fbfbfb; border:1px solid #eee; padding:12px; border-radius:6px; display:flex; justify-content:space-between;"><strong>${Data.escapeHtml(m.user_name || '隊員')}</strong><span class="role-badge">${isLeader ? '建立人' : '組員'}</span></div>`;
+          html += `<div style="background:#fbfbfb; border:1px solid #eee; padding:12px; border-radius:6px; display:flex; justify-content:space-between;"><strong>${Data.escapeHtml(m.userName || '隊員')}</strong><span class="role-badge">${isLeader ? '建立人' : '組員'}</span></div>`;
         });
         panel.innerHTML = html + '</div>';
       }
