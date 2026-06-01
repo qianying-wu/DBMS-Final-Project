@@ -10,6 +10,40 @@
   const contestId = Number(params.get('contestId')) || Number(params.get('id')) || 10;
 
   // --- 資料讀寫輔助函式區塊 ---
+  function getValidId(value) {
+    const text = String(value || '').trim();
+    return text && text !== 'unknown' && text !== 'null' && text !== 'undefined' ? text : '';
+  }
+
+  // 取得目前登入者，優先使用登入後儲存的 userId；網址列只當備援，避免舊連結覆蓋新帳號。
+  function getCurrentUserId() {
+    return getValidId(localStorage.getItem('userId')) || getValidId(sessionStorage.getItem('userId')) || getValidId(params.get('userId'));
+  }
+
+  // 用隊伍成員狀態重新計算目前人數，避免 Team.current_member_count 沒同步時顯示 0 人。
+  function countAcceptedMembers(members = []) {
+    return members.filter(member => {
+      const status = String(member.mem_status || member.status || '').trim();
+      const role = String(member.role || '').trim();
+      return status === '通過' || role === '建立人';
+    }).length;
+  }
+
+  async function getLiveTeamMemberCount(teamId, token) {
+    try {
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const res = await fetch(`/api/teams/detail?teamId=${encodeURIComponent(teamId)}`, { headers });
+      if (!res.ok) throw new Error('無法取得隊伍詳細資料');
+
+      const result = await res.json();
+      const members = result.members || result.data || [];
+      const count = countAcceptedMembers(members);
+      return count > 0 ? count : null;
+    } catch (err) {
+      console.warn('隊伍人數即時重算失敗，改用列表資料:', teamId, err);
+      return null;
+    }
+  }
 
   // 🚀 從後端真實資料庫讀取全部比賽（升級版：支援多標籤解析）
   async function loadContests() {
@@ -50,6 +84,7 @@
   // 🚀 從後端真實資料庫讀取全部隊伍
   async function loadTeams() {
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch('/api/teams/all');
       if (!res.ok) throw new Error('無法取得資料庫隊伍資料');
 
@@ -57,14 +92,19 @@
       const dbTeams = result.data || result.teams || result;
       const activeTeams = dbTeams.filter(team => (team.teamStatus || team.team_status || team.status || 'active') === 'active');
 
-      const mappedTeams = activeTeams.map(team => ({
-        id: team.team_id || team.id,
-        team_id: team.team_id,
-        team_name: team.team_name,
-        com_id: team.com_id,
-        demand: team.team_intro || team.demand || '尚未填寫說明',
-        current_member_count: team.current_member_count || 0,
-        num_limit: team.num_limit || 0
+      const mappedTeams = await Promise.all(activeTeams.map(async team => {
+        const teamId = team.team_id || team.id;
+        const liveCount = await getLiveTeamMemberCount(teamId, token);
+
+        return {
+          id: teamId,
+          team_id: teamId,
+          team_name: team.team_name,
+          com_id: team.com_id,
+          demand: team.team_intro || team.demand || '尚未填寫說明',
+          current_member_count: liveCount ?? team.current_member_count ?? team.current_members ?? team.member_count ?? 1,
+          num_limit: team.num_limit || 0
+        };
       }));
 
       return mappedTeams;
@@ -77,7 +117,7 @@
   // 🚀 從資料庫撈取該使用者目前的「收藏隊伍 ID 清單」
   async function loadDatabaseFavorites() {
     const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId');
+    const userId = getCurrentUserId();
     if (!token || !userId) return [];
 
     try {
@@ -117,8 +157,8 @@
 
   function isLoggedIn() {
     const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId') || params.get('userId');
-    return Boolean(token && token.trim() !== '');
+    const userId = getCurrentUserId();
+    return Boolean(token && token.trim() !== '' && userId);
   }
 
   function redirectToAuth() {
@@ -138,29 +178,28 @@
 
   async function syncContestFavoriteButton() {
     const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId') || params.get('userId');
+    const userId = getCurrentUserId();
+
+    // 先清成未收藏，避免切換帳號時短暫沿用上一個帳號的畫面狀態。
+    setContestFavoriteButton(false);
 
     if (!token || !userId) {
-      setContestFavoriteButton(false);
       return;
     }
 
     try {
-      const response = await fetch('/api/contests/getFavorites', {
+      const response = await fetch(`/api/contests/getFavorites?userId=${encodeURIComponent(userId)}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('無法取得收藏比賽清單');
 
       const result = await response.json();
       const favoriteContests = result.data || result.contests || [];
-      const isFavorite = favoriteContests.some(item => Number(item.com_id || item.id) === Number(contestId));
+      const isFavorite = favoriteContests.some(item => Number(item.com_id || item.comId || item.id) === Number(contestId));
       setContestFavoriteButton(isFavorite);
     } catch (error) {
       console.error('❌ 初始化比賽收藏狀態失敗:', error);
-
-      // 資料庫狀態讀不到時，至少保留 localStorage 的舊快取當備援。
-      const localFavorites = JSON.parse(localStorage.getItem('favoriteContests') || '[]').map(Number);
-      setContestFavoriteButton(localFavorites.includes(Number(contestId)));
+      setContestFavoriteButton(false);
     }
   }
 
@@ -254,7 +293,7 @@
   // 收藏 / 取消收藏
   async function toggleFavorite(teamId, favBtn) {
     const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId');
+    const userId = getCurrentUserId();
 
     if (!token || !userId) {
       alert('請先登入才能收藏隊伍！');
@@ -347,7 +386,7 @@
     }
 
     const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId');
+    const userId = getCurrentUserId();
 
     if (!token || token === 'undefined' || !userId) {
       if (typeof requireLogin === 'function') {
@@ -400,16 +439,12 @@
         btn.classList.add('active');
         btn.innerHTML = `<span class="heart-icon">♥</span> 已收藏`;
         btn.setAttribute('aria-pressed', 'true');
-        const localFavorites = JSON.parse(localStorage.getItem('favoriteContests') || '[]').map(Number);
-        if (!localFavorites.includes(Number(contestId))) {
-          localStorage.setItem('favoriteContests', JSON.stringify([...localFavorites, Number(contestId)]));
-        }
       } else if (result.action === 'unfavorite') {
         btn.classList.remove('active');
         btn.innerHTML = `<span class="heart-icon">♡</span> 收藏比賽`;
         btn.setAttribute('aria-pressed', 'false');
-        const localFavorites = JSON.parse(localStorage.getItem('favoriteContests') || '[]').map(Number);
-        localStorage.setItem('favoriteContests', JSON.stringify(localFavorites.filter(id => id !== Number(contestId))));
+      } else {
+        await syncContestFavoriteButton();
       }
 
     } catch (err) {
