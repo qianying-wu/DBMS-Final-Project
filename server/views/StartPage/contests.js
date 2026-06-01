@@ -77,15 +77,23 @@ function redirectToAuth() {
 // ==========================================================================
 
 // 從後端讀取資料庫 Competition 表的全部比賽
+// 從後端讀取資料庫 Competition 表的全部比賽（內含聯查標籤）
 async function loadContests() {
   try {
     const res = await fetch('/api/contests/competitions');
     if (!res.ok) throw new Error('無法取得比賽資料');
     const result = await res.json();
 
-    contests = result.competitions || result;
-    console.log('成功載入比賽資料：', contests);
+    const dbContests = result.competitions || result;
 
+    // 🚀 核心修正：將後端的 com_tags 欄位解開為前端可用的 tags 陣列
+    contests = dbContests.map(contest => ({
+      ...contest,
+      // 萬一後端某個比賽沒有設定標籤，就給它預設值 ['Other']
+      tags: contest.tags ? contest.tags.split(',') : ['其他']
+    }));
+
+    console.log('成功載入含標籤的比賽資料：', contests);
     return contests;
   } catch (err) {
     console.error('讀取比賽失敗:', err);
@@ -96,22 +104,27 @@ async function loadContests() {
 
 
 // 依照比賽名稱與說明做簡單分類
-function inferCategory(contest) {
-  const text = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase();
-  if (text.includes('ai') || text.includes('資料') || text.includes('機器') || text.includes('智慧')) return 'AI';
-  if (text.includes('設計') || text.includes('創意') || text.includes('黑客松')) return 'Design';
-  if (text.includes('商業') || text.includes('創業') || text.includes('金融')) return 'Business';
-  return 'Other';
-}
+// function inferCategory(contest) {
+//   const text = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase();
+//   if (text.includes('ai') || text.includes('資料') || text.includes('機器') || text.includes('智慧')) return 'AI';
+//   if (text.includes('設計') || text.includes('創意') || text.includes('黑客松')) return 'Design';
+//   if (text.includes('商業') || text.includes('創業') || text.includes('金融')) return 'Business';
+//   return 'Other';
+// }
 
 // 對應中文標籤
-function categoryLabel(category) {
-  return {
-    AI: '人工智慧',
-    Design: '設計與創意',
-    Business: '商業競賽',
-    Other: '其他'
-  }[category] || category;
+// function categoryLabel(category) {
+//   return {
+//     AI: '人工智慧',
+//     Design: '設計與創意',
+//     Business: '商業競賽',
+//     Other: '其他'
+//   }[category] || category;
+// }
+
+// 🚀【全面升級】揚棄前端盲猜，直接拿資料庫定義的中文分類標籤
+function getContestMainTag(contest) {
+  return contest.tags && contest.tags.length ? contest.tags[0] : '其他';
 }
 
 function preferenceKeywords(preferences = []) {
@@ -149,20 +162,6 @@ async function loadRecommendationPreferences() {
   return [];
 }
 
-function getRecommendedContests(dataList = [], preferences = []) {
-  const keywords = preferenceKeywords(preferences).map(item => String(item).toLowerCase());
-
-  return dataList
-    .map(contest => {
-      const text = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase();
-      const score = keywords.reduce((sum, keyword) => sum + (text.includes(keyword) ? 1 : 0), 0);
-      return { contest, score };
-    })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
-    .map(item => item.contest);
-}
-
 function renderRecommendations(dataList = []) {
   const grid = $('recommendedGrid');
   const section = $('recommendedSection');
@@ -183,7 +182,8 @@ function renderRecommendations(dataList = []) {
   }
 
   grid.innerHTML = recommended.map(contest => {
-    const category = inferCategory(contest);
+    // 🚀 核心修正：改抓資料庫真實標籤
+    const mainTag = getContestMainTag(contest);
     const rawDate = contest.com_date || '';
     const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
     const contestId = contest.com_id || contest.id;
@@ -191,7 +191,7 @@ function renderRecommendations(dataList = []) {
     return `
       <article class="recommend-card" data-recommend-id="${contestId}">
         <div class="recommend-topline">
-          <span>${categoryLabel(category)}</span>
+          <span>${escapeHtml(mainTag)}</span>
           <strong>推薦</strong>
         </div>
         <h3>${escapeHtml(contest.com_name || contest.name || '未命名比賽')}</h3>
@@ -204,24 +204,80 @@ function renderRecommendations(dataList = []) {
     `;
   }).join('');
 }
+function getRecommendedContests(dataList = [], preferences = []) {
+  const keywords = preferenceKeywords(preferences).map(item => String(item).toLowerCase());
 
+  return dataList
+    .map(contest => {
+      const text = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase();
+      const score = keywords.reduce((sum, keyword) => sum + (text.includes(keyword) ? 1 : 0), 0);
+      return { contest, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(item => item.contest);
+}
+
+// function renderRecommendations(dataList = []) {
+//   const grid = $('recommendedGrid');
+//   const section = $('recommendedSection');
+//   if (!grid || !section) return;
+
+//   if (!isLoggedIn()) {
+//     section.classList.add('hidden');
+//     grid.innerHTML = '';
+//     return;
+//   }
+
+//   section.classList.remove('hidden');
+
+//   const recommended = getRecommendedContests(dataList, currentPreferences);
+//   if (!recommended.length) {
+//     grid.innerHTML = '<div class="empty-note">目前暫無適合的推薦比賽。</div>';
+//     return;
+//   }
+
+//   grid.innerHTML = recommended.map(contest => {
+//     const category = getContestMainTag(contest);
+//     const rawDate = contest.com_date || '';
+//     const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
+//     const contestId = contest.com_id || contest.id;
+
+//     return `
+//       <article class="recommend-card" data-recommend-id="${contestId}">
+//         <div class="recommend-topline">
+//           <span>${categoryLabel(category)}</span>
+//           <strong>推薦</strong>
+//         </div>
+//         <h3>${escapeHtml(contest.com_name || contest.name || '未命名比賽')}</h3>
+//         <p>${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
+//         <div class="recommend-footer">
+//           <span>${escapeHtml(displayDate || '日期未定')}</span>
+//           <span>查看詳情 →</span>
+//         </div>
+//       </article>
+//     `;
+//   }).join('');
+// }
+
+// 核心渲染函式：負責將比賽資料陣列轉換成 HTML 卡片
 // 核心渲染函式：負責將比賽資料陣列轉換成 HTML 卡片
 function renderContests(dataList = []) {
   const grid = $('contestsGrid');
   if (!grid) return;
 
   grid.innerHTML = dataList.length ? dataList.map(contest => {
-    const category = inferCategory(contest);
+    // 🚀 核心修正：改抓資料庫真實標籤
+    const mainTag = getContestMainTag(contest);
 
-    // 💡 修正原本 com_date 為 null 時可能引發的 .includes 報錯問題
     const rawDate = contest.com_date || '';
     const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
 
     return `
       <article class="contest-card" data-id="${contest.com_id}">
-        <div class="card-tag">${categoryLabel(category)}</div>
+        <div class="card-tag">${escapeHtml(mainTag)}</div>
         <h3>${escapeHtml(contest.com_name)}</h3>
-        <p class="category">分類：${categoryLabel(category)}</p>
+        <p class="category">分類：${escapeHtml(mainTag)}</p>
         <p class="desc">${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
         <div class="card-footer">
           <span>${escapeHtml(displayDate || '日期未定')}</span>
@@ -231,6 +287,31 @@ function renderContests(dataList = []) {
     `;
   }).join('') : '<div class="empty-note">目前資料庫沒有可瀏覽的比賽。</div>';
 }
+// function renderContests(dataList = []) {
+//   const grid = $('contestsGrid');
+//   if (!grid) return;
+
+//   grid.innerHTML = dataList.length ? dataList.map(contest => {
+//     const category = getContestMainTag(contest);
+
+//     // 💡 修正原本 com_date 為 null 時可能引發的 .includes 報錯問題
+//     const rawDate = contest.com_date || '';
+//     const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
+
+//     return `
+//       <article class="contest-card" data-id="${contest.com_id}">
+//         <div class="card-tag">${categoryLabel(category)}</div>
+//         <h3>${escapeHtml(contest.com_name)}</h3>
+//         <p class="category">分類：${categoryLabel(category)}</p>
+//         <p class="desc">${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
+//         <div class="card-footer">
+//           <span>${escapeHtml(displayDate || '日期未定')}</span>
+//           <span class="more-link">查看更多 →</span>
+//         </div>
+//       </article>
+//     `;
+//   }).join('') : '<div class="empty-note">目前資料庫沒有可瀏覽的比賽。</div>';
+// }
 
 // 執行搜尋與下拉選單的篩選功能
 function applyFilters() {
@@ -239,12 +320,26 @@ function applyFilters() {
 
   const filtered = contests.filter(contest => {
     const matchedText = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase().includes(q);
-    const matchedCategory = category === 'all' || inferCategory(contest) === category;
+
+    // 🚀 核心修正：直接比對資料庫拿回來的標籤是否有包含下拉選單選的分類！
+    const matchedCategory = category === 'all' || contest.tags.includes(category);
     return matchedText && matchedCategory;
   });
 
   renderContests(filtered);
 }
+// function applyFilters() {
+//   const q = $('contestSearch')?.value.trim().toLowerCase() || '';
+//   const category = $('categoryFilter')?.value || 'all';
+
+//   const filtered = contests.filter(contest => {
+//     const matchedText = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase().includes(q);
+//     const matchedCategory = category === 'all' || getContestMainTag(contest) === category;
+//     return matchedText && matchedCategory;
+//   });
+
+//   renderContests(filtered);
+// }
 
 
 // ==========================================================================
