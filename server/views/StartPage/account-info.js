@@ -323,4 +323,5 @@
     getUserName();
     initPreferences();
     renderReceivedReviews();
+
 })();
