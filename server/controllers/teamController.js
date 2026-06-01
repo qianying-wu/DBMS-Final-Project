@@ -164,12 +164,12 @@ export const applyToTeam = async (req, res) => {
 
 export const createTeam = async (req, res) => {
   const com_id = req.body.com_id || req.body.comId || req.body.contestId || req.body.contest_id;
-  const { team_name, demand, num_limit, user_id } = req.body;
+  const { team_name, demand, num_limit, user_id, resume_id } = req.body;
 
-  if (!team_name || !com_id || !user_id) {
+  if (!team_name || !com_id || !user_id || !resume_id) {
     return res.status(400).json({
       success: false,
-      message: `缺少必要欄位：team_name=${team_name}, com_id=${com_id}, user_id=${user_id}`
+      message: `缺少必要欄位：team_name=${team_name}, com_id=${com_id}, user_id=${user_id}, resume_id=${resume_id}`
     });
   }
 
@@ -177,6 +177,16 @@ export const createTeam = async (req, res) => {
 
   try {
     await connection.beginTransaction();
+
+    const [resumeCheck] = await connection.execute(
+      'SELECT resume_id FROM Resumes WHERE resume_id = ? AND user_id = ?',
+      [resume_id, user_id]
+    );
+
+    if (resumeCheck.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, message: '無效的建立者履歷資料' });
+    }
 
     const [teamResult] = await connection.execute(
       `INSERT INTO Team (team_name, com_id, demand, num_limit, current_member_count, teamStatus)
@@ -187,9 +197,9 @@ export const createTeam = async (req, res) => {
     const newTeamId = teamResult.insertId;
 
     await connection.execute(
-      `INSERT INTO Membership (user_id, team_id, role, mem_status)
-       VALUES (?, ?, ?, ?)`,
-      [Number(user_id), newTeamId, ROLE_OWNER, MEMBER_ACCEPTED]
+      `INSERT INTO Membership (user_id, team_id, role, mem_status, resume_id)
+       VALUES (?, ?, ?, ?, ?)`,
+      [Number(user_id), newTeamId, ROLE_OWNER, MEMBER_ACCEPTED, resume_id]
     );
 
     await connection.commit();
