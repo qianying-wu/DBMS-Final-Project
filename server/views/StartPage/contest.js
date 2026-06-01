@@ -161,7 +161,7 @@
     $('contestSummary').innerHTML = `
       <h2 style="margin: 0 0 12px 0;">${contest.name}</h2>
       
-      <div class="contest-tags-wrap" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+      <div class="contest-tags-wrap" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 20px;">
         ${tagsHtml}
       </div>
       
