@@ -348,3 +348,55 @@
 .btn-modal-secondary { background: #f5f5f5; color: #666; border: 1px solid #ddd; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
 
 @keyframes fadeIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* =========================================
+   7. 彈出視窗 (自訂 Modal 樣式)
+   ========================================= */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(58, 47, 37, 0.5); /* 帶有暖色調的半透明黑底 */
+  backdrop-filter: blur(4px); /* 讓背後的網頁模糊化，增加質感 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-card {
+  background: #FFFFFF;
+  border-radius: 20px; /* 大圓角 */
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+  padding: 32px 24px;
+  width: 90%;
+  max-width: 380px;
+  text-align: center;
+  animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 確保彈窗裡面的按鈕不會因為失去舊的 btn class 而縮水 */
+.modal-card button {
+  padding: 12px 0;
+  cursor: pointer;
+  transition: transform 0.2s, filter 0.2s;
+}
+
+.modal-card button:hover {
+  transform: translateY(-2px);
+  filter: brightness(0.95);
+}
+
+/* 彈窗動畫特效 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popUp {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
