@@ -392,13 +392,17 @@ export const reviewApplication = async (req, res) => {
 
     // 🌟 動作一：審核通過
     if (action === 'pass') {
+      // 先把使用者的狀態改成通過
       await pool.execute(
         `UPDATE Membership SET mem_status = '通過' WHERE team_id = ? AND user_id = ?`,
         [team_id, user_id]
       );
       
-      // (選擇性) 如果你們的 teams table 有記錄目前人數，記得在這邊 +1 喔！
-      // await db.execute(`UPDATE teams SET current_member_count = current_member_count + 1 WHERE team_id = ?`, [team_id]);
+      // 修正為正確的資料表 (Team) 與資料庫呼叫 (pool)
+      await pool.execute(
+        `UPDATE Team SET current_member_count = current_member_count + 1 WHERE team_id = ?`, 
+        [team_id]
+      );
 
       return res.status(200).json({ message: '已成功核准加入隊伍' });
     }

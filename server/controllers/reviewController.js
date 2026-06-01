@@ -1,8 +1,8 @@
 import pool from '../models/db.js';
-import { checkContent } from '../util/wordfilter.js'; // 匯入工具
+import { checkContent } from '../util/wordfilter.js';
 
 export const submitReview = async (req, res) => {
-    // 1. 從 req.body 拿資料 (這就是 postman 傳來的東西)
+    // 1. 從 req.body 拿資料
     const {com_id, userWrite_id, userRec_id, star, rev_content } = req.body;
 
     // 2. 驗證邏輯
@@ -14,9 +14,8 @@ export const submitReview = async (req, res) => {
         return res.status(400).json({ ok: false, error: '評分須介於 1-5 之間' });
     }
 
-// 3. 髒話過濾
+    // 3. 髒話過濾
     if (rev_content) {
-        // 🌟 修正：把物件裡面的 isBad 跟 cleanText 拿出來
         const { isBad, cleanText } = checkContent(rev_content);
 
         if (isBad) {
@@ -25,18 +24,35 @@ export const submitReview = async (req, res) => {
                 error: '評論包含不當用語，請修正後再提交！'
             });
         }
-        
-        // 如果你想自動幫他把髒話變成 *** 存進資料庫，可以加這行：
-        // rev_content = cleanText; 
     }
 
     try {
+        // ==========================================
+        // 🌟 新的防護網：檢查「這場比賽」是否已經評價過
+        // ==========================================
+        const checkSql = `
+            SELECT rev_id 
+            FROM Review 
+            WHERE userWrite_id = ? AND userRec_id = ? AND com_id = ?
+        `;
+        // 這裡把 com_id 也加進去當作查詢條件
+        const [existingReviews] = await pool.execute(checkSql, [userWrite_id, userRec_id, com_id]);
+
+        // 如果找到紀錄，代表在這場比賽已經留過言了
+        if (existingReviews.length > 0) {
+            return res.status(400).json({ 
+                ok: false, 
+                error: '您已經在這場比賽中評價過這位隊友囉！若要修改，請先刪除舊評價。' 
+            });
+        }
+        // ==========================================
+
         // 4. 寫入資料庫
-        const sql = `
+        const insertSql = `
             INSERT INTO Review (com_id, userWrite_id, userRec_id, star, rev_content)
             VALUES (?, ?, ?, ?, ?)
         `;
-        await pool.execute(sql, [com_id, userWrite_id, userRec_id, star, rev_content || null]);
+        await pool.execute(insertSql, [com_id, userWrite_id, userRec_id, star, rev_content || null]);
 
         res.json({ ok: true, message: '評價成功送出' });
     } catch (error) {
@@ -47,11 +63,9 @@ export const submitReview = async (req, res) => {
 
 // 獲取特定使用者的歷史評價
 export const getReviews = async (req, res) => {
-    // 從網址列抓取被評價者的 ID
     const { userId } = req.params; 
 
     try {
-        // 去 Review 表格撈出該用戶的所有評價，順便去 user 表格關聯出「留言者」的名字
         const sql = `
             SELECT 
                 r.rev_id,
@@ -73,11 +87,10 @@ export const getReviews = async (req, res) => {
 };
 
 export const deleteReview = async (req, res) => {
-    const { revId } = req.params; // 從網址抓取要刪除的留言 ID
-    const currentUserId = req.user.user_id; // 從 JWT Token 抓取目前登入者的 ID
+    const { revId } = req.params; 
+    const currentUserId = req.user.user_id; 
 
     try {
-        // SQL 條件加上 userWrite_id = ?，確保只能刪除「自己寫的」評價
         const sql = 'DELETE FROM Review WHERE rev_id = ? AND userWrite_id = ?';
         const [result] = await pool.execute(sql, [revId, currentUserId]);
 
