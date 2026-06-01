@@ -141,7 +141,10 @@
       out.style.color = '#b64d45';
       out.textContent = '伺服器維護中，已為您跳轉本地測試模式';
       // 測試環境 Fallback 處理
-
+      if (mode === 'login') {
+        localStorage.setItem('userId', '9999');
+        setTimeout(() => location.href = buildLoginTarget('9999'), 1000);
+      }
     }
   });
 

@@ -285,10 +285,16 @@
         });
     }
 
+<<<<<<< HEAD
     // ======================================================================
     // 4. 收到的評價列表 (🚀 補齊全域變數與點擊事件完全體)
     // ======================================================================
 
+=======
+    // =================================================
+    // 4. 顯示別人對自己的評價
+    // ================================================
+>>>>>>> parent of c59c668 (Merge branch 'main' of https://github.com/qianying-wu/DBMS-Final-Project into frontedit2)
     function renderReceivedReviews() {
         const list = $('receivedReviewList');
         if (!list) return;
@@ -297,28 +303,10 @@
 
         if (reviews.length === 0) {
             list.innerHTML = '<div class="received-review-empty">目前尚未收到隊友評價。</div>';
-        } else {
-            list.innerHTML = reviews.map(review => {
-                const rating = Math.max(0, Math.min(5, Number(review.rating) || 0));
-                const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
-                const date = review.date ? new Date(review.date).toLocaleDateString('zh-TW') : '';
-                const meta = review.teamName ? `來自 ${review.teamName}` : '隊友評價';
-
-                return `
-            <article class="received-review-card">
-              <div class="received-review-head">
-                <span>${escapeHtml(review.reviewerName || '匿名隊友')}</span>
-                <span class="received-review-date">${escapeHtml(date)}</span>
-              </div>
-              <div class="received-review-meta">${escapeHtml(meta)}</div>
-              <div class="received-review-stars">${stars}</div>
-              <p class="received-review-text">${escapeHtml(review.content || '')}</p>
-            </article>
-          `;
-            }).join('');
+            return;
         }
-    }
 
+<<<<<<< HEAD
     function initReviewButton() {
         const btnGoToMyReviews = $('btnGoToMyReviews');
         if (btnGoToMyReviews) {
@@ -328,6 +316,26 @@
                 window.location.href = `review.html?targetUserId=${id}`;
             });
         }
+=======
+        list.innerHTML = reviews.map(review => {
+            const rating = Math.max(0, Math.min(5, Number(review.rating) || 0));
+            const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+            const date = review.date ? new Date(review.date).toLocaleDateString('zh-TW') : '';
+            const meta = review.teamName ? `來自 ${review.teamName}` : '隊友評價';
+
+            return `
+        <article class="received-review-card">
+          <div class="received-review-head">
+            <span>${escapeHtml(review.reviewerName || '匿名隊友')}</span>
+            <span class="received-review-date">${escapeHtml(date)}</span>
+          </div>
+          <div class="received-review-meta">${escapeHtml(meta)}</div>
+          <div class="received-review-stars">${stars}</div>
+          <p class="received-review-text">${escapeHtml(review.content || '')}</p>
+        </article>
+      `;
+        }).join('');
+>>>>>>> parent of c59c668 (Merge branch 'main' of https://github.com/qianying-wu/DBMS-Final-Project into frontedit2)
     }
 
     // 初始化啟動
@@ -335,5 +343,4 @@
     getUserName();
     initPreferences();
     renderReceivedReviews();
-    initReviewButton();
 })();
