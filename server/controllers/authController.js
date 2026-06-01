@@ -307,6 +307,41 @@ export const getPreferenceTags = async (req, res) => {
 };
 
 // --- 取得使用者偏好 ---
+export const searchUsers = async (req, res) => {
+    const q = String(req.query.q || '').trim();
+
+    if (!q) {
+        return res.status(400).json({ ok: false, error: '請輸入搜尋關鍵字' });
+    }
+
+    try {
+        const currentUserId = req.user?.id || req.user?.user_id || req.user?.userId;
+        const keyword = `%${q}%`;
+        const [rows] = await pool.execute(
+            `
+                SELECT
+                    u.user_id AS userId,
+                    u.userName,
+                    COALESCE(AVG(r.star), 0) AS averageStar,
+                    COUNT(r.rev_id) AS reviewCount
+                FROM user u
+                LEFT JOIN Review r ON r.userRec_id = u.user_id
+                WHERE (u.userName LIKE ? OR CAST(u.user_id AS CHAR) LIKE ?)
+                  AND (? IS NULL OR u.user_id <> ?)
+                GROUP BY u.user_id, u.userName
+                ORDER BY reviewCount DESC, averageStar DESC, u.userName ASC
+                LIMIT 20
+            `,
+            [keyword, keyword, currentUserId || null, currentUserId || null]
+        );
+
+        res.json({ ok: true, users: rows });
+    } catch (err) {
+        console.error('Database Error (Search Users):', err.message);
+        res.status(500).json({ ok: false, error: '搜尋使用者失敗' });
+    }
+};
+
 export const getUserPreferences = async (req, res) => {
     const userId = Number(req.params.userId || req.query.userId);
     if (!Number.isFinite(userId)) {

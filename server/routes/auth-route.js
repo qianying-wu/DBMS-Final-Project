@@ -15,6 +15,7 @@ router.get('/preference-tags', authController.getPreferenceTags);
 router.use(passport.authenticate("jwt", { session: false }));    // 驗證 Token 並注入 req.user
 
 // 運作流程：先經過 passport.authenticate 檢查 Token → 再經過 requireLogin 檢查 req.user → 最後才進入 controller
+router.get('/users/search', authController.searchUsers);
 router.get('/users/:userId/preferences', authController.getUserPreferences);
 router.put('/users/:userId/preferences', authController.updateUserPreferences);
 router.get('/account', authController.getUserAccount);  // 這個路由會從 req.user 拿 userId
