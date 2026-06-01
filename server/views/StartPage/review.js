@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // targetUserId 是「被評價的人」，userId 則保留給目前登入者，避免兩者混在一起。
   const currentUserId = getValidStoredId('userId') || getValidParam('userId') || Data.currentUserId || '';
-  const targetUserId = getValidParam('targetUserId') || getValidParam('revieweeId') || currentUserId || 'default_user';
+  const targetUserId = getValidParam('targetUserId') || getValidParam('revieweeId') || '';
   // 新增：嘗試從網址抓履歷 ID（例如 ?resumeId=xxx）
   const resumeId = params.get('resumeId') || '';
   const mode = params.get('mode') || 'write';
@@ -29,6 +29,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   const storageKey = `userReviews_${targetUserId}`;
 
   const starRating = $('starRating');
+  const reviewError = $('reviewError');
+  const contentGrid = document.querySelector('.content-grid');
+  let pageHasError = false;
+
+  function showReviewError(message) {
+    pageHasError = true;
+    const backTeamUrl = Data.withUserParam('/myTeam.html');
+
+    if (reviewError) {
+      reviewError.innerHTML = `
+        <div class="review-error-card">
+          <h3>找不到此用戶</h3>
+          <p>${escapeHtml(message)}</p>
+          <div class="error-actions">
+            <a href="/contests.html" class="btn-error">返回競賽首頁</a>
+            <a href="${backTeamUrl}" class="btn-error">回到隊伍管理</a>
+          </div>
+        </div>
+      `;
+      reviewError.hidden = false;
+    }
+
+    if (contentGrid) contentGrid.hidden = true;
+    if (reviewFormCard) reviewFormCard.hidden = true;
+    const reviewHistoryCard = document.querySelector('.review-history-card');
+    if (reviewHistoryCard) reviewHistoryCard.hidden = true;
+    const resumeSidebar = document.querySelector('.resume-sidebar');
+    if (resumeSidebar) resumeSidebar.hidden = true;
+    const pageHeader = document.querySelector('.page-header');
+    if (pageHeader) pageHeader.style.marginBottom = '16px';
+  }
+
   const stars = starRating ? starRating.querySelectorAll('.star') : [];
   const reviewComment = $('reviewComment');
   const submitReviewBtn = $('submitReviewBtn');
@@ -171,18 +203,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       const headers = token ? { 'Authorization': token } : {};
 
       const response = await fetch(url, { headers });
-      if (!response.ok) throw new Error('無法取得該用戶履歷');
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        if (response.status === 404) {
+          if (body.reason === 'user-not-found' || /使用者帳號|user-not-found/i.test(body.message || body.reason || '')) {
+            return { error: 'user-not-found' };
+          }
+          return { error: 'no-resume' };
+        }
+        throw new Error(body.message || '無法取得該用戶履歷');
+      }
 
       const data = await response.json();
       return extractResume(data);
 
     } catch (error) {
       console.error('抓取履歷失敗：', error);
-      // 萬一壞掉（例如後端掛了或找不到），給個預設值，畫面才不會一片白
-      return extractResume({
-        name: localStorage.getItem(`nickname:${targetUserId}`) || `使用者 ${targetUserId}`,
-        intro: '目前無法取得履歷資料，可能已被隱藏或刪除。'
-      });
+      return null;
     }
   }
 
@@ -207,7 +244,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 改為非同步函式 (async)
   async function loadResumeData() {
     // 這裡變成等待後端回傳資料
-    targetProfile = await fetchTargetUserResume();
+    const result = await fetchTargetUserResume();
+
+    if (!result || result.error) {
+      const message = result?.error === 'user-not-found'
+        ? '此目標帳號不存在，請從隊伍管理重新進入評價頁面。'
+        : '該用戶尚未建立履歷，請等待該用戶建立履歷或查看其他隊友的履歷。';
+      showReviewError(message);
+      return;
+    }
+
+    targetProfile = result;
 
     safeSetText('r-title', targetProfile.title);
     safeSetText('r-school', targetProfile.school);
@@ -292,6 +339,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   async function loadReviews() {
+    if (pageHasError) return;
     if (!reviewList) return;
     reviewList.innerHTML = '讀取中...';
 
@@ -449,6 +497,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (submitReviewBtn) {
     submitReviewBtn.addEventListener('click', async () => {
+      if (pageHasError) {
+        showReviewError('無效的評價頁面，請從隊友歷史資料重新進入。');
+        return;
+      }
       if (!canWriteReview) {
         showCustomAlert('這支隊伍尚未完賽，暫時不能送出評價。', 'error');
         return;
@@ -526,6 +578,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   const homeLink = document.querySelector('.logo-link');
   if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
+
+  if (!targetUserId) {
+    showReviewError('查無目標用戶，請從有效的評論連結重新進入。');
+    return;
+  }
 
   await initMode();
 
