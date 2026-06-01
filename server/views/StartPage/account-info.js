@@ -286,10 +286,16 @@
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // ======================================================================
     // 4. 收到的評價列表 (🚀 補齊全域變數與點擊事件完全體)
     // ======================================================================
 
+=======
+    // =================================================
+    // 4. 顯示別人對自己的評價
+    // ================================================
+>>>>>>> parent of c59c668 (Merge branch 'main' of https://github.com/qianying-wu/DBMS-Final-Project into frontedit2)
 =======
     // =================================================
     // 4. 顯示別人對自己的評價
@@ -307,6 +313,7 @@
         }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     function initReviewButton() {
         const btnGoToMyReviews = $('btnGoToMyReviews');
         if (btnGoToMyReviews) {
@@ -317,6 +324,8 @@
             });
         }
 =======
+=======
+>>>>>>> parent of c59c668 (Merge branch 'main' of https://github.com/qianying-wu/DBMS-Final-Project into frontedit2)
         list.innerHTML = reviews.map(review => {
             const rating = Math.max(0, Math.min(5, Number(review.rating) || 0));
             const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
@@ -335,6 +344,9 @@
         </article>
       `;
         }).join('');
+<<<<<<< HEAD
+>>>>>>> parent of c59c668 (Merge branch 'main' of https://github.com/qianying-wu/DBMS-Final-Project into frontedit2)
+=======
 >>>>>>> parent of c59c668 (Merge branch 'main' of https://github.com/qianying-wu/DBMS-Final-Project into frontedit2)
     }
 
