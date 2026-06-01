@@ -1,4 +1,59 @@
 import * as Data from '../team-data.js';
+function showTeamAlert(message, type = 'success') {
+  const existingModal = document.getElementById('teamAlertModal');
+  if (existingModal) existingModal.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'teamAlertModal';
+  modal.className = 'team-dialog';
+
+  const isError = type === 'error';
+  modal.innerHTML = `
+    <div class="team-dialog-card" role="dialog" aria-modal="true">
+      <div class="team-dialog-icon ${isError ? 'error' : 'success'}">${isError ? '!' : 'OK'}</div>
+      <h3>${isError ? '操作失敗' : '操作完成'}</h3>
+      <p>${Data.escapeHtml(message)}</p>
+      <button type="button" class="team-dialog-primary" data-dialog-close>我知道了</button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.querySelector('[data-dialog-close]')?.addEventListener('click', () => modal.remove());
+}
+
+function showTeamConfirm(message, { title = '確認操作', okText = '確認', danger = false } = {}) {
+  const existingModal = document.getElementById('teamConfirmModal');
+  if (existingModal) existingModal.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'teamConfirmModal';
+  modal.className = 'team-dialog';
+  modal.innerHTML = `
+    <div class="team-dialog-card" role="dialog" aria-modal="true">
+      <div class="team-dialog-icon ${danger ? 'error' : 'warning'}">${danger ? '!' : '?'}</div>
+      <h3>${Data.escapeHtml(title)}</h3>
+      <p>${Data.escapeHtml(message)}</p>
+      <div class="team-dialog-actions">
+        <button type="button" class="team-dialog-secondary" data-dialog-cancel>取消</button>
+        <button type="button" class="team-dialog-primary ${danger ? 'danger' : ''}" data-dialog-ok>${Data.escapeHtml(okText)}</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  return new Promise(resolve => {
+    const close = value => {
+      modal.remove();
+      resolve(value);
+    };
+    modal.querySelector('[data-dialog-cancel]')?.addEventListener('click', () => close(false));
+    modal.querySelector('[data-dialog-ok]')?.addEventListener('click', () => close(true));
+    modal.addEventListener('click', event => {
+      if (event.target === modal) close(false);
+    });
+  });
+}
 
 /**
  * 🚀 主渲染函式：驅動網格卡片與面板外殼
@@ -134,11 +189,11 @@ export async function render(gridContainer, token, userId) {
 
       if (!res.ok) throw new Error('更新隊伍狀態失敗');
 
-      alert(statusAction === 'completed' ? '隊伍已成功標記為順利完賽！' : '隊伍已成功解散。');
+      showTeamAlert(statusAction === 'completed' ? '隊伍已成功標記為順利完賽！' : '隊伍已成功解散。');
       render(gridContainer, token, userId); // 刷新最新網格狀態
 
     } catch (err) {
-      alert(err.message);
+      showTeamAlert(err.message, 'error');
     }
   });
 
@@ -221,7 +276,10 @@ function bindReviewActionButtons(panelContainer, refreshCallback) {
   panelContainer.querySelectorAll('.btn-review-view').forEach(btn => {
     btn.addEventListener('click', async () => {
       const targetUid = btn.dataset.uid;
-      if (!targetUid) return alert('無法取得該用戶的識別碼');
+      if (!targetUid) {
+        showTeamAlert('無法取得該用戶的識別碼', 'error');
+        return;
+      }
 
       if (viewCard) viewCard.innerHTML = `<p style="text-align: center; color: #caa77a; font-weight: bold;">⏳ 正在連線資料庫讀取履歷...</p>`;
       
@@ -264,7 +322,11 @@ function bindReviewActionButtons(panelContainer, refreshCallback) {
   // 2. 👑 修正點一：核准通過按鈕
   panelContainer.querySelectorAll('.btn-review-pass').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('確定要核准此成員加入隊伍嗎？')) return;
+      const confirmed = await showTeamConfirm('確定要核准此成員加入隊伍嗎？', {
+        title: '核准申請',
+        okText: '核准加入'
+      });
+      if (!confirmed) return;
       try {
         const res = await fetch('/api/teams/review', { 
           method: 'POST', 
@@ -273,26 +335,31 @@ function bindReviewActionButtons(panelContainer, refreshCallback) {
         });
         
         if (res.ok) { 
-          alert('已成功核准加入！'); 
+          showTeamAlert('已成功核准加入！');
           // 💡 通過成功後，立刻執行 refreshCallback 觸發外部的「主控台網格重渲染」
           // 這將會重新打後端 API，獲取更新後(加 1 人)的最新 current_member_count 欄位！
           if (typeof refreshCallback === 'function') refreshCallback(); 
         }
-      } catch (err) { alert('運作失敗'); }
+      } catch (err) { showTeamAlert('運作失敗', 'error'); }
     });
   });
 
   // 3. 拒絕加入按鈕
   panelContainer.querySelectorAll('.btn-review-reject').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('確定要拒絕此申請嗎？')) return;
+      const confirmed = await showTeamConfirm('確定要拒絕此申請嗎？', {
+        title: '拒絕申請',
+        okText: '拒絕',
+        danger: true
+      });
+      if (!confirmed) return;
       try {
         const res = await fetch('/api/teams/review', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': ` ${token}` }, body: JSON.stringify({ team_id: btn.dataset.teamId, user_id: btn.dataset.uid, action: 'reject' }) });
         if (res.ok) { 
-          alert('已成功駁回申請。'); 
+          showTeamAlert('已成功駁回申請。');
           if (typeof refreshCallback === 'function') refreshCallback(); 
         }
-      } catch (err) { alert('運作失敗'); }
+      } catch (err) { showTeamAlert('運作失敗', 'error'); }
     });
   });
 }
