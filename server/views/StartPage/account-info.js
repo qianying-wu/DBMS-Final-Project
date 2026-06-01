@@ -87,12 +87,28 @@
             const serverData = await response.json();
             // 假設後端回傳：{ account: "xxx@mail.com" }
             if ($('username')) $('username').value = serverData.account || id;
-            if ($('sideName')) $('sideName').textContent = serverData.account || id;
+            // if ($('sideName')) $('sideName').textContent = serverData.userName || id;
             return serverData;
         } catch (err) {
             console.error("無法連線至後端資料庫 API", err);
         }
     }
+
+    async function getUserName() {
+        try {
+            const path = '/api/auth/userName';
+            // 💡 透過修正後的 getAuthHeader 帶上標準 Token 
+            const response = await fetch(path, { headers: { ...getAuthHeader() } });
+            if (!response.ok) throw new Error('無法取得使用者名稱');
+
+            const serverData = await response.json();
+            if ($('sideName')) $('sideName').textContent = serverData.userName || id;
+            return serverData;
+        } catch (err) {
+            console.error("無法連線至後端資料庫 API", err);
+        }
+    }
+
 
     // 2. 【寫入資料庫】儲存修改密碼（新增成功通知）
     async function saveAccountSettings(event) {
@@ -277,6 +293,7 @@
 
     // 初始化啟動
     getAccount();
+    getUserName();
     initPreferences();
     renderReceivedReviews();
 })();

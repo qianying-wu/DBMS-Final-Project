@@ -212,6 +212,44 @@ export const getUserAccount = async (req, res) => {
         return res.status(500).json({ ok: false, error: '伺服器內部錯誤' });
     }
 };
+
+export const getUserName = async (req, res) => {
+    try {
+        // 1. 從請求中取得 userId
+        const userId = req.user.id || req.user.user_id || req.user.userId;
+
+        if (!userId) {
+            console.log('【後端警告】查詢帳號失敗：缺少有效的 userId');
+            return res.status(400).json({ ok: false, error: '缺少使用者 ID' });
+        }
+
+        console.log(`[帳號查詢] 正在撈取 user_id: ${userId} 的帳號資料...`);
+
+        // 2. 執行 SQL 查詢 
+        // 💡 請根據你資料庫真正的欄位名稱調整，這裡假設表名為 user，欄位為 account 與 user_id
+        const [rows] = await pool.execute(
+            'SELECT userName FROM user WHERE user_id = ?',
+            [Number(userId)]
+        );
+
+        // 3. 檢查資料庫有沒有這個人
+        if (!rows || rows.length === 0) {
+            console.log(`【後端警告】找不到 user_id: ${userId} 的使用者`);
+            return res.status(404).json({ ok: false, error: '找不到該使用者' });
+        }
+
+        // 4. 成功查到，回傳給前端
+        // rows[0].userName 就是對應到的使用者名稱
+        return res.status(200).json({
+            ok: true,
+            userName: rows[0].userName
+        });
+
+    } catch (error) {
+        console.error('❌ getUserAccount 發生 SQL 錯誤:', error);
+        return res.status(500).json({ ok: false, error: '伺服器內部錯誤' });
+    }
+};
 // --- 更新使用者密碼 ---
 export const updatePsw = async (req, res) => {
     try {

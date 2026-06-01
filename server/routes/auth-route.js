@@ -18,6 +18,7 @@ router.use(passport.authenticate("jwt", { session: false }));    // 驗證 Token
 router.get('/users/:userId/preferences', authController.getUserPreferences);
 router.put('/users/:userId/preferences', authController.updateUserPreferences);
 router.get('/account', authController.getUserAccount);  // 這個路由會從 req.user 拿 userId
+router.get('/userName', authController.getUserName);  // 這個路由會從 req.user 拿 userId
 router.put('/password', authController.updatePsw);  // 更新密碼的路由
 
 export default router;
