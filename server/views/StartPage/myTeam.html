@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="header.css">
     <link rel="stylesheet" href="myTeam.css">
+    <link rel="stylesheet" href="modules/tabMyTeams.css">
     <title>隊伍管理中心</title>
 </head>
 <body>
@@ -93,6 +94,20 @@
 
         </main>
     </div>
+
+    <div id="viewResumeModal" class="custom-modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+          <div class="modal-header">
+            <h3 id="viewResumeTitle">隊員履歷詳細資料</h3>
+            <button id="closeViewModalBtn" class="close-btn">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div id="viewResumeDetailCard" class="resume-detail-preview">
+              <p style="text-align: center; color: #8a735e;">正在拼命讀取履歷資料...</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
     <script src="account-menu.js"></script>
     <script type="module" src="myTeam.js"></script>

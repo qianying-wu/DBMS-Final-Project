@@ -9,9 +9,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const currentUserId = localStorage.getItem('userId') || params.get('userId') || Data.currentUserId || '';
   const targetUserId = params.get('targetUserId') || params.get('revieweeId') || currentUserId || 'default_user';
   // 新增：嘗試從網址抓履歷 ID（例如 ?resumeId=xxx）
-  const resumeId = params.get('resumeId') || ''; 
+  const resumeId = params.get('resumeId') || '';
   const mode = params.get('mode') || 'write';
-  const teamId = params.get('teamId') || '';
+  const teamId = params.get('comId') || params.get('teamId') || '';
   const teamName = params.get('teamName') || '';
   const storageKey = `userReviews_${targetUserId}`;
 
@@ -32,8 +32,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 建立外層的半透明黑色背景
     const modal = document.createElement('div');
     modal.id = 'customAlertModal';
-    modal.className = 'modal'; 
-    modal.style.zIndex = '9999'; 
+    modal.className = 'modal';
+    modal.style.zIndex = '9999';
 
     // 根據成功或失敗，決定圖示跟顏色
     const icon = type === 'error' ? '🥺' : '✨';
@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 按下確定：關閉視窗，並執行傳進來的刪除邏輯
     document.getElementById('okConfirmBtn').addEventListener('click', () => {
       modal.remove();
-      onConfirm(); 
+      onConfirm();
     });
   }
 
@@ -217,11 +217,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   stars.forEach(star => {
-    star.addEventListener('mouseover', function() {
+    star.addEventListener('mouseover', function () {
       updateStars(parseInt(this.getAttribute('data-value'), 10));
     });
     star.addEventListener('mouseout', () => updateStars(currentRating));
-    star.addEventListener('click', function() {
+    star.addEventListener('click', function () {
       currentRating = parseInt(this.getAttribute('data-value'), 10);
       updateStars(currentRating);
     });
@@ -241,26 +241,39 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const reviews = result.data;
-      
+
       // ==========================================
-      // 🌟 新增：計算並顯示平均星數
+      // 🌟 計算並顯示平均星數 (動態精準比例版)
       // ==========================================
       let totalStars = 0;
       reviews.forEach(r => {
-        totalStars += (Number(r.star) || 0); // 把每個人給的星數加總
+        totalStars += (Number(r.star) || 0);
       });
-      
+
       // 算出平均值 (算到小數點第一位)
       const avgStar = reviews.length > 0 ? (totalStars / reviews.length).toFixed(1) : 0;
-      const roundedStar = Math.round(avgStar); // 四捨五入用來畫星星
 
-      // 把算好的數字塞進剛寫好的 HTML 裡
+      // 準備畫星星的 HTML
+      let starsHtml = '';
+      for (let i = 1; i <= 5; i++) {
+        if (i <= Math.floor(avgStar)) {
+          starsHtml += '<span class="star-full">★</span>'; // 實星
+        } else if (i === Math.ceil(avgStar) && !Number.isInteger(Number(avgStar))) {
+          // 🌟 魔法在這裡：動態計算小數點的百分比 (例如 2.3 取 0.3 -> 30%)
+          const fillPercentage = Math.round((avgStar % 1) * 100);
+          starsHtml += `<span class="star-partial" style="background: linear-gradient(90deg, #F28E2B ${fillPercentage}%, #E6DFD5 ${fillPercentage}%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">★</span>`;
+        } else {
+          starsHtml += '<span class="star-empty">★</span>'; // 空星
+        }
+      }
+
+      // 把算好的數字與星星塞進 HTML
       const scoreEl = document.getElementById('r-avg-score');
       const starsEl = document.getElementById('r-avg-stars');
       const countEl = document.getElementById('r-avg-count');
 
       if (scoreEl) scoreEl.textContent = avgStar > 0 ? avgStar : '-.-';
-      if (starsEl) starsEl.textContent = avgStar > 0 ? '★'.repeat(roundedStar) + '☆'.repeat(5 - roundedStar) : '☆☆☆☆☆';
+      if (starsEl) starsEl.innerHTML = avgStar > 0 ? starsHtml : '<span class="star-empty">★</span>'.repeat(5);
       if (countEl) countEl.textContent = `(${reviews.length} 則評價)`;
       // ==========================================
 
@@ -280,9 +293,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 邏輯：判斷這則留言的作者，是不是現在正在看網頁的人
         const isMyReview = String(review.userWrite_id) === String(currentUserId);
-        
-        const deleteBtnHtml = isMyReview 
-          ? `<button class="delete-review-btn" data-revid="${review.rev_id}">🗑️ 刪除</button>` 
+
+        const deleteBtnHtml = isMyReview
+          ? `<button class="delete-review-btn" data-revid="${review.rev_id}">🗑️ 刪除</button>`
           : '';
 
         item.innerHTML = `
@@ -300,7 +313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       deleteBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
           const revId = e.target.getAttribute('data-revid');
-          
+
           // 呼叫自訂確認視窗，把 fetch 刪除的動作包進去
           showCustomConfirm('確定要刪除這則評價嗎？此動作無法復原。', async () => {
             try {
@@ -315,9 +328,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               }
               const data = await response.json();
               if (!response.ok || !data.ok) throw new Error(data.error || '刪除失敗');
-              
+
               showCustomAlert('評價已成功刪除！');
-              await loadReviews(); 
+              await loadReviews();
 
             } catch (error) {
               console.error('刪除評價失敗:', error);
@@ -365,7 +378,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       setSubmitState(true);
-      
+
       const reviewPayload = {
         com_id: teamId || 1, // 端必填 com_id(比賽ID)，如果你從網址抓不到，可能要先塞個預設值(如 1)避免報錯
         userWrite_id: currentUserId,
@@ -380,7 +393,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': token ? token : '' 
+            'Authorization': token ? token : ''
           },
           body: JSON.stringify(reviewPayload)
         });
@@ -392,19 +405,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 確認沒被擋，再來解析 JSON
         const data = await response.json();
-        
+
         if (!response.ok || !data.ok) {
-           throw new Error(data.error || '後端儲存評價失敗');
+          throw new Error(data.error || '後端儲存評價失敗');
         }
 
         currentRating = 0;
         updateStars(0);
         reviewComment.value = '';
         setSubmitState(false);
-        
+
         showCustomAlert('評價發布成功！');
-        await loadReviews(); 
-        
+        await loadReviews();
+
       } catch (error) {
         console.error('發送評價失敗：', error);
         showCustomAlert(error.message || '評價送出失敗，請檢查網路連線或稍後再試。', 'error');
@@ -416,7 +429,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (homeLink) homeLink.href = Data.withUserParam('/contests.html');
 
   initMode();
-  
+
   // 已經拿掉多餘的 loadReviews() 呼叫
   await loadReviews();
   await loadResumeData();

@@ -229,3 +229,38 @@ export const getTargetResume = async (req, res) => {
         res.status(500).json({ ok: false, message: '伺服器內部錯誤' });
     }
 };
+
+// 👑 新增 API：取得特定使用者所有的履歷簡要列表（僅名稱與ID）
+export const getMyResumeList = async (req, res) => {
+    const { userId } = req.query;
+  
+    if (!userId) {
+      return res.status(400).json({ success: false, message: '必須提供 userId' });
+    }
+  
+    try {
+      // 撈取該用戶的所有履歷，依時間由新到舊排序
+      const [rows] = await pool.query(
+        `SELECT resume_id, resume_name 
+         FROM Resumes 
+         WHERE user_id = ? 
+         ORDER BY created_at DESC`,
+        [userId]
+      );
+  
+      if (rows.length === 0) {
+        return res.status(404).json({ success: false, message: '找不到任何履歷' });
+      }
+  
+      // 轉換成前端好讀的欄位名稱
+      const list = rows.map(row => ({
+        id: row.resume_id,
+        name: row.resume_name || '未命名履歷'
+      }));
+  
+      res.status(200).json({ success: true, data: list });
+    } catch (error) {
+      console.error('❌ 撈取用戶履歷列表失敗：', error);
+      res.status(500).json({ success: false, message: '伺服器內部錯誤' });
+    }
+  };

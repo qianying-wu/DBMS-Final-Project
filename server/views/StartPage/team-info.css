@@ -266,15 +266,137 @@
     width: 100%;
   }
 }
-.icon-btn svg, .avatar-btn svg {
+.avatar-btn svg {
   display: block;
   color: #7b6a59;
 }
 
-.icon-btn:hover svg, .avatar-btn:hover svg {
+.avatar-btn:hover svg {
   color: #4f3827;
 }
 
-.icon-btn:hover, .avatar-btn:hover {
+.avatar-btn:hover {
   background: #f5f0ea;
+}
+
+.custom-modal {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.modal-content {
+  background: #fff; border-radius: 12px; width: 90%; max-width: 400px;
+  padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: fadeIn 0.2s ease-out;
+}
+
+.modal-header { 
+  display: flex; justify-content: space-between; 
+  align-items: center; border-bottom: 1px solid #eee; 
+  padding-bottom: 10px; 
+}
+
+.modal-header h3 { 
+  margin: 0; color: #4f3827; font-size: 18px; 
+}
+
+.close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #aaa; }
+
+.close-btn:hover { color: #333; }
+
+.custom-modal {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.modal-content {
+  background: #fff; border-radius: 12px; width: 90%; max-width: 400px;
+  padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: fadeIn 0.2s ease-out;
+}
+
+.modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+
+.modal-header h3 { margin: 0; color: #4f3827; font-size: 18px; }
+
+.close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #aaa; }
+
+.close-btn:hover { color: #333; }
+
+/* 👑 履歷按鈕直排清單 */
+.resume-buttons-list {
+  display: flex; flex-direction: column; gap: 10px; max-height: 240px; overflow-y: auto; padding: 5px 2px;
+}
+
+/* 單個履歷選項按鈕基本樣式 */
+.resume-item-btn {
+  background: #fbf9f6; border: 1px solid #eadfd2; border-radius: 8px; padding: 12px 15px;
+  text-align: left; font-size: 14px; color: #4f3827; cursor: pointer; transition: all 0.2s ease;
+  font-weight: 500; display: flex; align-items: center; gap: 8px;
+}
+
+.resume-item-btn:hover { background: #f4eee6; border-color: #caa77a; }
+
+/* 👑 當該份履歷被選取時的強烈視覺效果 */
+.resume-item-btn.selected {
+  background: #caa77a; color: white; border-color: #b59369; box-shadow: 0 2px 8px rgba(202,167,122,0.4);
+}
+
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; }
+
+.btn-modal-primary { background: #caa77a; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+/* 讓沒選取履歷前的確認按鈕呈現灰色停用狀態 */
+.btn-modal-primary:disabled { background: #ddd; color: #aaa; cursor: not-allowed; box-shadow: none; }
+
+.btn-modal-secondary { background: #f5f5f5; color: #666; border: 1px solid #ddd; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+
+@keyframes fadeIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* =========================================
+   7. 彈出視窗 (自訂 Modal 樣式)
+   ========================================= */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(58, 47, 37, 0.5); /* 帶有暖色調的半透明黑底 */
+  backdrop-filter: blur(4px); /* 讓背後的網頁模糊化，增加質感 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-card {
+  background: #FFFFFF;
+  border-radius: 20px; /* 大圓角 */
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+  padding: 32px 24px;
+  width: 90%;
+  max-width: 380px;
+  text-align: center;
+  animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 確保彈窗裡面的按鈕不會因為失去舊的 btn class 而縮水 */
+.modal-card button {
+  padding: 12px 0;
+  cursor: pointer;
+  transition: transform 0.2s, filter 0.2s;
+}
+
+.modal-card button:hover {
+  transform: translateY(-2px);
+  filter: brightness(0.95);
+}
+
+/* 彈窗動畫特效 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popUp {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }

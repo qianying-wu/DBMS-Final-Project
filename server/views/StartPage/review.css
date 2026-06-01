@@ -347,6 +347,7 @@ body {
   line-height: 1;
 }
 
+/* --- 平均星數星星樣式 (動態精準版) --- */
 .avg-stars-wrapper {
   display: flex;
   flex-direction: column;
@@ -354,9 +355,23 @@ body {
 }
 
 .avg-stars {
-  font-size: 18px;
-  color: #f58228;
-  letter-spacing: 2px;
+  display: flex;
+  font-size: 22px; 
+  gap: 2px;
+}
+
+.star-full { 
+  color: #F28E2B; 
+}
+
+.star-empty { 
+  color: #E6DFD5; 
+}
+
+/* 讓 JS 動態塞入的 background 可以正確變成文字顏色 */
+.star-partial {
+  display: inline-block;
+  /* 背景的 linear-gradient 已經交給 JS 動態計算了 */
 }
 
 .avg-count {

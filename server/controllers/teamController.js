@@ -85,20 +85,28 @@ export const contestsResult = async (req, res) => {
 }
 
 export const applyToTeam = async (req, res) => {
-  const { user_id, team_id } = req.body;
+  const { user_id, team_id, resume_id } = req.body;
 
-  if (!user_id || !team_id) {
-    return res.status(400).json({ success: false, message: '缺少必要參數' });
+  // 1. 基本參數防呆（加入 resume_id 檢查）
+  if (!user_id || !team_id || !resume_id) {
+    return res.status(400).json({ success: false, message: '缺少必要參數（使用者、隊伍或履歷識別碼）' });
   }
 
+  // 取得資料庫連線，準備使用交易 (Transaction) 確保競爭條件安全
+  const connection = await pool.getConnection();
+
   try {
-    // 1. 防呆：檢查是否已經申請過或已經是團員
-    const [existing] = await pool.execute(
+    // 開啟交易
+    await connection.beginTransaction();
+
+    // 2. 檢查是否已經申請過或已經是團員
+    const [existing] = await connection.execute(
       'SELECT mem_status FROM Membership WHERE user_id = ? AND team_id = ?',
       [user_id, team_id]
     );
 
     if (existing.length > 0) {
+      await connection.rollback(); // 記得要回滾交易
       const status = existing[0].mem_status;
       return res.status(400).json({
         success: false,
@@ -106,29 +114,50 @@ export const applyToTeam = async (req, res) => {
       });
     }
 
-    // 2. 防呆：檢查隊伍人數是否已滿 (比對當前人數與上限)
-    const [teamCheck] = await pool.execute(
-      'SELECT current_member_count, num_limit FROM Team WHERE team_id = ?',
+    // 3. 安全檢查：確認這份履歷真的是這個使用者的（選填，但對後端安全很有幫助）
+    const [resumeCheck] = await connection.execute(
+      'SELECT resume_id FROM Resumes WHERE resume_id = ? AND user_id = ?',
+      [resume_id, user_id]
+    );
+    if (resumeCheck.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, message: '無效的履歷資料' });
+    }
+
+    // 4. 檢查隊伍人數是否已滿 (加上 FOR UPDATE 鎖定這列資料，防止其他人同時讀取修改)
+    const [teamCheck] = await connection.execute(
+      'SELECT current_member_count, num_limit FROM Team WHERE team_id = ? FOR UPDATE',
       [team_id]
     );
-    if (teamCheck.length === 0) return res.status(404).json({ success: false, message: '找不到該隊伍' });
+    if (teamCheck.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: '找不到該隊伍' });
+    }
 
     if (teamCheck[0].current_member_count >= teamCheck[0].num_limit) {
+      await connection.rollback();
       return res.status(400).json({ success: false, message: '該隊伍人數已滿，無法申請' });
     }
 
-    // 3. 核心：寫入 Membership 表，設定為 組員 / 申請中
-    await pool.execute(
-      `INSERT INTO Membership (user_id, team_id, role, mem_status) 
-       VALUES (?, ?, '組員', '申請中')`,
-      [user_id, team_id]
+    // 5. 核心：寫入 Membership 表
+    await connection.execute(
+      `INSERT INTO Membership (user_id, team_id, role, mem_status, resume_id) 
+       VALUES (?, ?, '組員', '申請中', ?)`,
+      [user_id, team_id, resume_id]
     );
 
+    // 提交交易
+    await connection.commit();
     res.status(200).json({ success: true, message: '申請已成功送出' });
 
   } catch (error) {
-    console.error('後端申請出錯:', error);
+    // 遇到任何錯誤，必須將資料庫狀態回滾
+    await connection.rollback();
+    console.error('❌ 後端申請出錯:', error);
     res.status(500).json({ success: false, message: '伺服器內部錯誤' });
+  } finally {
+    // 👑 萬分重要：不論成功或失敗，一定要釋放連線回連線池
+    connection.release();
   }
 };
 
@@ -363,13 +392,17 @@ export const reviewApplication = async (req, res) => {
 
     // 🌟 動作一：審核通過
     if (action === 'pass') {
+      // 先把使用者的狀態改成通過
       await pool.execute(
         `UPDATE Membership SET mem_status = '通過' WHERE team_id = ? AND user_id = ?`,
         [team_id, user_id]
       );
       
-      // (選擇性) 如果你們的 teams table 有記錄目前人數，記得在這邊 +1 喔！
-      // await db.execute(`UPDATE teams SET current_member_count = current_member_count + 1 WHERE team_id = ?`, [team_id]);
+      // 修正為正確的資料表 (Team) 與資料庫呼叫 (pool)
+      await pool.execute(
+        `UPDATE Team SET current_member_count = current_member_count + 1 WHERE team_id = ?`, 
+        [team_id]
+      );
 
       return res.status(200).json({ message: '已成功核准加入隊伍' });
     }
@@ -388,5 +421,34 @@ export const reviewApplication = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: '伺服器審核失敗' });
+  }
+};
+
+// 檢查使用者對於特定隊伍的加入狀態
+export const checkApplyStatus = async (req, res) => {
+  const { userId, teamId } = req.query;
+
+  if (!userId || !teamId) {
+    return res.status(400).json({ success: false, message: '缺少參數' });
+  }
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT mem_status 
+       FROM Membership 
+       WHERE user_id = ? AND team_id = ?`,
+      [userId, teamId]
+    );
+
+    // 如果有紀錄，就回傳目前的狀態（例如：'申請中'、'通過'）
+    if (rows.length > 0) {
+      return res.status(200).json({ success: true, status: rows[0].mem_status });
+    }
+
+    // 沒有紀錄代表從未申請過
+    res.status(200).json({ success: true, status: 'none' });
+  } catch (error) {
+    console.error('❌ SQL 檢查申請狀態出錯:', error);
+    res.status(500).json({ success: false, message: '伺服器內部錯誤' });
   }
 };
