@@ -35,7 +35,8 @@ export function initManageDashboard() {
     renderTeamsGridSection();
   });
 
-  setupReviewPanelDelegation();
+  // 👑 修正點：從 tabMyTeams 模組調用被抽離的事件代理，並將刷新網格的函式作為 Callback 傳進去
+  tabMyTeams.setupReviewPanelDelegation(renderTeamsGridSection);
 }
 
 export async function renderTeamsGridSection() {
@@ -66,96 +67,6 @@ export async function renderTeamsGridSection() {
     console.error('❌ 中央管理網格驅動失敗:', error);
     gridContainer.innerHTML = '<div class="empty-text" style="color:red;">資料載入失敗，請確認網路連線。</div>';
   }
-}
-
-// 👑 右側審核面板動態事件代理 (處理資料庫、本地與評價跳轉)
-function setupReviewPanelDelegation() {
-  const gridContainer = $('teamsGrid');
-  if (!gridContainer) return;
-
-  gridContainer.addEventListener('click', async (event) => {
-    const btn = event.target.closest('[data-owned-action]');
-    if (!btn) return;
-
-    const action = btn.dataset.ownedAction;
-    const teamId = btn.dataset.teamId;
-    const teamName = btn.dataset.teamName;
-    const token = localStorage.getItem('token');
-    const panel = document.getElementById('ownedTeamPanel');
-
-    if (!panel) return;
-    panel.innerHTML = `<div class="loading-placeholder" style="padding:20px; text-align:center; color:#caa77a;">🔍 正在連線讀取【${Data.escapeHtml(teamName)}】...</div>`;
-
-    try {
-      const res = await fetch(`/api/teams/detail?teamId=${teamId}`, { headers: { 'Authorization': ` ${token}` } });
-      if (!res.ok) throw new Error();
-      const result = await res.json();
-      const members = result.members || [];
-
-      if (action === 'applications') {
-        const applicants = members.filter(m => m.mem_status === '申請中' || m.status === '申請中');
-        if (applicants.length === 0) {
-          panel.innerHTML = `<div class="panel-header"><h3>👋 申請審核中心：${Data.escapeHtml(teamName)}</h3></div><div class="empty-text">🎉 目前沒有任何待審核的加入申請。</div>`;
-          return;
-        }
-
-        let html = `<div class="panel-header" style="display:flex; justify-content:space-between;"><h3>👋 申請審核中心：${Data.escapeHtml(teamName)}</h3><span class="role-badge creator">${applicants.length} 筆待處理</span></div><div style="display:grid; gap:12px; margin-top:10px;">`;
-        applicants.forEach(a => {
-          html += `
-            <div class="applicant-card" style="background:#fff; border:1px solid #eadfd2; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center;">
-              <div><strong>${Data.escapeHtml(a.user_name || '未知名稱')}</strong><small style="display:block; color:#8a735e; margin-top:4px;">附帶履歷：${Data.escapeHtml(a.resume_name || '預設履歷')}</small></div>
-              <div style="display:flex; gap:8px;">
-                <button class="btn-review-view" data-uid="${a.user_id}" data-res-id="${a.resume_id || ''}" style="cursor:pointer;">檢視履歷</button>
-                <button class="btn-review-pass" data-uid="${a.user_id}" data-team-id="${teamId}" style="cursor:pointer; background:#caa77a; color:#fff; border:none; padding:4px 8px; border-radius:4px;">通過</button>
-                <button class="btn-review-reject" data-uid="${a.user_id}" data-team-id="${teamId}" style="cursor:pointer; color:#b05353; background:#fff; border:1px solid #f3cccc; padding:4px 8px; border-radius:4px;">拒絕</button>
-              </div>
-            </div>`;
-        });
-        panel.innerHTML = html + '</div>';
-        bindReviewActionButtons(panel);
-      }
-
-      if (action === 'members') {
-        const activeMembers = members.filter(m => m.mem_status === '通過' || m.status === '通過');
-        let html = `<div class="panel-header"><h3>👥 正式隊友名單：${Data.escapeHtml(teamName)}</h3></div><div style="display:grid; gap:8px; margin-top:10px;">`;
-        activeMembers.forEach(m => {
-          const isLeader = m.role === '建立人';
-          html += `<div style="background:#fbfbfb; border:1px solid #eee; padding:12px; border-radius:6px; display:flex; justify-content:space-between;"><strong>${Data.escapeHtml(m.userName || '隊員')}</strong><span class="role-badge">${isLeader ? '建立人' : '組員'}</span></div>`;
-        });
-        panel.innerHTML = html + '</div>';
-      }
-    } catch (err) {
-      panel.innerHTML = `<div class="empty-text" style="color:red;">載入失敗，請確認伺服器連線。</div>`;
-    }
-  });
-}
-
-function bindReviewActionButtons(panelContainer) {
-  const token = localStorage.getItem('token');
-
-  panelContainer.querySelectorAll('.btn-review-view').forEach(btn => {
-    btn.addEventListener('click', () => alert(`即將跳轉檢視用戶 ID: ${btn.dataset.uid}`));
-  });
-
-  panelContainer.querySelectorAll('.btn-review-pass').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('確定要核准此成員加入隊伍嗎？')) return;
-      try {
-        const res = await fetch('/api/teams/review', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': ` ${token}` }, body: JSON.stringify({ team_id: btn.dataset.teamId, user_id: btn.dataset.uid, action: 'pass' }) });
-        if (res.ok) { alert('已成功核准加入！'); renderTeamsGridSection(); }
-      } catch (err) { alert('運作失敗'); }
-    });
-  });
-
-  panelContainer.querySelectorAll('.btn-review-reject').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('確定要拒絕此申請嗎？')) return;
-      try {
-        const res = await fetch('/api/teams/review', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': ` ${token}` }, body: JSON.stringify({ team_id: btn.dataset.teamId, user_id: btn.dataset.uid, action: 'reject' }) });
-        if (res.ok) { alert('已成功駁回申請。'); renderTeamsGridSection(); }
-      } catch (err) { alert('運作失敗'); }
-    });
-  });
 }
 
 function isLoggedIn() { return Boolean(localStorage.getItem("token")?.trim()); }
