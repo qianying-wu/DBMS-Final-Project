@@ -75,6 +75,10 @@
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
   }
 
+  function getLocalMembers(teamId) {
+    return JSON.parse(localStorage.getItem(`teamMembers:v1:${teamId}`) || '[]');
+  }
+
   async function checkAndRenderApplyButton(teamId, userId) {
     const applyBtn = $('applyBtn');
     if (!applyBtn || !userId || userId === 'unknown') return;
@@ -133,8 +137,7 @@
         realMembers = membersArray.filter(m => m.mem_status === '通過' || m.status === '通過' || m.role === '建立人').map(m => ({
           id: m.user_id,
           name: m.userName || m.name || m.user_name || `使用者 ${m.user_id}`,
-          role: m.role || '組員',
-          resumeId: m.resume_id || ''
+          role: m.role || '組員'
         }));
       }
     } catch (err) {
@@ -153,16 +156,9 @@
     if(countEl) countEl.textContent = realMembers.length;
 
     // 簡化卡片內容，移除履歷和評價提示，保留點擊跳轉功能
-    memberList.innerHTML = realMembers.map(member => {
-      const reviewParams = new URLSearchParams({
-        targetUserId: String(member.id),
-        teamId: String(team.team_id)
-      });
-      if (member.resumeId) reviewParams.set('resumeId', String(member.resumeId));
-
-      return `
+    memberList.innerHTML = realMembers.map(member => `
       <li style="padding: 0; overflow: hidden; border: 1px solid #e6ddd3; border-radius: 8px;">
-        <a href="/review.html?${reviewParams.toString()}" 
+        <a href="/review.html?targetUserId=${member.id}&teamId=${team.team_id}" 
            class="member-card" 
            style="text-decoration: none; display: flex; padding: 14px; color: inherit; transition: background 0.2s ease;"
            onmouseover="this.style.backgroundColor='#f4eee6'" 
@@ -182,8 +178,7 @@
 
         </a>
       </li>
-    `;
-    }).join('');
+    `).join('');
   }
 
   function withUserParam(path){
@@ -217,13 +212,17 @@
     $('displayDesc').style.whiteSpace = 'pre-line';
     $('displayDesc').textContent = formattedDemand;
 
-    if (Number(team.current_member_count) >= Number(team.num_limit)) {
+    const userTeamIds = JSON.parse(localStorage.getItem(`myTeams:${ME.id}`) || '[]');
+    const alreadyJoinedLocal = userTeamIds.some(id => Number(id) === Number(team.team_id));
+    const pending = JSON.parse(localStorage.getItem('joinRequests') || '[]').some(req => Number(req.teamId) === Number(team.team_id) && String(req.user?.id) === String(ME.id) && req.status === 'pending');
+    
+    if (alreadyJoinedLocal || pending || Number(team.current_member_count) >= Number(team.num_limit)) {
       setApplicationAvailability({
-        visible: true,
+        visible: !alreadyJoinedLocal,
         disabled: true,
-        text: '隊伍已額滿',
+        text: alreadyJoinedLocal ? '已在隊伍中' : pending ? '審核中...' : '隊伍已額滿',
         lock: true,
-        tone: 'muted'
+        tone: alreadyJoinedLocal ? 'member' : 'muted'
       });
     }
 
@@ -358,13 +357,21 @@
   async function checkUserRoleAndRender(team) {
     try {
       const isCreator = await isOwnedByCurrentUser(currentTeamId);
+      const isAlreadyMember = getLocalMembers(currentTeamId).some(member => String(member.userId) === String(ME.id));
+      const hasPendingApplication = JSON.parse(localStorage.getItem('teamApplications:v1') || '[]').some(app =>
+        Number(app.teamId) === Number(currentTeamId) &&
+        String(app.userId) === String(ME.id) &&
+        app.status === 'pending'
+      );
 
       await renderMemberList(team, isCreator);
 
-      if (isCreator) {
+      if (isCreator || isAlreadyMember) {
         setApplicationAvailability({ visible: false, disabled: true, text: '已在隊伍中', lock: true, tone: 'member' });
+      } else if (hasPendingApplication) {
+        setApplicationAvailability({ disabled: true, text: '審核中...', lock: true, tone: 'muted' });
       } else {
-        await checkAndRenderApplyButton(currentTeamId, ME.id);
+        if (!applyLocked) setApplicationAvailability({ disabled: false, text: '加入隊伍', lock: false });
       }
 
       if (isCreator) {
