@@ -148,36 +148,158 @@
 }
 
 /* --- 4. 核心：每一個隊伍都是一個可以選的精緻框框 --- */
+.team-application-notice {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(260px, 0.8fr) minmax(320px, 1.2fr);
+    gap: 18px;
+    align-items: center;
+    background: linear-gradient(135deg, #fff8ec, #ffffff);
+    border: 1px solid #d4ae7a;
+    border-radius: 16px;
+    padding: 20px 22px;
+    box-shadow: 0 16px 34px rgba(139, 103, 66, 0.09);
+}
+
+.notice-copy {
+    display: grid;
+    gap: 6px;
+}
+
+.notice-kicker {
+    width: fit-content;
+    border: 1px solid #ead7bd;
+    background: #ffffff;
+    color: #b1844b;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.notice-copy h3 {
+    margin: 0;
+    color: #4f3827;
+    font-size: 20px;
+    line-height: 1.35;
+}
+
+.notice-copy p {
+    margin: 0;
+    color: #8a735e;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.notice-list {
+    display: grid;
+    gap: 10px;
+}
+
+.notice-item {
+    width: 100%;
+    border: 1px solid #eadfd2;
+    background: rgba(255, 255, 255, 0.82);
+    color: #4f3827;
+    border-radius: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: minmax(120px, 0.8fr) minmax(180px, 1fr) max-content;
+    gap: 12px;
+    align-items: center;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.notice-item:hover {
+    border-color: #caa77a;
+    background: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(139, 103, 66, 0.08);
+}
+
+.notice-team {
+    font-weight: 900;
+}
+
+.notice-contest {
+    color: #8a735e;
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.notice-item strong,
+.button-count {
+    background: #caa77a;
+    color: #ffffff;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.button-count {
+    margin-left: 6px;
+    min-width: 20px;
+    box-sizing: border-box;
+    display: inline-flex;
+    justify-content: center;
+}
+
 .teams-management-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* 自動填滿的精緻卡片盒 */
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); /* 自動填滿的精緻卡片盒 */
     gap: 20px;
+    align-items: start;
 }
 
 .team-manage-card {
     background: #ffffff;
-    border: 1px solid #eadfd2;
-    border-radius: 12px;
-    padding: 20px;
+    border: 1px solid #e7dbcc;
+    border-radius: 14px;
+    padding: 22px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    box-shadow: 0 4px 12px rgba(79, 56, 39, 0.02);
+    gap: 14px;
+    min-height: 245px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 14px 32px rgba(79, 56, 39, 0.045);
     transition: all 0.2s ease;
+}
+
+.team-manage-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: linear-gradient(180deg, #d2af7c, #f0dfc5);
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
 .team-manage-card:hover {
     border-color: #caa77a;
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(212, 178, 131, 0.12);
+    box-shadow: 0 18px 38px rgba(139, 103, 66, 0.12);
+}
+
+.team-manage-card:hover::before {
+    opacity: 1;
+}
+
+.team-manage-card.has-pending-applications {
+    border-color: #d4ae7a;
+    box-shadow: 0 16px 34px rgba(139, 103, 66, 0.08);
 }
 
 /* 卡片頂部：標籤與隊伍名稱 */
 .card-top {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-bottom: 14px;
+    gap: 10px;
+    margin-bottom: 0;
 }
 
 /* 創立者與成員標籤顯示 */
@@ -200,84 +322,151 @@
     border: 1px solid #dce5ec;
 }
 
+.pending-badge {
+    align-self: flex-start;
+    border: 1px solid #ead7bd;
+    background: #fff8ec;
+    color: #b1844b;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 900;
+}
+
 .team-title {
     margin: 0;
-    font-size: 18px;
+    font-size: 19px;
     color: #4f3827;
     font-weight: 800;
-    line-height: 1.3;
+    line-height: 1.35;
 }
 
 /* 卡片中部：競賽名稱與目前人數 */
 .card-mid {
-    border-top: 1px solid #fcfaf7;
-    padding-top: 12px;
-    margin-bottom: 18px;
+    border-top: 1px solid #f2ece5;
+    padding-top: 14px;
+    margin-bottom: 2px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 
 .info-row {
     display: flex;
-    font-size: 13.5px;
-    line-height: 1.4;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 .info-row .label {
     color: #8a735e;
-    min-width: 70px;
+    min-width: 76px;
+    font-weight: 800;
 }
 
 .info-row .val {
     color: #4f3827;
-    font-weight: 600;
+    font-weight: 800;
+}
+
+.card-bottom {
+    display: grid;
+    gap: 12px;
+    margin-top: auto;
 }
 
 /* 卡片底部：「管理」按鈕導向 */
 .btn-manage-action {
     width: 100%;
-    background-color: #ffffff;
+    min-height: 48px;
+    background-color: #fffdfa;
     border: 1px solid #caa77a;
     color: #caa77a;
-    padding: 10px 0;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 700;
+    padding: 11px 16px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 900;
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    box-sizing: border-box;
 }
 
 .btn-manage-action:hover {
     background-color: #caa77a;
     color: #ffffff;
-    box-shadow: 0 4px 10px rgba(212, 178, 131, 0.25);
+    box-shadow: 0 10px 22px rgba(202, 167, 122, 0.28);
 }
 
 .owned-action-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 8px;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin-top: 0 !important;
+    justify-content: stretch !important;
 }
 
 .btn-secondary-action {
+    min-height: 42px;
     border: 1px solid #eadfd2;
-    background: #fbf9f6;
+    background: #fffdfa;
     color: #6f5a47;
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 9px 10px;
-    font-size: 13px;
-    font-weight: 800;
+    font-size: 14px;
+    font-weight: 900;
     cursor: pointer;
     transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
 }
 
 .btn-secondary-action:hover {
     border-color: #caa77a;
     color: #4f3827;
-    background: #ffffff;
+    background: #fff8ec;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(139, 103, 66, 0.08);
+}
+
+.btn-secondary-action.has-pending {
+    border-color: #caa77a;
+    background: #fff8ec;
+    color: #4f3827;
+}
+
+.btn-secondary-action.btn-disband-team {
+    border-color: #e5c8ba;
+    background: #fff8f3;
+    color: #9a604f;
+}
+
+.btn-secondary-action.btn-disband-team:hover {
+    border-color: #c88470;
+    background: #fff0e9;
+    color: #874e40;
+}
+
+.review-teammate-btn {
+    min-height: 48px !important;
+    border-radius: 10px !important;
+    background: #fffdfa !important;
+    color: #caa77a !important;
+    border-color: #caa77a !important;
+    font-size: 15px !important;
+    font-weight: 900 !important;
+    padding: 11px 16px !important;
+}
+
+.review-teammate-btn:hover {
+    background: #caa77a !important;
+    color: #ffffff !important;
 }
 
 .review-link {
@@ -710,6 +899,25 @@
 @media (max-width: 768px) {
     .layout-manage {
         grid-template-columns: 1fr;
+    }
+    .teams-management-grid {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+    .team-application-notice {
+        grid-template-columns: 1fr;
+        padding: 18px;
+    }
+    .notice-item {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+    .team-manage-card {
+        min-height: auto;
+        padding: 22px;
+    }
+    .owned-action-row {
+        grid-template-columns: 1fr !important;
     }
     .manage-sidebar {
         border-right: none;

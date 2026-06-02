@@ -16,6 +16,7 @@
       if (!userId || userId === 'unknown') {
          userId = sessionStorage.getItem('userId');
       }
+      const token = localStorage.getItem('token');
 
       // 3. 這時候再去拿 LocalStorage，就絕對拿得到了
       const userArea = document.querySelector('.actions'); // 🔔👤 區塊
@@ -23,12 +24,21 @@
   
       if (!userArea || !authArea) return; // 確保頁面上有這些元素才執行
   
-      if (userId && userId !== 'unknown' && userId !== '') {
+      const hasValidLogin = Boolean(
+        token &&
+        token.trim() !== '' &&
+        userId &&
+        userId !== 'unknown' &&
+        userId !== 'null' &&
+        userId !== 'undefined'
+      );
+
+      if (hasValidLogin) {
         userArea.style.display = 'flex';
         authArea.style.display = 'none';
       } else {
         userArea.style.display = 'none';
-        authArea.style.display = 'block';
+        authArea.style.display = 'flex';
       }
     }
   

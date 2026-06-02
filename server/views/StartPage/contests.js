@@ -2,22 +2,16 @@
 // 1. 全域變數與基礎工具函式
 // ==========================================================================
 
-// 取得 DOM 元素的簡寫工具函式
 const $ = id => document.getElementById(id);
 
-// 存放後端撈回來的「全部比賽原始資料」
 let contests = [];
 let currentPreferences = [];
+let globalDbTags = []; // 🚀 新增：全域快取標籤總表
 
-// 檢查 sessionStorage 有沒有進站紀錄
 const urlParams = new URLSearchParams(window.location.search);
-const hasUserIdInUrl = urlParams.has('userId'); // 👑 檢查網址是不是剛登入跳轉過來的
+const hasUserIdInUrl = urlParams.has('userId'); 
 
 if (!sessionStorage.getItem('hasVisited')) {
-  // 如果沒有，代表這是「新開的分頁」或是「剛關掉重開」
-  
-  // 👑 核心修正：只有在網址「沒有」帶 userId 的情況下，才允許清空快取
-  // 如果網址有 userId，代表他是剛登入成功的，千萬不能刪！
   if (!hasUserIdInUrl) {
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
@@ -25,12 +19,9 @@ if (!sessionStorage.getItem('hasVisited')) {
   } else {
     console.log('[AUTH] 檢測到新工作階段，但偵測到剛登入成功跳轉，保留憑證');
   }
-
-  // 標記已經訪問過
   sessionStorage.setItem('hasVisited', 'true');
 }
 
-// 將字串轉成安全 HTML，避免資料庫文字影響頁面結構
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
     '&': '&amp;',
@@ -41,30 +32,17 @@ function escapeHtml(value) {
   }[char]));
 }
 
-// 導頁時保留目前登入使用者的 userId
 function withUserParam(path) {
   const userId = new URLSearchParams(location.search).get('userId') || localStorage.getItem('userId');
   return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
 }
 
-// 檢查使用者是否已登入
 function isLoggedIn() {
-  const token = localStorage.getItem('token'); // 或是 sessionStorage.getItem('token')
+  const token = localStorage.getItem('token'); 
   const id = localStorage.getItem('userId') || new URLSearchParams(location.search).get('userId');
-
-  // 👑 關鍵核心：只有當 token 存在，且 id 不是髒資料時，才算真正登入
   return Boolean(token && token.trim() !== "");
-
-  // token &&
-  // token.trim() !== "" &&
-  // id &&
-  // id !== 'unknown' &&
-  // id !== 'null' &&
-  // id !== 'undefined'
-  // );
 }
 
-// 未登入時的彈出提示或跳轉
 function showLoginPrompt() {
   const loginPromptModal = $('loginPromptModal');
   const loginPromptMessage = $('loginPromptMessage');
@@ -82,11 +60,10 @@ function redirectToAuth() {
   location.href = '/auth.html';
 }
 
-
 // ==========================================================================
 // 2. 競賽資料處理與渲染核心 (核心業務邏輯)
 // ==========================================================================
-// 從後端讀取資料庫 Competition 表的全部比賽（內含聯查標籤）
+
 async function loadContests() {
   try {
     const res = await fetch('/api/contests/competitions');
@@ -95,14 +72,11 @@ async function loadContests() {
 
     const dbContests = result.competitions || result;
 
-    // 🚀 核心修正：將後端的 com_tags 欄位解開為前端可用的 tags 陣列
     contests = dbContests.map(contest => ({
       ...contest,
-      // 萬一後端某個比賽沒有設定標籤，就給它預設值 ['Other']
       tags: contest.tags ? contest.tags.split(',') : ['其他']
     }));
 
-    console.log('成功載入含標籤的比賽資料：', contests);
     return contests;
   } catch (err) {
     console.error('讀取比賽失敗:', err);
@@ -111,73 +85,74 @@ async function loadContests() {
   }
 }
 
-
-// 依照比賽名稱與說明做簡單分類
-// function inferCategory(contest) {
-//   const text = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase();
-//   if (text.includes('ai') || text.includes('資料') || text.includes('機器') || text.includes('智慧')) return 'AI';
-//   if (text.includes('設計') || text.includes('創意') || text.includes('黑客松')) return 'Design';
-//   if (text.includes('商業') || text.includes('創業') || text.includes('金融')) return 'Business';
-//   return 'Other';
-// }
-
-// 對應中文標籤
-// function categoryLabel(category) {
-//   return {
-//     AI: '人工智慧',
-//     Design: '設計與創意',
-//     Business: '商業競賽',
-//     Other: '其他'
-//   }[category] || category;
-// }
-
-// 🚀【全面升級】揚棄前端盲猜，直接拿資料庫定義的中文分類標籤
 function getContestMainTag(contest) {
   return contest.tags && contest.tags.length ? contest.tags[0] : '其他';
 }
 
+// 🚀 核心字典：只管中文對應，不用再猜英文代碼了
 function preferenceKeywords(preferences = []) {
   const map = {
-    ai: ['ai', '人工智慧', '智慧', '機器', '資料', '模型'],
-    data: ['資料', '數據', '分析', 'data'],
-    web: ['網頁', '網站', 'web', '前端', '後端'],
-    app: ['app', '應用', '手機', '行動'],
-    robotics: ['機器人', '自動化', 'robot'],
-    security: ['資安', '安全', 'security'],
-    medical: ['醫療', '健康', '照護'],
-    fintech: ['金融', 'fintech', '商業'],
-    sustainability: ['永續', '環境', '綠色'],
-    startup: ['創業', '新創', '提案'],
-    design: ['設計', '創意', 'ui', 'ux'],
-    presentation: ['簡報', '企劃', '提案']
+    // 預防萬一保留舊的英文
+    'ai': ['ai', '人工智慧', '機器學習', '深度學習', '模型'],
+    'robotics': ['機器人', '自動化', 'robot'],
+    'medical': ['醫療', '健康', '照護', '生技'],
+    'app': ['app', '手機', 'ios', 'android'],
+    'business': ['商業個案', '商業', '企劃', '行銷', '商管', '創業'],
+    'sustainability': ['永續', '環境', '綠色', 'esg', 'sdgs', '碳中和'],
+    'web': ['網頁', '前端', '後端', '網站'],
+    'algorithm': ['演算法', '程式設計', '解題', 'c++', 'python', '邏輯運算'],
+    
+    // 全面採用中文名稱作為 Key
+    'ai / ml': ['ai', '人工智慧', '機器學習', '深度學習', '模型', 'ml'],
+    '資料分析': ['資料', '數據', '分析', 'data', '大數據'],
+    '網頁開發': ['網頁', '前端', '後端', '網站', 'web'],
+    'app 開發': ['app', '手機', 'ios', 'android', '行動應用'],
+    '機器人': ['機器人', '自動化', 'robot'],
+    '資安': ['資安', '安全', '駭客', 'security', '資訊安全'],
+    
+    '醫療科技': ['醫療', '健康', '生技', '照護', '醫學'],
+    '金融科技': ['金融', 'fintech', '區塊鏈', '理財', '支付'],
+    '永續議題': ['永續', '環境', '綠色', 'esg', 'sdgs', '社會企業', '淨零'],
+    '創業提案': ['創業', '新創', '提案', 'startup', '商業模式'],
+    'ui/ux': ['ui', 'ux', '介面', '使用者體驗', '設計'],
+    
+    '簡報企劃': ['簡報', '企劃', '提案', '發表', 'pitch'],
+    '物聯網 / 硬體整合': ['物聯網', 'iot', '硬體', '感測', '嵌入式'],
+    '商業個案': ['商業個案', '商業', '企劃', '行銷', '商管', 'case'],
+    '智慧城市 / 地方創生': ['智慧城市', '地方創生', '社區', '城鄉', '都市'],
+    
+    '建築與空間設計': ['建築', '空間', '室內設計', '景觀', '環境設計'],
+    '智慧製造 / 機械工程': ['製造', '機械', '工廠', '自動化', '機電'],
+    '體育賽事 / 健康促進': ['體育', '運動', '健康', '賽事', '休閒'],
+    
+    '智慧財產 / 專利活化': ['專利', '智財', '商標', '著作權', 'ip'],
+    '行銷企劃 / 廣告設計': ['行銷', '廣告', '公關', '社群', '行銷企劃'],
+    '社會參與 / 社會企業': ['社會', '志工', '公益', '社會企業', 'npo'],
+    
+    '電子商務 / 國際貿易': ['電商', '貿易', '電子商務', '進出口', '零售'],
+    '演算法 / 程式設計': ['演算法', '程式設計', '解題', 'c++', 'python', '邏輯運算', '軟體設計']
   };
 
-  const keywords = preferences.flatMap(key => map[key] || [key]);
-  return keywords.length ? keywords : ['ai', '人工智慧', '設計', '創意', '商業', '熱門'];
+  const keywords = preferences.flatMap(key => {
+    const lowerKey = String(key).toLowerCase();
+    return map[lowerKey] ? map[lowerKey] : [lowerKey]; 
+  });
+
+  return keywords;
 }
 
-async function loadRecommendationPreferences() {
-  const userId = localStorage.getItem('userId') || new URLSearchParams(location.search).get('userId');
-  if (!userId || userId === 'unknown') return [];
-
-  try {
-    if (window.AppPreferences?.loadUserPreferences) {
-      return await window.AppPreferences.loadUserPreferences(userId);
-    }
-  } catch (err) {
-    console.warn('讀取使用者偏好失敗，改用熱門推薦:', err);
-  }
-
-  return [];
-}
-
+// 🚀 負責抓取資料庫標籤總表，並存在全域變數裡
 async function fetchAllDbTags() {
+  if (globalDbTags.length > 0) return globalDbTags; // 如果已經抓過就直接用
   try {
     const path = '/api/pref/allPrefTags';
     const res = await fetch(path);
     if (res.ok) {
       const result = await res.json();
-      if (result.success && Array.isArray(result.data)) return result.data;
+      if (result.success && Array.isArray(result.data)) {
+        globalDbTags = result.data;
+        return result.data;
+      }
     }
   } catch (e) {
     console.error("無法從資料庫讀取 Com_type 總表", e);
@@ -185,55 +160,123 @@ async function fetchAllDbTags() {
   return [];
 }
 
-// 🚀 建立一個動態初始化下拉選單的函式
-async function initCategoryFilter() {
-  const categoryFilter = document.getElementById('categoryFilter');
-  if (!categoryFilter) return; // 確保畫面上真的有這個元件
+async function loadRecommendationPreferences() {
+  const token = localStorage.getItem('token');
+  if (!token) return [];
 
-  // 1. 直接呼叫你之前寫好的函式，拿到資料庫的總表陣列
-  const dbTags = await fetchAllDbTags();
+  try {
+    const response = await fetch('/api/pref/getpref', {
+      headers: { 'Authorization': token }
+    });
 
-  if (!dbTags || dbTags.length === 0) {
-    console.warn("⚠️ 沒拿到任何資料庫標籤資料");
-    return;
+    if (response.ok) {
+      const result = await response.json();
+      if (result.success && Array.isArray(result.data)) {
+        const rawPrefs = result.data;
+        
+        // 🚀 神級翻譯蒟蒻：拿著後端回傳的 Key，去總表裡面找出對應的中文！
+        await fetchAllDbTags(); // 確保總表已經準備好
+        const translatedPrefs = rawPrefs.map(pref => {
+          // 不管傳來的是 comType_key 還是 comType，我們統一轉成中文的 comType
+          const foundTag = globalDbTags.find(tag => tag.comType_key === pref || tag.comType === pref);
+          return foundTag ? foundTag.comType : pref;
+        });
+
+        console.log('🔄 翻譯前的後端偏好：', rawPrefs);
+        console.log('✨ 翻譯後的純中文偏好：', translatedPrefs);
+        
+        return translatedPrefs;
+      }
+    }
+  } catch (err) {
+    console.warn('無法從資料庫讀取偏好:', err);
   }
 
-  // 2. 將陣列資料轉換成 HTML 的 <option> 標籤
-  // 💡 關鍵點：value 改用 db 欄位裡的 comType（字串），這樣後面搜尋比較好對齊
+  return [];
+}
+
+async function initCategoryFilter() {
+  const categoryFilter = document.getElementById('categoryFilter');
+  if (!categoryFilter) return; 
+
+  const dbTags = await fetchAllDbTags();
+
+  if (!dbTags || dbTags.length === 0) return;
+
   const optionsHtml = dbTags.map(tag => {
     return `<option value="${tag.comType}">${tag.comType}</option>`;
   }).join('');
 
-  // 3. 保留原本的「所有分類」，後面塞入從資料庫撈出來的真實分類
   categoryFilter.innerHTML = `<option value="all">所有分類</option>` + optionsHtml;
 }
 
-// 💡 記得在頁面載入（例如 DOMContentLoaded 或其他初始化進程）時執行它！
 document.addEventListener('DOMContentLoaded', () => {
   initCategoryFilter();
 });
+
+// 🚀 算分系統升級：主副標籤加權，保證精準命中
+function getRecommendedContests(dataList = [], preferences = []) {
+  if (!preferences || preferences.length === 0) return [];
+
+  const keywords = preferenceKeywords(preferences).map(item => String(item).toLowerCase());
+
+  const scoredContests = dataList.map(contest => {
+    const text = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase();
+    
+    const mainTag = (contest.tags && contest.tags.length > 0) ? contest.tags[0].toLowerCase() : '';
+    const subTagsText = (contest.tags && contest.tags.length > 1) ? contest.tags.slice(1).join(' ').toLowerCase() : '';
+
+    let score = keywords.reduce((sum, keyword) => sum + (text.includes(keyword) ? 1 : 0), 0);
+    score += keywords.reduce((sum, keyword) => sum + (mainTag.includes(keyword) ? 10 : 0), 0);
+    score += keywords.reduce((sum, keyword) => sum + (subTagsText.includes(keyword) ? 2 : 0), 0);
+
+    return { contest, score };
+  });
+
+  console.log('📊 最終分數排行榜：', scoredContests.map(c => ({ name: c.contest.com_name, score: c.score })));
+
+  return scoredContests
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score) 
+    .slice(0, 3)
+    .map(item => item.contest);
+}
 
 function renderRecommendations(dataList = []) {
   const grid = $('recommendedGrid');
   const section = $('recommendedSection');
   if (!grid || !section) return;
 
+  // 狀況 4：未登入 ➡️ 隱藏整個區塊
   if (!isLoggedIn()) {
     section.classList.add('hidden');
     grid.innerHTML = '';
     return;
   }
 
-  section.classList.remove('hidden');
+  // 先檢查身上到底有沒有帶著「偏好標籤」
+  const hasPreferences = currentPreferences && currentPreferences.length > 0;
 
-  const recommended = getRecommendedContests(dataList, currentPreferences);
-  if (!recommended.length) {
-    grid.innerHTML = '<div class="empty-note">目前暫無適合的推薦比賽。</div>';
+  // 狀況 3：已登入，未設定標籤 ➡️ 隱藏整個區塊
+  if (!hasPreferences) {
+    section.classList.add('hidden');
+    grid.innerHTML = '';
     return;
   }
 
+  // 既然有設定偏好，那就來算分，看看有沒有命中的比賽
+  const recommended = getRecommendedContests(dataList, currentPreferences);
+
+  // 狀況 2：已登入，標籤未命中 (算出來的名單是空的) ➡️ 顯示區塊，並用文字告知
+  if (recommended.length === 0) {
+    section.classList.remove('hidden');
+    grid.innerHTML = '<div class="empty-note" style="grid-column: 1 / -1; color: #8a735e; padding: 20px 0;">目前暫無符合您偏好的比賽，先看看下方的熱門競賽吧！</div>';
+    return;
+  }
+
+  // 狀況 1：已登入，標籤有命中 ➡️ 顯示推薦卡片
+  section.classList.remove('hidden');
   grid.innerHTML = recommended.map(contest => {
-    // 🚀 核心修正：改抓資料庫真實標籤
     const mainTag = getContestMainTag(contest);
     const rawDate = contest.com_date || '';
     const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
@@ -255,71 +298,13 @@ function renderRecommendations(dataList = []) {
     `;
   }).join('');
 }
-function getRecommendedContests(dataList = [], preferences = []) {
-  const keywords = preferenceKeywords(preferences).map(item => String(item).toLowerCase());
 
-  return dataList
-    .map(contest => {
-      const text = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase();
-      const score = keywords.reduce((sum, keyword) => sum + (text.includes(keyword) ? 1 : 0), 0);
-      return { contest, score };
-    })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
-    .map(item => item.contest);
-}
-
-// function renderRecommendations(dataList = []) {
-//   const grid = $('recommendedGrid');
-//   const section = $('recommendedSection');
-//   if (!grid || !section) return;
-
-//   if (!isLoggedIn()) {
-//     section.classList.add('hidden');
-//     grid.innerHTML = '';
-//     return;
-//   }
-
-//   section.classList.remove('hidden');
-
-//   const recommended = getRecommendedContests(dataList, currentPreferences);
-//   if (!recommended.length) {
-//     grid.innerHTML = '<div class="empty-note">目前暫無適合的推薦比賽。</div>';
-//     return;
-//   }
-
-//   grid.innerHTML = recommended.map(contest => {
-//     const category = getContestMainTag(contest);
-//     const rawDate = contest.com_date || '';
-//     const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
-//     const contestId = contest.com_id || contest.id;
-
-//     return `
-//       <article class="recommend-card" data-recommend-id="${contestId}">
-//         <div class="recommend-topline">
-//           <span>${categoryLabel(category)}</span>
-//           <strong>推薦</strong>
-//         </div>
-//         <h3>${escapeHtml(contest.com_name || contest.name || '未命名比賽')}</h3>
-//         <p>${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
-//         <div class="recommend-footer">
-//           <span>${escapeHtml(displayDate || '日期未定')}</span>
-//           <span>查看詳情 →</span>
-//         </div>
-//       </article>
-//     `;
-//   }).join('');
-// }
-
-// 核心渲染函式：負責將比賽資料陣列轉換成 HTML 卡片
 function renderContests(dataList = []) {
   const grid = $('contestsGrid');
   if (!grid) return;
 
   grid.innerHTML = dataList.length ? dataList.map(contest => {
-    // 🚀 核心修正：改抓資料庫真實標籤
     const mainTag = getContestMainTag(contest);
-
     const rawDate = contest.com_date || '';
     const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
 
@@ -336,60 +321,19 @@ function renderContests(dataList = []) {
     `;
   }).join('') : '<div class="empty-note">目前資料庫沒有可瀏覽的比賽。</div>';
 }
-// function renderContests(dataList = []) {
-//   const grid = $('contestsGrid');
-//   if (!grid) return;
 
-//   grid.innerHTML = dataList.length ? dataList.map(contest => {
-//     const category = getContestMainTag(contest);
-
-//     // 💡 修正原本 com_date 為 null 時可能引發的 .includes 報錯問題
-//     const rawDate = contest.com_date || '';
-//     const displayDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
-
-//     return `
-//       <article class="contest-card" data-id="${contest.com_id}">
-//         <div class="card-tag">${categoryLabel(category)}</div>
-//         <h3>${escapeHtml(contest.com_name)}</h3>
-//         <p class="category">分類：${categoryLabel(category)}</p>
-//         <p class="desc">${escapeHtml(contest.com_intro || '尚未填寫比賽說明')}</p>
-//         <div class="card-footer">
-//           <span>${escapeHtml(displayDate || '日期未定')}</span>
-//           <span class="more-link">查看更多 →</span>
-//         </div>
-//       </article>
-//     `;
-//   }).join('') : '<div class="empty-note">目前資料庫沒有可瀏覽的比賽。</div>';
-// }
-
-// 執行搜尋與下拉選單的篩選功能
 function applyFilters() {
   const q = $('contestSearch')?.value.trim().toLowerCase() || '';
   const category = $('categoryFilter')?.value || 'all';
 
   const filtered = contests.filter(contest => {
     const matchedText = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase().includes(q);
-
-    // 🚀 核心修正：直接比對資料庫拿回來的標籤是否有包含下拉選單選的分類！
     const matchedCategory = category === 'all' || contest.tags.includes(category);
     return matchedText && matchedCategory;
   });
 
   renderContests(filtered);
 }
-// function applyFilters() {
-//   const q = $('contestSearch')?.value.trim().toLowerCase() || '';
-//   const category = $('categoryFilter')?.value || 'all';
-
-//   const filtered = contests.filter(contest => {
-//     const matchedText = `${contest.com_name || ''} ${contest.com_intro || ''}`.toLowerCase().includes(q);
-//     const matchedCategory = category === 'all' || getContestMainTag(contest) === category;
-//     return matchedText && matchedCategory;
-//   });
-
-//   renderContests(filtered);
-// }
-
 
 // ==========================================================================
 // 3. UI 互動與通知/頭像權限事件綁定
@@ -458,20 +402,14 @@ function setupGeneralUiEvents() {
   if (homeLink) homeLink.href = withUserParam('/contests.html');
 }
 
-
 // ==========================================================================
 // 4. 統一初始化入口
 // ==========================================================================
 function initApp() {
-  // 1. 執行登入狀態 UI 切換
-  // renderAuthAction();
-
-  // 2. 綁定常規 UI 事件與通知/頭像監聽
   setupGeneralUiEvents();
   bindNotify();
   bindAvatar();
 
-  // 3. 從後端非同步讀取資料庫，並驅動第一次的畫面渲染
   Promise.all([loadContests(), isLoggedIn() ? loadRecommendationPreferences() : Promise.resolve([])]).then(([loadedContests, preferences]) => {
     currentPreferences = isLoggedIn() ? preferences : [];
     renderRecommendations(loadedContests);
@@ -479,7 +417,6 @@ function initApp() {
   });
 }
 
-// 確保在 DOM 樹完全載入後才執行初始化
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
 } else {
