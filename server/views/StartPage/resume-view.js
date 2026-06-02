@@ -38,9 +38,15 @@ async function loadProfile() {
 
     // 從陣列中，撈出 id 與網址列傳進來的 `resumeId` 相同的特定履歷
     // 如果網址沒傳，預設撈第一份 (existProfiles[0])
-    const profile = existProfiles.find(x => String(x.id) === String(resumeId)) || existProfiles[0] || null;
+    //const profile = existProfiles.find(x => String(x.id) === String(resumeId)) || existProfiles[0] || null;
 
+    // 修改這行：如果找不到指定的 ID，就抓陣列的最後一個 (最新的)
+    const profile = existProfiles.find(x => String(x.id) === String(resumeId)) 
+                || existProfiles[existProfiles.length - 1] // 👈 改抓最後一筆
+                || null;
+    
     console.log("=== 【DEBUG】從後端撈到的特定履歷整筆資料 ===", profile); // 👈 加這一行
+    
     if (profile && profile.data) {
       if (!profile.data.tags && profile.tags) {
         profile.data.tags = profile.tags;
