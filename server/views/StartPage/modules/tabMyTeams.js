@@ -514,7 +514,7 @@ function bindReviewActionButtons(panelContainer, refreshCallback) {
             <p><strong>申請人姓名：</strong>${Data.escapeHtml(resume.applicantName)}</p>
             <p><strong>學校：</strong>${Data.escapeHtml(resume.school || '未填寫')}</p>
             <p><strong>系級：</strong>${Data.escapeHtml(resume.grade || '未填寫')}</p>
-            <p><strong>自我介紹：</strong></p>
+            <p><strong>自我介紹（請附上至少一種連絡方式）：</strong></p>
             <div style="background:#fff; border:1px solid #eee; padding:10px; border-radius:4px; font-size:13px; max-height:150px; overflow-y:auto; color:#666; white-space: pre-line;">
               ${Data.escapeHtml(resume.intro || '這位夥伴很神秘，尚未填寫自我介紹。')}
             </div>
