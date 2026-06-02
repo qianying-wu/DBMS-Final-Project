@@ -191,6 +191,43 @@
     color: #a05a48;
   }
 
+  /* 讓裝卡片的容器高度一致 */
+.team-manage-grid { /* 假設你的外層 div 叫這個 */
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch; /* 🚀 關鍵：讓同一排的卡片等高 */
+    gap: 20px;
+}
+
+/* 卡片本體 */
+.team-manage-card {
+    display: flex;
+    flex-direction: column; /* 讓內容垂直排列 */
+    height: 100%;           /* 讓卡片撐滿容器高度 */
+    min-height: 280px;      /* 設定一個基礎最小高度 */
+    background: #fff;
+    /* ...你原本的其他樣式... */
+}
+
+/* 中間資訊區 */
+.card-mid {
+    flex-grow: 1;           /* 🚀 關鍵：把剩餘空間吃掉，把底部按鈕往下推 */
+}
+
+/* 底部按鈕區 */
+.card-bottom {
+    margin-top: auto;       /* 確保底部區塊永遠在最下面 */
+    padding-top: 15px;
+}
+
+/* 限制競賽名稱顯示，防止過長把卡片撐太高 */
+.info-row .val {
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* 🚀 最多顯示兩行，超過顯示... */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
   @media (max-width: 640px) {
     .applicant-card {
       align-items: flex-start;

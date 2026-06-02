@@ -185,13 +185,20 @@ export async function render(gridContainer, token, userId) {
         ${pendingCount && isCreator ? `<span class="pending-badge">${pendingCount} 筆待審核</span>` : ''}
         <h3 class="team-title" style="margin-top: 5px;">${Data.escapeHtml(t.team_name)}</h3>
       </div>
+      
       <div class="card-mid">
-          <div class="info-row"><span class="label">競賽項目：</span><span class="val">${Data.escapeHtml(contestName)}</span></div>
-          <div class="info-row"><span class="label">目前人數：</span><span class="val">${currentCount} / ${maxCount} 人</span></div>
+          <div class="info-row">
+            <span class="label">競賽項目：</span>
+            <span class="val">${Data.escapeHtml(contestName)}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">目前人數：</span>
+            <span class="val">${currentCount} / ${maxCount} 人</span>
+          </div>
       </div>
+      
       <div class="card-bottom">
-          <button class="btn-manage-action ${isCreator ? '' : 'btn-view-only'}" 
-                  data-team-id="${teamId}">
+          <button class="btn-manage-action ${isCreator ? '' : 'btn-view-only'}" data-team-id="${teamId}">
               ${isCreator ? '管理隊伍' : '查看隊伍'}
           </button>
 
