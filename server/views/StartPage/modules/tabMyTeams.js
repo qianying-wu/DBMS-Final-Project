@@ -56,6 +56,49 @@ function showTeamConfirm(message, { title = '確認操作', okText = '確認', d
   });
 }
 
+// 從隊伍詳細資料重新計算目前人數，避免列表 API 的 current_member_count 沒有即時同步。
+function countAcceptedMembers(members = []) {
+  return members.filter(member => {
+    const status = String(member.mem_status || member.status || '').trim();
+    const role = String(member.role || '').trim();
+    return status === '通過' || role === '建立人';
+  }).length;
+}
+
+// 卡片顯示前補抓隊伍 detail，讓「目前人數」與「待審核數」都以最新成員資料為準。
+async function enrichTeamsWithLiveMemberCounts(teams, token) {
+  const enrichedTeams = await Promise.all(teams.map(async team => {
+    const teamId = team.team_id || team.id;
+    if (!teamId) return team;
+
+    try {
+      const res = await fetch(`/api/teams/detail?teamId=${encodeURIComponent(teamId)}`, {
+        headers: { 'Authorization': ` ${token}` }
+      });
+      if (!res.ok) throw new Error('讀取隊伍詳細資料失敗');
+
+      const result = await res.json();
+      const members = result.members || [];
+      const acceptedCount = countAcceptedMembers(members);
+      const pendingCount = members.filter(member => {
+        const status = String(member.mem_status || member.status || '').trim();
+        return status === '申請中';
+      }).length;
+
+      return {
+        ...team,
+        current_member_count: acceptedCount || team.current_member_count || team.current_members || team.member_count || 1,
+        pending_count: pendingCount
+      };
+    } catch (err) {
+      console.warn('隊伍人數重新計算失敗，暫用原本列表資料:', teamId, err);
+      return team;
+    }
+  }));
+
+  return enrichedTeams;
+}
+
 /**
  * 🚀 主渲染函式：驅動網格卡片與面板外殼
  */
@@ -85,27 +128,61 @@ export async function render(gridContainer, token, userId) {
   processedOwned.forEach(item => { const id = item.team_id || item.id; if (id) mergedMap.set(id, item); });
 
   // 只顯示正常運作中的隊伍
-  const teams = Array.from(mergedMap.values()).filter(t => {
+  const activeTeams = Array.from(mergedMap.values()).filter(t => {
     const status = t.team_status || t.teamStatus || t.status;
     return status !== 'disbanded' && status !== 'completed';
   });
+  const teams = await enrichTeamsWithLiveMemberCounts(activeTeams, token);
 
   if (teams.length === 0) {
     gridContainer.innerHTML = `<div class="empty-text">目前您尚未加入或建立任何作用中的隊伍。</div>`;
     return;
   }
 
+  // 判斷某支隊伍是否由目前使用者建立，通知區與隊長功能都會用到。
+  const isTeamCreator = team => team.isApiOwner || String(team.leader_id) === String(userId);
+
+  // 統整待審核申請，讓隊長一進「我的隊伍」就知道哪個比賽的哪支隊伍有人申請。
+  const pendingTeams = teams
+    .filter(team => isTeamCreator(team) && Number(team.pending_count || 0) > 0)
+    .map(team => ({
+      teamId: team.team_id || team.id,
+      teamName: team.team_name,
+      contestName: team.com_name || team.contest_name || team.contestName || '未指定特定競賽',
+      pendingCount: Number(team.pending_count || 0)
+    }));
+
+  const noticeHtml = pendingTeams.length > 0 ? `
+    <section class="team-application-notice" aria-label="待審核申請提醒">
+      <div class="notice-copy">
+        <span class="notice-kicker">待處理申請</span>
+        <h3>有 ${pendingTeams.reduce((sum, team) => sum + team.pendingCount, 0)} 位使用者想加入你的隊伍</h3>
+        <p>點擊下方提醒可以直接查看對應比賽與隊伍的申請審核。</p>
+      </div>
+      <div class="notice-list">
+        ${pendingTeams.map(team => `
+          <button class="notice-item" type="button" data-open-applications data-team-id="${team.teamId}" data-team-name="${Data.escapeHtml(team.teamName)}">
+            <span class="notice-team">${Data.escapeHtml(team.teamName)}</span>
+            <span class="notice-contest">${Data.escapeHtml(team.contestName)}</span>
+            <strong>${team.pendingCount} 筆</strong>
+          </button>
+        `).join('')}
+      </div>
+    </section>
+  ` : '';
+
   const cardsHtml = teams.map(t => {
     const teamId = t.team_id || t.id;
     const contestName = t.com_name || t.contest_name || t.contestName || '未指定特定競賽';
     const currentCount = t.current_member_count ?? t.current_members ?? t.member_count ?? 1;
     const maxCount = t.num_limit ?? t.max_members ?? 5;
-    const isCreator = t.isApiOwner || String(t.leader_id) === String(userId);
+    const isCreator = isTeamCreator(t);
     const pendingCount = t.pending_count || 0;
 
     return `
-      <div class="team-manage-card" id="team-card-${teamId}">
+      <div class="team-manage-card ${pendingCount && isCreator ? 'has-pending-applications' : ''}" id="team-card-${teamId}">
       <div class="card-top">
+        ${pendingCount && isCreator ? `<span class="pending-badge">${pendingCount} 筆待審核</span>` : ''}
         <h3 class="team-title" style="margin-top: 5px;">${Data.escapeHtml(t.team_name)}</h3>
       </div>
       <div class="card-mid">
@@ -120,16 +197,16 @@ export async function render(gridContainer, token, userId) {
 
           ${isCreator ? `
             <div class="owned-action-row" style="margin-top:8px; display:flex; gap:4px; flex-wrap: wrap;">
-              <button class="btn-secondary-action" data-owned-action="applications" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">申請審核${pendingCount ? ` (${pendingCount})` : ''}</button>
               <button class="btn-secondary-action" data-owned-action="members" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">隊友名單</button>
+              <button class="btn-secondary-action ${pendingCount ? 'has-pending' : ''}" data-owned-action="applications" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">申請審核${pendingCount ? `<span class="button-count">${pendingCount}</span>` : ''}</button>
               <button class="btn-secondary-action btn-disband-team" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}" data-contest-name="${Data.escapeHtml(contestName)}">解散/完賽</button>
             </div>
           ` : `
-             <div class="owned-action-row" style="margin-top:8px; display:flex; gap:4px; flex-wrap: wrap; justify-content:center;">
+             <div class="owned-action-row" style="margin-top:8px; display:flex; gap:4px; flex-wrap: wrap; justify-content:left;">
                 <button class="btn-secondary-action" data-owned-action="members" data-team-id="${teamId}" data-team-name="${Data.escapeHtml(t.team_name)}">隊友名單</button>
-             </div>
-             <div class="member-tag" style="margin-top:10px; font-size:12px; color:#999; text-align:center;">
-              ※ 您是以成員身份加入此隊伍
+                <div style="margin-top: auto; padding-top: 12px;">
+                  <span style="font-size: 13px; color: #a89a8e; font-style: italic; display: block;"> ※非隊長無法審核申請或解散隊伍 </span>
+                </div>
              </div>
           `}
       </div>
@@ -138,6 +215,7 @@ export async function render(gridContainer, token, userId) {
   }).join('');
 
   gridContainer.innerHTML = `
+    ${noticeHtml}
     <section id="ownedTeamPanel" class="owned-team-panel">
       <div class="empty-text">選擇一支隊伍，查看申請審核或隊友名單。</div>
     </section>
@@ -164,6 +242,15 @@ export async function render(gridContainer, token, userId) {
       </div>
     </div>
   `;
+
+  // 點擊上方提醒時，自動打開對應隊伍的申請審核面板。
+  gridContainer.querySelectorAll('[data-open-applications]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const reviewButton = gridContainer.querySelector(`[data-owned-action="applications"][data-team-id="${btn.dataset.teamId}"]`);
+      reviewButton?.click();
+      document.getElementById('ownedTeamPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
 
   // 綁定基本管理跳轉
   gridContainer.querySelectorAll('.btn-manage-action').forEach(btn => {
@@ -265,7 +352,11 @@ export function setupReviewPanelDelegation(refreshCallback) {
       }
 
       if (action === 'members') {
-        const activeMembers = members.filter(m => m.mem_status === '通過' || m.status === '通過');
+        const activeMembers = members.filter(m => {
+          const status = String(m.mem_status || m.status || '').trim();
+          const role = String(m.role || '').trim();
+          return status === '通過' || role === '建立人';
+        });
         let html = `<div class="panel-header"><h3>👥隊伍【${Data.escapeHtml(teamName)}】的正式隊友名單</h3></div><div style="display:grid; gap:8px; margin-top:10px;">`;
         
         activeMembers.forEach(m => {
