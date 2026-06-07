@@ -14,6 +14,4 @@ router.use(passport.authenticate("jwt", { session: false }));    // 驗證 Token
 router.get('/getpref', prefController.getUserPreferences); // 取得使用者收藏的比賽列表
 router.post('/savepref', prefController.saveUserPreferences); // 儲存使用者偏好設定
 
-
-
 export default router;

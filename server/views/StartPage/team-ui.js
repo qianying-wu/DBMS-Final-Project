@@ -69,14 +69,13 @@ export async function renderSidebarTeams() {
       }
     }
 
-    // 3. 處理並渲染「我建立的隊伍」與「待處理請求數 (pending)」
+    // 處理並渲染「我建立的隊伍」與「待處理請求數 (pending)」
     const ownedRes = await fetch(`/api/teams/my-owned?userId=${userId}`, {
       headers: { 'Authorization': ` ${token}` }
     });
     const ownedData = await ownedRes.json();
 
     if (ownedData.success && ownedData.data.length > 0) {
-      // <span class="pending-count">${team.pending_count || 0}</span> 
 
       myOwnedTeams.innerHTML = `
         <ul class="managed-list">
@@ -128,7 +127,6 @@ export function renderContestCategoryList(contests, selectedContest, expandedCon
     }))
     .filter(category => category.contests.length);
 
-// 🚀 關鍵：一打開網頁時不自動打開任何分類（將 currentExpanded 設為空或 null）
   // 如果 expandedContestCategory 一開始是空的，isOpen 就絕對會是 false
   const currentExpanded = expandedContestCategory || '';
 
@@ -181,7 +179,6 @@ export function renderRecommendations(contests, currentPreferences) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 
-  // helper: map tag keys to semantic CSS class names so colors are centrally controlled in CSS
   function tagClassFor(key) {
     if (!key) return 'tag-default';
     const k = String(key).toLowerCase();
@@ -233,11 +230,11 @@ export function renderContestOverview(contests, teams, selectedContest, contestF
   // 渲染每張比賽卡片，包含愛心收藏按鈕、比賽資訊與參賽隊伍數量
   contestsGrid.innerHTML = `${displayContests.map(contest => {
 
-    // 🚀 修正 1：對齊隊伍與比賽的資料庫欄位名稱 (team.com_id 比對 contest.id)
+    // 對齊隊伍與比賽的資料庫欄位名稱 (team.com_id 比對 contest.id)
     const contestTeams = teams.filter(team => Number(team.com_id) === Number(contest.id));
     const isContestFav = contestFavs.includes(Number(contest.id));
 
-    // 🛠️ 修正 2：優先讀取資料庫撈出來的真實標籤（相容 comType 或 com_category）
+    // 優先讀取資料庫撈出來的真實標籤（相容 comType 或 com_category）
     // 如果資料庫有標籤就分割成陣列，沒有的話才用原本的「通靈比對」當作安全備份（Fallback）
     const realTag = contest.comType || contest.com_category;
     const contestTags = realTag

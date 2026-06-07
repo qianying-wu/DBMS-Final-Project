@@ -1,7 +1,5 @@
-// 使用立即執行函式 (IIFE) 包裝，避免內部的變數污染到全域環境
 (function () {
 
-  // DOM 元素選擇器簡寫
   const $ = id => document.getElementById(id);
 
   // 取得網址參數，設定目前的使用者 ID 以及當前頁面要顯示的「比賽 ID」

@@ -2,7 +2,6 @@
 import express from 'express';
 import passport from 'passport';
 import * as authController from '../controllers/authController.js';
-import { requireLogin } from '../middleware/auth-middleware.js';
 
 const router = express.Router();
 

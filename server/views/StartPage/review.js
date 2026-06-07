@@ -110,8 +110,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
 
     document.body.appendChild(modal);
-
-    // 綁定「我知道了」按鈕，點下去就把視窗關掉
     document.getElementById('closeAlertBtn').addEventListener('click', () => {
       modal.remove();
     });
@@ -404,7 +402,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (scoreEl) scoreEl.textContent = avgStar > 0 ? avgStar : '-.-';
       if (starsEl) starsEl.innerHTML = avgStar > 0 ? starsHtml : '<span class="star-empty">★</span>'.repeat(5);
       if (countEl) countEl.textContent = `(${reviews.length} 則評價)`;
-      // ==========================================
 
       reviewList.innerHTML = '';
 

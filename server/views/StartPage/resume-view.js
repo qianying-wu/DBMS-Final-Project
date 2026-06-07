@@ -36,10 +36,6 @@ async function loadProfile() {
 
     const existProfiles = await response.json(); // 這是一個履歷陣列
 
-    // 從陣列中，撈出 id 與網址列傳進來的 `resumeId` 相同的特定履歷
-    // 如果網址沒傳，預設撈第一份 (existProfiles[0])
-    //const profile = existProfiles.find(x => String(x.id) === String(resumeId)) || existProfiles[0] || null;
-
     // 修改這行：如果找不到指定的 ID，就抓陣列的最後一個 (最新的)
     const profile = existProfiles.find(x => String(x.id) === String(resumeId)) 
                 || existProfiles[existProfiles.length - 1] // 👈 改抓最後一筆

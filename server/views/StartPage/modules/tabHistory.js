@@ -1,4 +1,4 @@
-import * as Data from '../team-data.js'; //
+import * as Data from '../team-data.js'; 
 
 export async function render(gridContainer, token, userId) { //[cite: 5]
   const currentUserId = getValidId(userId) || getValidId(localStorage.getItem('userId')) || getValidId(new URLSearchParams(location.search).get('userId')) || Data.currentUserId;

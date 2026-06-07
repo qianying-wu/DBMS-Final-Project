@@ -2,7 +2,6 @@
 import express from 'express';
 import passport from 'passport';
 import * as PVController from '../controllers/PVController.js';
-import { requireLogin } from '../middleware/auth-middleware.js';
 
 const router = express.Router();
 

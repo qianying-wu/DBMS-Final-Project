@@ -82,10 +82,6 @@ import * as Data from './team-data.js';
       }
     }
     // ================================== 以上是與後端 API 互動的函式 ==========================
-
-    // function saveProfiles(p){ localStorage.setItem('profiles', JSON.stringify(p)); }
-    // function setActiveProfileId(id){ localStorage.setItem('activeProfileId', String(id)); }
-    // function getActiveProfileId(){ return localStorage.getItem('activeProfileId') || null; }
     let activeResumeId = null; // 這就是全域紀錄本變數
 
     function setActiveProfileId(id) {
@@ -154,31 +150,12 @@ import * as Data from './team-data.js';
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
 
-    // 從履歷資料還原照片與照片調整設定。
-    // function setPhotoFromData(data) {
-    //   // Ignore any stored photo; keep default avatar
-    //   photoState = { src: null };
-    //   renderPhoto();
-    // }
-
     // 將 ISO 時間字串轉成台灣常用的日期時間格式。
     function formatDateTime(value) {
       const date = value ? new Date(value) : new Date();
       if (Number.isNaN(date.getTime())) return '時間未記錄';
       return date.toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     }
-
-    // // 以下通知功能是備援：若共用 notifications.js 未載入，仍可顯示基本通知。
-    // function loadNotifications() {
-    //   return JSON.parse(localStorage.getItem('notifications') || '[]');
-    // }
-
-    // function updateNotificationBadge() {
-    //   const notifyBtn = document.getElementById('notifyBtn');
-    //   if (!notifyBtn) return;
-    //   const unread = loadNotifications().filter(item => Number(item.userId) === 9999 && !item.read).length;
-    //   notifyBtn.textContent = unread ? `🔔 ${unread}` : '🔔';
-    // }
 
     function getTeamHref() {
       const userId = localStorage.getItem("userId");
@@ -268,14 +245,11 @@ import * as Data from './team-data.js';
 
       if (card && !event.target.closest('.resume-title')) loadProfile(card.dataset.id);
     });
-
-    //=======???======
-
-    //===============
+    
     // ======= 修正後：真正與後端 DB 連線的新增履歷 =======
     async function createResume() {
       try {
-        // 1. 先準備一份要送給後端的全新空履歷格式
+        // 先準備一份要送給後端的全新空履歷格式
         const newProfilePayload = {
           resume_id: undefined,
           resume_name: '履歷',      // 🌟 傳 undefined，後端看到就知道這是「全新建立」
@@ -285,17 +259,12 @@ import * as Data from './team-data.js';
           user_intro: '',
           tags: []                     // 一開始沒有標籤，傳空陣列
         };
-        // 2. 發送給後端，請資料庫執行 INSERT INTO Resumes...
         // saveProfileToDB 就是我們之前對齊過後端的那支 fetch 函式
         const result = await saveProfileToDB(newProfilePayload);
-        // 3. 後端成功寫入後，會回傳 { ok: true, resumeId: 15 }
         // 我們要把後端資料庫幫我們生成的「真正 ID」拿回來！
         const trueId = result.resumeId;
-        // 4. 把這個真正的 ID 鎖定為目前正在編輯的履歷
         setActiveProfileId(trueId);
-        // 5. 重新跟後端拉取最新列表（這樣快取 cachedProfiles 才會拿到最新有這份新履歷的資料）
         await loadProfiles();
-        // 6. 把這份新履歷的空白欄位填入右邊編輯器，並切換到編輯畫面
         await loadEditorData();
         showEditor();
 
@@ -315,26 +284,20 @@ import * as Data from './team-data.js';
     });
 
     // 刪除按鈕目前選取的履歷，並更新畫面。
-    // 刪除按鈕：利用 card.dataset.id 抓出當前開啟的履歷並刪除
     delResume.addEventListener('click', async () => {
-      // 1. 抓出畫面上目前被打開、蓋著「開啟」緞帶的那張履歷卡片
       const activeCard = document.querySelector('.resume-card.open');
-      // 2. 防呆：萬一使用者還沒點任何卡片就按刪除，提示他
+      // 防呆：萬一使用者還沒點任何卡片就按刪除，提示他
       if (!activeCard) {
         alert('沒有選中的履歷');
         return;
       }
-      // 🌟3. 精髓在這一行！直接從這張卡片的 HTML 號碼牌（data-id）把履歷 ID 挖出來！
+      // 精髓在這一行！直接從這張卡片的 HTML 號碼牌（data-id）把履歷 ID 挖出來！
       const resumeIdToDelete = activeCard.dataset.id;
-      // 4. 跳出確認視窗，問使用者是不是真的要刪除
       if (!confirm('確定要刪除這份履歷嗎？')) return;
       try {
-        // 5. 呼叫刪除 API，把剛剛挖到的「真．履歷 ID」傳給後端
         const success = await deleteProfile(resumeIdToDelete);
         if (success) {
-          //  6. 清除全域的選取狀態（因為那份履歷已經在地球上消失了）
           setActiveProfileId(null);
-          // 7. 重新整理列表，
           load();
         }
       } catch (err) {
@@ -344,7 +307,6 @@ import * as Data from './team-data.js';
     });
 
     saveBtn.addEventListener('click', async () => {
-      // Inline validation on save: show errors and focus first empty
       const clearErrors2 = () => { $('error-name').textContent = ''; $('error-school').textContent = ''; $('error-intro').textContent = ''; };
       clearErrors2();
 
@@ -352,7 +314,6 @@ import * as Data from './team-data.js';
       const nameVal = $('name').value.trim();
       const schoolVal = $('school').value.trim();
       const gradeVal = $('grade').value.trim();
-      // HTML 內欄位 id 是 intro，這裡必須保持一致，否則儲存時會讀不到欄位。
       const introVal = $('intro').value.trim();
       const errorInputs = [];
 
@@ -373,7 +334,6 @@ import * as Data from './team-data.js';
         errorInputs.push($('intro'));
       }
 
-      // 如果有欄位沒填，把游標焦點移到第一個漏填的欄位並中斷執行
       if (errorInputs.length) {
         errorInputs[0].focus();
         return;
@@ -391,16 +351,12 @@ import * as Data from './team-data.js';
       };
 
       try {
-        // 4. 送去給我們之前接好後端的 saveProfileToDB 函式
         const result = await saveProfileToDB(payload);
-        // 5. 🌟 關鍵：如果是「第一次存全新履歷」，後端會產生一個新 ID
         // 我們要把這個新 ID 抓回來，更新前端的紀錄本，不然下次再按儲存就會變成重複新增了！
         if (result && result.resumeId) {
           setActiveProfileId(result.resumeId);
         }
-        // 6. 儲存成功後，重新跟後端拉取最新資料更新快取
         await loadProfiles();
-        // 7. 重新刷洗左邊的履歷卡片列表（這樣卡片上的更新時間、名字才會同步變更）
         await renderResumeGallery();
         alert('已成功儲存至資料庫！');
         load(); // 儲存後回到列表頁，讓使用者看到更新後的狀態
@@ -411,12 +367,10 @@ import * as Data from './team-data.js';
 
     });
 
-    // Photo upload and editing removed; photoPreview kept only for display.
 
     // 右上角按鈕的防禦性綁定，避免缺少共用模組時整頁失效。
     try {
       const notifyBtn = document.getElementById('notifyBtn');
-      // const avatarBtn = document.getElementById('avatarBtn');
       const teamBtn = document.getElementById('teamBtn');
       if (notifyBtn && !window.AppNotifications) notifyBtn.addEventListener('click', showNotifications);
       if (teamBtn) {

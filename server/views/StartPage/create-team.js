@@ -142,10 +142,6 @@
     return JSON.parse(localStorage.getItem('teams') || '[]');
   }
 
-  function saveTeams(teams) {
-    localStorage.setItem('teams', JSON.stringify(teams));
-  }
-
   function withUserParam(path) {
     const userId = params.get('userId');
     return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
@@ -175,25 +171,6 @@
 
   }
 
-  // 渲染比賽下拉選單
-  async function renderContestSelect() {
-    let contests = await loadContests();
-
-    // 2. 決定預設選中的值
-    const selectedValue = selectedContestId && contests.some(c => Number(c.com_id) === Number(selectedContestId)) ? String(selectedContestId) : '';
-
-    // 3. 開始渲染 Options
-    $('contestSelect').innerHTML = `
-      ${contests.map(contest => `
-        <option value="${contest.com_id}">
-          ${escapeAttr(contest.com_name)}（${escapeAttr(contest.com_date || '日期未定')}）
-        </option>
-      `).join('')}
-    `;
-
-    $('contestSelect').value = selectedValue;
-  }
-
   // 送出表單時取得比賽
   function resolveContestForSubmit() {
     const selectedComId = $('contestSelect').value;
@@ -209,15 +186,6 @@
     };
 
   }
-  // 渲染「給申請人的提問」列表。
-  // function renderQuestions(){
-  //   $('questionsList').innerHTML = questions.map((question, index) => `
-  //     <div class="question-row">
-  //       <input class="question-input" data-index="${index}" type="text" value="${escapeAttr(question)}" placeholder="輸入給申請人的問題">
-  //       <button class="remove-question" data-remove="${index}" type="button" aria-label="刪除提問">×</button>
-  //     </div>
-  //   `).join('');
-  // }
 
   // 監聽搜尋列表的點擊
   // 🚀 1. 核心搜尋與渲染函式
@@ -298,110 +266,6 @@
       renderContestResults();
     }, 300);
   });
-
-  // $('addQuestion').addEventListener('click', () => {
-  //   questions.push('');
-  //   renderQuestions();
-  //   document.querySelectorAll('.question-input').item(questions.length - 1)?.focus();
-  // });
-
-  // $('questionsList').addEventListener('input', event => {
-  //   const input = event.target.closest('.question-input');
-  //   if (!input) return;
-  //   questions[Number(input.dataset.index)] = input.value;
-  // });
-
-  // $('questionsList').addEventListener('click', event => {
-  //   const button = event.target.closest('[data-remove]');
-  //   if (!button) return;
-  //   if (questions.length === 1) questions[0] = '';
-  //   else questions.splice(Number(button.dataset.remove), 1);
-  //   renderQuestions();
-  // });
-
-  /**
- * 取得當前使用者在搜尋結果中點選的比賽資料
- * @returns {Object} 包含 com_id 的比賽物件
- */
-  function getSelectedContest() {
-    // 1. 從隱藏欄位中撈出剛剛點擊卡片塞進去的 com_id
-    const selectedComId = $('contestSelect')?.value;
-
-    // 2. 🚀 防呆機制：如果欄位是空的，代表使用者根本沒有點選任何一場比賽
-    if (!selectedComId || selectedComId.trim() === '') {
-      throw new Error('請先在上方輸入關鍵字，並「點擊選擇」一場比賽！');
-    }
-
-    // 3. 成功拿到 ID，包裝成物件回傳（對齊你後端需要的欄位名稱）
-    return {
-      com_id: Number(selectedComId)
-    };
-  }
-  /*  // 表單送出：建立隊伍並導回對應比賽頁。
-    $('createForm').addEventListener('submit', async event => { // 💡 注意：這裡加上了 async
-  
-      event.preventDefault();
-      // const contest = getSelectedContest();
-      contest = resolveContestForSubmit();
-      const name = $('teamName').value.trim();
-      if (!contest) return alert('請先搜尋並選擇一個比賽');
-      if (!name) return alert('請輸入隊伍名稱');
-  
-      // try {
-      //   console.log(contest);
-      // } catch (error) {
-      //   return alert(error.message || error);
-      // }
-    
-      // ----------檢查這邊的邏輯------------
-      const descParts = [$('teamDesc').value.trim(), $('teamSkills').value.trim() ? `需求：${$('teamSkills').value.trim()}` : ''].filter(Boolean);
-      const slots = Number($('teamSlots').value) || 4;
-      
-      // 這裡打包要丟給資料庫的欄位資料
-      const teamData = {
-        com_id: contest.id,                // 資料庫: com_id
-        teamStatus: 'active',              // 資料庫: teamStatus (預設啟用)
-        num_limit: slots,                  // 資料庫: num_limit
-        demand: descParts.join('\n'),      // 資料庫: demand
-        team_name: name,                   // 資料庫: team_name
-        current_member_count: 1,          // 資料庫: current_member_count (建立時預設 1 人，代表隊長)
-      };
-    
-      try {
-        
-        const path = '/api/teams/create';
-        const token = localStorage.getItem('token'); // 🚀 假設你們登入時把 token 存存在這裡
-        const response = await fetch(path, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 
-                     'Authorization': ` ${token}` // 🚀 關鍵核心：手動把 JWT Token 傳給後端驗證
-          },
-          body: JSON.stringify(teamData) // 把資料變成字串送過去
-        });
-    
-        console.log(teamData);
-        // 🚀 3. 安全防護：如果是 401，抓出純文字提示
-        if (!response.ok) {
-          const errorText = await response.text();
-          return console.log(`建立失敗 (錯誤代碼 ${response.status}): ${errorText}\n提示：請檢查 Token 是否有效或是否已登入。`);
-        }
-        const result = await response.json();
-  
-        if (response.ok && result.success) {
-          alert('🎉 隊伍建立成功！');
-          
-          // 成功後看你要導頁回到哪裡，例如：
-          window.location.href = withUserParam('/team.html');
-        } else {
-          alert('建立隊伍失敗：' + (result.message || '未知錯誤'));
-        }
-      } catch (error) {
-        console.error('網路錯誤:', error);
-        alert('無法連接到伺服器，請稍後再試');
-      }
-  
-    });
-  */
 
   $('createForm').addEventListener('submit', async event => {
     event.preventDefault();
@@ -505,5 +369,4 @@
   });
   toggleNewContestFields();
   render();
-  // renderQuestions();
 })();

@@ -17,7 +17,7 @@ export function withUserParam(path) {
   return userId ? `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(userId)}` : path;
 }
 
-// 🚀 轉正版：從真實後端資料庫讀取全部隊伍
+// 從真實後端資料庫讀取全部隊伍
 export async function loadTeams() {
   try {
     const res = await fetch('/api/teams/all');
@@ -29,7 +29,7 @@ export async function loadTeams() {
 
     console.log('📦 資料庫原始隊伍資料：', dbTeams);
 
-    // 🛠️ 變數對齊：對應你之前調整過的資料庫欄位
+    // 對應資料庫欄位
     const mappedTeams = activeTeams.map(team => ({
       id: team.team_id || team.id,                  // 雙重保險相容
       team_id: team.team_id,                        // 隊伍 ID
@@ -47,7 +47,7 @@ export async function loadTeams() {
   }
 }
 
-// 🚀 轉正版：從真實後端資料庫讀取全部比賽
+// 從真實後端資料庫讀取全部比賽
 export async function loadContests() {
   try {
     const res = await fetch('/api/contests/competitions');
@@ -58,7 +58,7 @@ export async function loadContests() {
 
     console.log('📦 資料庫原始比賽資料：', dbContests);
 
-    // 🛠️ 變數對齊：完全對接你之前在 contest.html 內寫的變數
+    // 完全對接你之前在 contest.html 內寫的變數
     const mappedContests = dbContests.map(contest => ({
       id: contest.com_id,
       name: contest.com_name,

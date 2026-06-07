@@ -35,7 +35,7 @@ export function initManageDashboard() {
     renderTeamsGridSection();
   });
 
-  // 👑 修正點：從 tabMyTeams 模組調用被抽離的事件代理，並將刷新網格的函式作為 Callback 傳進去
+  // 從 tabMyTeams 模組調用被抽離的事件代理，並將刷新網格的函式作為 Callback 傳進去
   tabMyTeams.setupReviewPanelDelegation(renderTeamsGridSection);
 }
 
