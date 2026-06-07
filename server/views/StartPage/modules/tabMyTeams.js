@@ -185,13 +185,20 @@ export async function render(gridContainer, token, userId) {
         ${pendingCount && isCreator ? `<span class="pending-badge">${pendingCount} 筆待審核</span>` : ''}
         <h3 class="team-title" style="margin-top: 5px;">${Data.escapeHtml(t.team_name)}</h3>
       </div>
+      
       <div class="card-mid">
-          <div class="info-row"><span class="label">競賽項目：</span><span class="val">${Data.escapeHtml(contestName)}</span></div>
-          <div class="info-row"><span class="label">目前人數：</span><span class="val">${currentCount} / ${maxCount} 人</span></div>
+          <div class="info-row">
+            <span class="label">競賽項目：</span>
+            <span class="val">${Data.escapeHtml(contestName)}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">目前人數：</span>
+            <span class="val">${currentCount} / ${maxCount} 人</span>
+          </div>
       </div>
+      
       <div class="card-bottom">
-          <button class="btn-manage-action ${isCreator ? '' : 'btn-view-only'}" 
-                  data-team-id="${teamId}">
+          <button class="btn-manage-action ${isCreator ? '' : 'btn-view-only'}" data-team-id="${teamId}">
               ${isCreator ? '管理隊伍' : '查看隊伍'}
           </button>
 
@@ -507,7 +514,7 @@ function bindReviewActionButtons(panelContainer, refreshCallback) {
             <p><strong>申請人姓名：</strong>${Data.escapeHtml(resume.applicantName)}</p>
             <p><strong>學校：</strong>${Data.escapeHtml(resume.school || '未填寫')}</p>
             <p><strong>系級：</strong>${Data.escapeHtml(resume.grade || '未填寫')}</p>
-            <p><strong>自我介紹：</strong></p>
+            <p><strong>自我介紹（請附上至少一種連絡方式）：</strong></p>
             <div style="background:#fff; border:1px solid #eee; padding:10px; border-radius:4px; font-size:13px; max-height:150px; overflow-y:auto; color:#666; white-space: pre-line;">
               ${Data.escapeHtml(resume.intro || '這位夥伴很神秘，尚未填寫自我介紹。')}
             </div>
